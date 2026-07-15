@@ -63,6 +63,7 @@ export class OperationsController {
 
   @Get("workflows")
   workflows(@Req() request: Request) {
+    this.requireRole(request.tenantContext!.roles, ["platform-admin", "security-admin", "m365-admin", "auditor"]);
     return {
       items: this.operations.listWorkflows(request.tenantContext!.tenantId),
     };
@@ -86,6 +87,7 @@ export class OperationsController {
 
   @Get("workflows/:id")
   workflow(@Req() request: Request, @Param("id") id: string) {
+    this.requireRole(request.tenantContext!.roles, ["platform-admin", "security-admin", "m365-admin", "auditor"]);
     return this.operations.getWorkflow(request.tenantContext!.tenantId, id);
   }
 
@@ -96,6 +98,7 @@ export class OperationsController {
     @Body() _body: WorkflowDecisionDto,
   ) {
     const context = request.tenantContext!;
+    this.requireRole(context.roles, ["platform-admin", "security-admin", "m365-admin"]);
     return this.operations.submitWorkflow(
       context.tenantId,
       id,
@@ -143,6 +146,7 @@ export class OperationsController {
     @Body() _body: WorkflowDecisionDto,
   ) {
     const context = request.tenantContext!;
+    this.requireRole(context.roles, ["platform-admin", "m365-admin"]);
     return this.operations.rollbackWorkflow(
       context.tenantId,
       id,
@@ -153,6 +157,7 @@ export class OperationsController {
 
   @Get("audit")
   audit(@Req() request: Request, @Query() query: ListAuditQuery) {
+    this.requireRole(request.tenantContext!.roles, ["platform-admin", "security-admin", "auditor"]);
     const items = this.operations.audit(
       request.tenantContext!.tenantId,
       query.objectType,
@@ -170,6 +175,7 @@ export class OperationsController {
   @Post("simulation/tick")
   tick(@Req() request: Request) {
     const context = request.tenantContext!;
+    this.requireRole(context.roles, ["platform-admin"]);
     return this.operations.simulateTick(
       context.tenantId,
       context.actorId,

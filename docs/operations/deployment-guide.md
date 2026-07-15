@@ -12,7 +12,7 @@ Search and AI are opt-in resource-heavy profiles: `docker compose --profile sear
 
 Prometheus process/build metrics are available through the `observability` profile. Forward structured container logs to the customer's approved local log platform and alert on readiness, collection lag, queue depth, workflow failure, certificate expiry, storage, and backup age.
 
-The Compose stack deliberately uses development header identity to make the foundation evaluable. It is not an internet-facing production configuration. Production deployment must set `NODE_ENV=production`, remove `AUTH_MODE=development`, configure OIDC, terminate trusted TLS, issue service certificates, enable OpenSearch security, deploy Vault, and pass the release gates in the roadmap.
+The Compose stack uses the signed internal web-to-API identity boundary and rejects caller-supplied tenant or role headers. Copy the generated `AEGIS_LOCAL_USERS_B64`, `AEGIS_SESSION_SECRET`, and `AEGIS_INTERNAL_API_SECRET` values into the protected root environment for a local Compose pilot. An internet-facing production deployment must replace local identities with Entra OIDC, terminate trusted TLS, use managed workload identity or service certificates, enable OpenSearch security, deploy a secret provider such as Key Vault or Vault, and pass the release gates in the roadmap.
 
 ## Kubernetes
 

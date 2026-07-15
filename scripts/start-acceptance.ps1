@@ -36,8 +36,8 @@ if (-not $SkipBuild) {
 }
 
 $env:PORT = '3001'
-$env:NODE_ENV = 'development'
-$env:AUTH_MODE = 'development'
+$env:NODE_ENV = 'production'
+$env:AUTH_MODE = 'internal'
 $env:WEB_ORIGIN = 'http://localhost:3008,http://127.0.0.1:3008'
 $env:RUNTIME_DATA_PATH = Join-Path $api 'data\runtime-state.json'
 
@@ -68,7 +68,19 @@ if (-not $ready) {
 }
 
 if ($ResetData) {
-  Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:3001/api/v1/simulation/reset' -Headers @{ 'x-actor-id' = 'acceptance.bootstrap@apex.local'; 'x-platform-roles' = 'platform-admin' } | Out-Null
+  $identityJson = @{
+    tenantId = '00000000-0000-4000-8000-000000000001'
+    actorId = 'acceptance.bootstrap@apex.local'
+    roles = @('platform-admin')
+    issuedAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    nonce = [guid]::NewGuid().ToString()
+  } | ConvertTo-Json -Compress
+  $identity = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($identityJson)).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+  $hmac = [Security.Cryptography.HMACSHA256]::new([Text.Encoding]::UTF8.GetBytes($env:AEGIS_INTERNAL_API_SECRET))
+  try {
+    $signature = [Convert]::ToBase64String($hmac.ComputeHash([Text.Encoding]::UTF8.GetBytes($identity))).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+  } finally { $hmac.Dispose() }
+  Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:3001/api/v1/simulation/reset' -Headers @{ 'x-aegis-identity' = $identity; 'x-aegis-signature' = $signature } | Out-Null
 }
 
 Write-Host 'Acceptance environment is ready.' -ForegroundColor Green

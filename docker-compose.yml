@@ -22,10 +22,10 @@ services:
     environment:
       HOSTNAME: 0.0.0.0
       PORT: 3000
-      AEGIS_AUTH_USERNAME: ${AEGIS_AUTH_USERNAME}
-      AEGIS_AUTH_PASSWORD_SALT: ${AEGIS_AUTH_PASSWORD_SALT}
-      AEGIS_AUTH_PASSWORD_HASH: ${AEGIS_AUTH_PASSWORD_HASH}
+      AEGIS_LOCAL_USERS_B64: ${AEGIS_LOCAL_USERS_B64}
       AEGIS_SESSION_SECRET: ${AEGIS_SESSION_SECRET}
+      AEGIS_INTERNAL_API_SECRET: ${AEGIS_INTERNAL_API_SECRET}
+      INTERNAL_API_URL: http://api:3001
       AEGIS_COOKIE_SECURE: ${AEGIS_COOKIE_SECURE:-true}
     expose: ["3000"]
     healthcheck:
@@ -42,8 +42,9 @@ services:
     build: ./apps/api
     environment:
       PORT: 3001
-      NODE_ENV: development
-      AUTH_MODE: development
+      NODE_ENV: production
+      AUTH_MODE: internal
+      AEGIS_INTERNAL_API_SECRET: ${AEGIS_INTERNAL_API_SECRET}
       WEB_ORIGIN: http://localhost:8080
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379

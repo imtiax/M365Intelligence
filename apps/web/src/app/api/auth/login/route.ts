@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSession, SESSION_COOKIE, SESSION_TTL_SECONDS } from '@/lib/session';
-import { verifyConfiguredPassword } from '@/lib/password';
+import { authenticateConfiguredUser } from '@/lib/password';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -39,11 +39,11 @@ export async function POST(request: NextRequest) {
   try { credentials = await request.json(); } catch { return NextResponse.json({ error: 'Invalid credentials.' }, { status: 400 }); }
   if (typeof credentials.username !== 'string' || typeof credentials.password !== 'string') return NextResponse.json({ error: 'Invalid credentials.' }, { status: 400 });
 
-  let valid = false;
-  try { valid = await verifyConfiguredPassword(credentials.username, credentials.password); }
+  let identity = null;
+  try { identity = await authenticateConfiguredUser(credentials.username, credentials.password); }
   catch { return NextResponse.json({ error: 'Authentication is not configured.' }, { status: 503 }); }
 
-  if (!valid) {
+  if (!identity) {
     const active = current && current.resetAt > now ? current : { count: 0, resetAt: now + WINDOW_MS };
     active.count += 1;
     attempts.set(key, active);
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
   }
 
   attempts.delete(key);
-  const token = await createSession(credentials.username);
+  const token = await createSession(identity);
   const response = NextResponse.json({ ok: true });
   response.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true, sameSite: 'strict', secure: process.env.AEGIS_COOKIE_SECURE !== 'false', path: '/', maxAge: SESSION_TTL_SECONDS,

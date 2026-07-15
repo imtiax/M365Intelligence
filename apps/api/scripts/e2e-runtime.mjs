@@ -1,7 +1,25 @@
+import { createHmac, randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 const base = process.env.API_URL ?? "http://127.0.0.1:3001";
 const tenant = "00000000-0000-4000-8000-000000000001";
+const env = Object.fromEntries(readFileSync(resolve("../web/.env.local"), "utf8").split(/\r?\n/).filter((line) => /^[^#][^=]*=/.test(line)).map((line) => {
+  const separator = line.indexOf("=");
+  return [line.slice(0, separator), line.slice(separator + 1)];
+}));
+const internalSecret = env.AEGIS_INTERNAL_API_SECRET;
+if (!internalSecret) throw new Error("AEGIS_INTERNAL_API_SECRET is not configured. Run the web auth setup.");
 const delay = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+function authHeaders(actor, roles) {
+  const identity = Buffer.from(JSON.stringify({ tenantId: tenant, actorId: actor, roles: roles.split(","), issuedAt: Date.now(), nonce: randomUUID() })).toString("base64url");
+  return {
+    "x-aegis-identity": identity,
+    "x-aegis-signature": createHmac("sha256", internalSecret).update(identity).digest("base64url"),
+  };
+}
 
 async function call(
   path,
@@ -17,9 +35,7 @@ async function call(
     method,
     headers: {
       "Content-Type": "application/json",
-      "x-tenant-id": tenant,
-      "x-actor-id": actor,
-      "x-platform-roles": roles,
+      ...authHeaders(actor, roles),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -44,6 +60,10 @@ async function waitFor(path, state) {
 }
 
 const health = await call("/health/ready");
+const replayHeaders = authHeaders("acceptance.replay@apex.local", "read-only");
+const firstEnvelopeUse = await fetch(`${base}/api/v1/admin-centers`, { headers: replayHeaders });
+const replayedEnvelope = await fetch(`${base}/api/v1/admin-centers`, { headers: replayHeaders });
+if (firstEnvelopeUse.status !== 200 || replayedEnvelope.status !== 401) throw new Error(`Internal identity replay defense failed (${firstEnvelopeUse.status}/${replayedEnvelope.status}).`);
 const reset = await call("/api/v1/simulation/reset", { method: "POST" });
 const centers = await call("/api/v1/admin-centers");
 if (centers.items.length !== 10) throw new Error("Expected ten admin centers.");
@@ -155,10 +175,7 @@ if (failedWorkflow.execution.succeeded !== 0)
 
 const streamController = new AbortController();
 const eventPromise = fetch(`${base}/api/v1/events/stream`, {
-  headers: {
-    "x-tenant-id": tenant,
-    "x-actor-id": "acceptance.stream@apex.local",
-  },
+  headers: authHeaders("acceptance.stream@apex.local", "platform-admin"),
   signal: streamController.signal,
 }).then(async (response) => {
   const reader = response.body.getReader();
@@ -192,6 +209,7 @@ console.log(
   JSON.stringify(
     {
       health: health.status,
+      replayDefense: { firstUse: firstEnvelopeUse.status, replay: replayedEnvelope.status },
       seeded: reset,
       adminCenters: centers.items.length,
       resources,

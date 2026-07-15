@@ -1,6 +1,7 @@
 import { SignJWT } from 'jose/jwt/sign';
 import { jwtVerify } from 'jose/jwt/verify';
 import type { JWTPayload } from 'jose';
+import type { PlatformRole, PublicIdentity } from './identity';
 
 export const SESSION_COOKIE = 'aegis_session';
 export const SESSION_TTL_SECONDS = 8 * 60 * 60;
@@ -8,7 +9,9 @@ export const SESSION_TTL_SECONDS = 8 * 60 * 60;
 export interface AegisSession extends JWTPayload {
   sub: string;
   name: string;
-  role: string;
+  title: string;
+  tenantId: string;
+  roles: PlatformRole[];
 }
 
 function signingKey(): Uint8Array {
@@ -17,10 +20,10 @@ function signingKey(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-export async function createSession(username: string): Promise<string> {
-  return new SignJWT({ name: 'Alex Morgan', role: 'Platform Administrator' })
+export async function createSession(identity: PublicIdentity): Promise<string> {
+  return new SignJWT({ name: identity.name, title: identity.title, tenantId: identity.tenantId, roles: identity.roles })
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
-    .setSubject(username)
+    .setSubject(identity.username)
     .setIssuer('aegis-local')
     .setAudience('aegis-web')
     .setJti(crypto.randomUUID())
@@ -33,6 +36,6 @@ export async function verifySession(token: string): Promise<AegisSession> {
   const { payload } = await jwtVerify(token, signingKey(), {
     algorithms: ['HS256'], issuer: 'aegis-local', audience: 'aegis-web',
   });
-  if (!payload.sub || typeof payload.name !== 'string' || typeof payload.role !== 'string') throw new Error('Invalid session claims.');
+  if (!payload.sub || typeof payload.name !== 'string' || typeof payload.title !== 'string' || typeof payload.tenantId !== 'string' || !Array.isArray(payload.roles)) throw new Error('Invalid session claims.');
   return payload as AegisSession;
 }

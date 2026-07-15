@@ -38,6 +38,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-acceptance.ps1 -ResetDa
 
 Open `http://localhost:3008/login`. This starts the production web build plus the persistent API runtime on port `3001`, seeds 7,850 deterministic resources across ten admin centers, and enables report execution, governed workflows, rollback, audit history, and live events. See the [end-to-end testing guide](docs/END-TO-END-TESTING.md) for the automated and manual acceptance checklist.
 
+The setup command creates six organization personas for platform administration, security, Microsoft 365 operations, reporting, audit, and read-only access. See the [customer acceptance and enhancement register](docs/CUSTOMER-ACCEPTANCE-AND-ENHANCEMENTS.md) for per-module results, implemented controls, and remaining live-tenant gates.
+
 ### Frontend showcase on port 3008
 
 ```powershell

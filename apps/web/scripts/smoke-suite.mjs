@@ -411,8 +411,8 @@ try {
     `([...document.querySelectorAll('.action-dialog footer button')].find(x=>x.textContent.includes('Run governed workflow'))).click()`,
   );
   await waitFor(
-    "document.querySelector('.toast')?.textContent.includes('completed:')",
-    "governed workflow completion",
+    "document.querySelector('.toast')?.textContent.includes('independent approval')",
+    "governed workflow submission",
   );
   await waitFor(
     "!document.querySelector('.runtime-live')?.textContent.includes('0 events')",

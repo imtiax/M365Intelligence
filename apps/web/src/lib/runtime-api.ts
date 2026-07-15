@@ -1,25 +1,14 @@
 import type { GeneratedReport } from "@/lib/reporting";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-const TENANT = "00000000-0000-4000-8000-000000000001";
-
-function headers(actor = "admin@apex.local") {
-  return {
-    "Content-Type": "application/json",
-    "x-tenant-id": TENANT,
-    "x-actor-id": actor,
-    "x-platform-roles": "platform-admin,security-admin",
-  };
-}
+const API = "/api/runtime";
 
 async function request<T>(
   path: string,
   init?: RequestInit,
-  actor?: string,
 ): Promise<T> {
   const response = await fetch(`${API}${path}`, {
     ...init,
-    headers: { ...headers(actor), ...(init?.headers ?? {}) },
+    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
   });
   if (!response.ok) {
     const body = await response
@@ -107,9 +96,11 @@ export async function runRuntimeReport(
   };
 }
 
-type RuntimeWorkflow = {
+export type RuntimeWorkflow = {
   id: string;
   title: string;
+  requestedBy: string;
+  approver?: string;
   state:
     | "draft"
     | "pending_approval"
@@ -125,6 +116,14 @@ type RuntimeWorkflow = {
     message: string;
   };
 };
+
+export async function getRuntimeWorkflows() {
+  return request<{ items: RuntimeWorkflow[] }>("/api/v1/workflows");
+}
+
+export async function transitionRuntimeWorkflow(id: string, action: "approve" | "execute" | "rollback") {
+  return request<RuntimeWorkflow>(`/api/v1/workflows/${id}/${action}`, { method: "POST", body: "{}" });
+}
 
 export async function runRuntimeWorkflow(
   title: string,
@@ -142,36 +141,11 @@ export async function runRuntimeWorkflow(
         justification,
       }),
     },
-    "admin@apex.local",
   );
   workflow = await request<RuntimeWorkflow>(
     `/api/v1/workflows/${workflow.id}/submit`,
     { method: "POST", body: "{}" },
-    "admin@apex.local",
   );
-  workflow = await request<RuntimeWorkflow>(
-    `/api/v1/workflows/${workflow.id}/approve`,
-    {
-      method: "POST",
-      body: JSON.stringify({ comment: "Acceptance environment approval" }),
-    },
-    "security.approver@apex.local",
-  );
-  workflow = await request<RuntimeWorkflow>(
-    `/api/v1/workflows/${workflow.id}/execute`,
-    { method: "POST", body: "{}" },
-    "workflow.engine@apex.local",
-  );
-  for (
-    let attempt = 0;
-    attempt < 40 && workflow.state === "running";
-    attempt++
-  ) {
-    await delay(150);
-    workflow = await request<RuntimeWorkflow>(
-      `/api/v1/workflows/${workflow.id}`,
-    );
-  }
   return workflow;
 }
 

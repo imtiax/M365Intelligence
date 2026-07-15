@@ -27,6 +27,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-acceptance.ps1 -ResetDa
 
 Use `-SkipBuild` after the first successful build. Open `http://localhost:3008/login`. API documentation is at `http://localhost:3001/api/docs`.
 
+The generated acceptance organization includes `admin@apex.local`, `security@apex.local`, `m365admin@apex.local`, `reports@apex.local`, `auditor@apex.local`, and `viewer@apex.local`. They use the shared local password printed by `auth:setup`, but receive different signed roles and effective access.
+
 Stop the environment:
 
 ```powershell
@@ -89,7 +91,15 @@ $env:AEGIS_SMOKE_PASSWORD = '<password printed by auth:setup>'
 npm.cmd run test:smoke
 ```
 
-The browser suite logs in, visits all 23 modules, switches all ten admin dashboards, generates catalogue and custom reports through the API, validates result rows, downloads and validates PDF/Excel output, executes a governed workflow, tests shell controls and administration, and captures screenshots under the ignored `apps/web/artifacts` directory.
+The browser suite logs in, visits all 23 modules, switches all ten admin dashboards, generates catalogue and custom reports through the API, validates result rows, downloads and validates PDF/Excel output, submits a governed workflow for independent approval, tests shell controls and administration, and captures screenshots under the ignored `apps/web/artifacts` directory.
+
+Organization role and cross-persona workflow test:
+
+```powershell
+cd apps\web
+$env:AEGIS_SMOKE_PASSWORD = '<password printed by auth:setup>'
+npm.cmd run test:roles
+```
 
 ## Manual acceptance workflow
 

@@ -9,6 +9,8 @@
     "lint": "next lint",
     "auth:setup": "node scripts/setup-auth.mjs",
     "test:smoke": "node scripts/smoke-suite.mjs",
+    "test:roles": "node scripts/role-access.mjs",
+    "test:role-ui": "node scripts/role-navigation.mjs",
     "audit:controls": "node scripts/audit-controls.mjs"
   },
   "dependencies": {

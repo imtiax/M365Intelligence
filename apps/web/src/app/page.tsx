@@ -78,7 +78,9 @@ import {
   exportReportPdf,
   generateCustomReport,
 } from "@/lib/reporting";
-import { runRuntimeWorkflow, runtimeEventUrl } from "@/lib/runtime-api";
+import { getRuntimeWorkflows, runRuntimeWorkflow, runtimeEventUrl, transitionRuntimeWorkflow, type RuntimeWorkflow } from "@/lib/runtime-api";
+import { canOpenModule, canRunChanges } from "@/lib/access";
+import { roleLabels, type PlatformRole } from "@/lib/identity";
 
 type Icon = ComponentType<{ className?: string }>;
 type NavItem = { label: string; icon: Icon; badge?: string };
@@ -1283,8 +1285,18 @@ function ReportsPage({ onPreview }: { onPreview: (name: string) => void }) {
   );
 }
 
-function AutomationsPage({ notify }: { notify: (message: string) => void }) {
+function AutomationsPage({ notify, roles, username }: { notify: (message: string) => void; roles: PlatformRole[]; username?: string }) {
   const [selected, setSelected] = useState(workflows[0]);
+  const [runtimeWorkflows, setRuntimeWorkflows] = useState<RuntimeWorkflow[]>([]);
+  const refreshRuntime = () => getRuntimeWorkflows().then((body) => setRuntimeWorkflows(body.items)).catch(() => setRuntimeWorkflows([]));
+  useEffect(() => { refreshRuntime(); }, []);
+  const transition = async (workflow: RuntimeWorkflow, action: "approve" | "execute" | "rollback") => {
+    try {
+      const updated = await transitionRuntimeWorkflow(workflow.id, action);
+      notify(`${updated.title} moved to ${updated.state.replaceAll("_", " ")}.`);
+      refreshRuntime();
+    } catch (error) { notify(error instanceof Error ? error.message : "Workflow transition failed."); }
+  };
   return (
     <>
       <PageHeader
@@ -1309,8 +1321,8 @@ function AutomationsPage({ notify }: { notify: (message: string) => void }) {
         />
         <Stat
           label="AWAITING APPROVAL"
-          value="14"
-          detail="3 expire within 24 hours"
+          value={String(runtimeWorkflows.filter((item) => item.state === "pending_approval").length)}
+          detail="Persistent organization approval queue"
           icon={ClipboardTask24Regular}
           tone="gold"
         />
@@ -1329,6 +1341,27 @@ function AutomationsPage({ notify }: { notify: (message: string) => void }) {
           tone="teal"
         />
       </div>
+      <Panel title="Organization approval queue" subtitle="Requester, approver, execution, and rollback are enforced by signed workforce identity">
+        <div className="compact-table report-table">
+          <div className="compact-head"><span>Workflow</span><span>Requester</span><span>State</span><span>Approver</span><span>Result</span><span>Allowed action</span></div>
+          {runtimeWorkflows.slice(0, 12).map((workflow) => (
+            <div className="compact-row" key={workflow.id}>
+              <span><strong>{workflow.title}</strong><small>{workflow.id.slice(0, 8)}</small></span>
+              <span>{workflow.requestedBy}</span>
+              <b className="status active">{workflow.state.replaceAll("_", " ")}</b>
+              <span>{workflow.approver ?? "Not assigned"}</span>
+              <span>{workflow.execution ? `${workflow.execution.succeeded}/${workflow.execution.affected} succeeded` : "Not executed"}</span>
+              <span>
+                {workflow.state === "pending_approval" && roles.some((role) => ["platform-admin", "security-admin"].includes(role)) && workflow.requestedBy !== username && <button onClick={() => transition(workflow, "approve")}>Approve</button>}
+                {workflow.state === "approved" && roles.some((role) => ["platform-admin", "m365-admin"].includes(role)) && <button onClick={() => transition(workflow, "execute")}>Execute</button>}
+                {workflow.state === "completed" && roles.some((role) => ["platform-admin", "m365-admin"].includes(role)) && <button onClick={() => transition(workflow, "rollback")}>Rollback</button>}
+                {!(["pending_approval", "approved", "completed"].includes(workflow.state)) && <small>No action</small>}
+              </span>
+            </div>
+          ))}
+          {!runtimeWorkflows.length && <p>No persistent workflows are visible for this role.</p>}
+        </div>
+      </Panel>
       <div className="automation-layout">
         <Panel title="Playbook catalog" subtitle="Select a workflow to inspect">
           <div className="workflow-list">
@@ -1535,6 +1568,13 @@ function AIPage({ notify }: { notify: (m: string) => void }) {
 
 function AdminPage({ notify }: { notify: (m: string) => void }) {
   const [tab, setTab] = useState("Connectors");
+  const [organizationUsers, setOrganizationUsers] = useState<Array<{ username: string; name: string; title: string; roles: PlatformRole[] }>>([]);
+  useEffect(() => {
+    fetch("/api/auth/users", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((body) => setOrganizationUsers(body.items))
+      .catch(() => setOrganizationUsers([]));
+  }, []);
   const tabs = [
     "Connectors",
     "Access control",
@@ -1669,39 +1709,18 @@ function AdminPage({ notify }: { notify: (m: string) => void }) {
           subtitle="Least-privilege personas and scoped administration"
         >
           <div className="connector-grid">
-            {[
-              [
-                "Platform Administrator",
-                "4 members",
-                "Full configuration, no evidence deletion",
-              ],
-              [
-                "Security Operator",
-                "12 members",
-                "Investigations and guarded remediation",
-              ],
-              [
-                "Report Author",
-                "28 members",
-                "Semantic models and approved exports",
-              ],
-              [
-                "Executive Viewer",
-                "41 members",
-                "Masked, read-only decision intelligence",
-              ],
-            ].map((role) => (
-              <article key={role[0]}>
+            {organizationUsers.map((user) => (
+              <article key={user.username}>
                 <span>
                   <ShieldCheckmark24Regular />
                 </span>
                 <div>
-                  <strong>{role[0]}</strong>
-                  <small>{role[2]}</small>
-                  <em>{role[1]}</em>
+                  <strong>{user.name}</strong>
+                  <small>{user.username}</small>
+                  <em>{user.roles.map((role) => roleLabels[role]).join(", ")}</em>
                 </div>
                 <button
-                  onClick={() => notify(`${role[0]} access review opened.`)}
+                  onClick={() => notify(`${user.name} access review opened with ${user.roles.length} assigned role.`)}
                 >
                   <MoreHorizontal20Regular />
                 </button>
@@ -2297,6 +2316,7 @@ export default function Home() {
   const [lightTheme, setLightTheme] = useState(false);
   const [runtimeOnline, setRuntimeOnline] = useState(false);
   const [runtimeEvents, setRuntimeEvents] = useState(0);
+  const [identity, setIdentity] = useState<{ username: string; name: string; title: string; tenantId: string; roles: PlatformRole[] } | null>(null);
   const toastTimer = useRef<number | null>(null);
   const notify = (message: string) => {
     if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
@@ -2318,16 +2338,33 @@ export default function Home() {
       window.history.pushState(null, "", `#${slug}`);
   };
   useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Session unavailable")))
+      .then(setIdentity)
+      .catch(() => window.location.assign("/login"));
+  }, []);
+  const availableNavigation = useMemo(
+    () => identity ? allNavigation.filter((item) => canOpenModule(identity.roles, item.label)) : allNavigation.filter((item) => item.label === "Command center"),
+    [identity],
+  );
+  const visibleGroups = useMemo(
+    () => navGroups.map((group) => ({ ...group, items: group.items.filter((item) => availableNavigation.some((allowed) => allowed.label === item.label)) })).filter((group) => group.items.length),
+    [availableNavigation],
+  );
+  useEffect(() => {
+    if (identity && !canOpenModule(identity.roles, active)) setActive("Command center");
+  }, [identity, active]);
+  useEffect(() => {
     const sync = () => {
       const slug = window.location.hash.slice(1);
-      const match = allNavigation.find((item) => slugFor(item.label) === slug);
+      const match = availableNavigation.find((item) => slugFor(item.label) === slug);
       if (match) setActive(match.label);
     };
     sync();
     setLightTheme(localStorage.getItem("aegis.theme") === "light");
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
-  }, []);
+  }, [availableNavigation]);
   useEffect(() => {
     const stream = new EventSource(runtimeEventUrl());
     stream.onopen = () => setRuntimeOnline(true);
@@ -2372,7 +2409,7 @@ export default function Home() {
     const q = globalQuery.trim().toLowerCase();
     if (!q) return { modules: [], reports: [] };
     return {
-      modules: allNavigation
+      modules: availableNavigation
         .filter((item) => item.label.toLowerCase().includes(q))
         .slice(0, 5),
       reports: reportCatalogue
@@ -2383,7 +2420,7 @@ export default function Home() {
         )
         .slice(0, 5),
     };
-  }, [globalQuery]);
+  }, [globalQuery, availableNavigation]);
   const page = useMemo(() => {
     switch (active) {
       case "Security":
@@ -2399,7 +2436,7 @@ export default function Home() {
       case "Report studio":
         return <ReportsPage onPreview={setReport} />;
       case "Automations":
-        return <AutomationsPage notify={notify} />;
+        return <AutomationsPage notify={notify} roles={identity?.roles ?? []} username={identity?.username} />;
       case "AI analyst":
         return <AIPage notify={notify} />;
       case "Administration":
@@ -2423,7 +2460,7 @@ export default function Home() {
       default:
         return <CommandCenter onFinding={setFinding} onNavigate={navigateTo} />;
     }
-  }, [active]);
+  }, [active, identity]);
   return (
     <div
       className={`app-shell ${lightTheme ? "light-theme" : ""}`}
@@ -2440,7 +2477,7 @@ export default function Home() {
           </span>
         </div>
         <nav aria-label="Primary navigation">
-          {navGroups.map((group) => (
+          {visibleGroups.map((group) => (
             <div className="nav-group" key={group.label}>
               <div className="workspace-label">{group.label}</div>
               {group.items.map(({ label, icon: Icon, badge }) => (
@@ -2589,6 +2626,11 @@ export default function Home() {
               ? `Runtime live · ${runtimeEvents} events`
               : "Runtime offline"}
           </span>
+          {identity && (
+            <span className="runtime-live online" title={identity.roles.map((role) => roleLabels[role]).join(", ")}>
+              <ShieldCheckmark24Regular /> {roleLabels[identity.roles[0]]}
+            </span>
+          )}
           <button
             className="icon-button"
             aria-label="Theme"
@@ -2649,11 +2691,11 @@ export default function Home() {
           )}
           <button
             className="profile"
-            title="Sign out Alex Morgan"
+            title={`Sign out ${identity?.name ?? "current user"}`}
             aria-label="Sign out"
             onClick={logout}
           >
-            AM
+            {identity?.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() ?? "--"}
           </button>
         </header>
         <section className="content presentation-content">
@@ -2689,17 +2731,14 @@ export default function Home() {
             notify(message);
           }}
           onExecute={async (selectedAction, scope, justification) => {
+            if (!identity || !canRunChanges(identity.roles)) throw new Error("Your assigned organization role cannot submit change workflows.");
             const workflow = await runRuntimeWorkflow(
               selectedAction.title,
               scope,
               justification,
             );
-            if (workflow.state !== "completed")
-              throw new Error(
-                workflow.execution?.message ??
-                  `Workflow ended in ${workflow.state}.`,
-              );
-            return `${selectedAction.title} completed: ${workflow.execution?.succeeded ?? 0} succeeded, audit ID ${workflow.id}.`;
+            if (workflow.state !== "pending_approval") throw new Error(workflow.execution?.message ?? `Workflow ended in ${workflow.state}.`);
+            return `${selectedAction.title} submitted for independent approval. Workflow ID ${workflow.id}.`;
           }}
         />
       )}
