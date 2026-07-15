@@ -13,7 +13,7 @@ The client showcase is a locally executable product experience backed by one int
 | Identity | Workforce, guests, privilege, MFA, department risk | Identity watchlist and authentication posture |
 | Management | 68 guarded actions across identity, messaging, collaboration, endpoint, and compliance | Action selection, preflight, dry run, approval, execution and rollback flow |
 | Automations | Approval-aware lifecycle and response playbooks | Playbook selection, steps, dry run, savings and success history |
-| Reporting | Searchable 947-report presentation catalogue across ten workloads | Workload tree, query, favorites, report preview, columns, filters, schedule and run |
+| Reporting | Ten admin-center dashboards and a searchable 947-report catalogue | Workload KPIs, posture, trends, priority data, populated generation, filters, schedules, PDF and Excel downloads |
 | Custom Reports | Governed semantic builder with calculations, preview, schedules and security | Source selection, field ordering, formula, predicates, grouping, delivery and access policy |
 | Auditing | Long-term unified audit explorer and activity trend | Search/filter, event context, correlation, integrity evidence, case and alert actions |
 | Usage Analytics | Service and organizational adoption, value realization | Adoption depth, departmental heatmap, opportunity segments |

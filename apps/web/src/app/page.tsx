@@ -73,6 +73,11 @@ import {
 import { SuiteWorkspace } from "@/components/SuiteWorkspaces";
 import { reportCatalogue } from "@/data/suite";
 import { ProductStudio } from "@/components/ProductStudio";
+import {
+  exportReportExcel,
+  exportReportPdf,
+  generateCustomReport,
+} from "@/lib/reporting";
 
 type Icon = ComponentType<{ className?: string }>;
 type NavItem = { label: string; icon: Icon; badge?: string };
@@ -1889,6 +1894,37 @@ function ReportPreview({
   name: string;
   onClose: () => void;
 }) {
+  const executiveReport = generateCustomReport(
+    name,
+    "Defender XDR",
+    ["Decision", "Business owner", "Status", "Target date"],
+    [
+      [
+        "Complete phishing-resistant MFA for 45 privileged identities",
+        "CISO / IAM",
+        "In progress",
+        "31 Jul 2026",
+      ],
+      [
+        "Approve staged external-sharing governance program",
+        "Data Governance",
+        "Approval required",
+        "22 Jul 2026",
+      ],
+      [
+        "Endorse annual license optimization plan",
+        "CIO / Finance",
+        "Decision required",
+        "18 Jul 2026",
+      ],
+      [
+        "Close Intune compliance baseline gaps",
+        "Endpoint Operations",
+        "Remediating",
+        "25 Jul 2026",
+      ],
+    ],
+  );
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="report-preview" onMouseDown={(e) => e.stopPropagation()}>
@@ -1927,7 +1963,10 @@ function ReportPreview({
         </div>
         <footer>
           <span>Generated locally from governed evidence · Demo content</span>
-          <Button onClick={() => downloadDemoFile(name)}>
+          <Button onClick={() => exportReportExcel(executiveReport)}>
+            <ArrowDownload24Regular /> Export Excel
+          </Button>
+          <Button onClick={() => exportReportPdf(executiveReport)}>
             <ArrowDownload24Regular /> Export PDF
           </Button>
         </footer>

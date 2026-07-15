@@ -46,6 +46,12 @@ import {
   semanticSources,
   type SemanticField,
 } from "@/data/product-studio";
+import { GeneratedReportViewer } from "@/components/GeneratedReportViewer";
+import {
+  exportReportExcel,
+  generateCustomReport,
+  type GeneratedReport,
+} from "@/lib/reporting";
 
 type Props = { page: string; notify: (message: string) => void };
 function Header({
@@ -128,6 +134,7 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
   const [grouping, setGrouping] = useState("Department");
   const [visual, setVisual] = useState("Table");
   const [saved, setSaved] = useState(false);
+  const [generated, setGenerated] = useState<GeneratedReport | null>(null);
   useEffect(() => {
     try {
       const stored = localStorage.getItem("aegis.customReport");
@@ -192,6 +199,41 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
     setSaved(true);
     notify(
       `Custom report “${name}” saved with ${selected.length} fields, ${filters.length} filters, and role-aware access.`,
+    );
+  };
+  const buildGeneratedReport = () => {
+    const workloadMap: Record<string, string> = {
+      Identity: "Microsoft Entra ID",
+      "Exchange Online": "Exchange Online",
+      "Microsoft Teams": "Microsoft Teams",
+      "SharePoint Online": "SharePoint Online",
+      "Microsoft Intune": "Microsoft Intune",
+      "Licensing & Cost": "Licensing & Cost",
+      "Unified Audit": "Microsoft Purview",
+    };
+    const rows = Array.from({ length: 25 }, (_, index) => {
+      const seed = previewRows[index % previewRows.length] as Record<
+        string,
+        unknown
+      >;
+      return selectedFields.map((field) =>
+        String(
+          seed[field.id] ??
+            [
+              "Enabled",
+              "Member",
+              "Technology",
+              "Standard",
+              `Record ${index + 1}`,
+            ][index % 5],
+        ),
+      );
+    });
+    return generateCustomReport(
+      name,
+      workloadMap[source.domain] ?? source.domain,
+      selectedFields.map((field) => field.label),
+      rows,
     );
   };
   return (
@@ -557,33 +599,60 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
       )}
       {tab === "preview" && (
         <ReportPreview
+          name={name}
           source={source}
           fields={selectedFields}
           filters={filters.length}
           visual={visual}
           notify={notify}
+          onRun={() => setGenerated(buildGeneratedReport())}
         />
       )}{" "}
       {tab === "schedule" && <ScheduleDesigner notify={notify} />}{" "}
       {tab === "security" && <ReportSecurity notify={notify} />}
       <SavedReports notify={notify} />
+      {generated && (
+        <GeneratedReportViewer
+          report={generated}
+          onClose={() => setGenerated(null)}
+          notify={notify}
+        />
+      )}
     </>
   );
 }
 
 function ReportPreview({
+  name,
   source,
   fields,
   filters,
   visual,
   notify,
+  onRun,
 }: {
+  name: string;
   source: (typeof semanticSources)[number];
   fields: SemanticField[];
   filters: number;
   visual: string;
   notify: (m: string) => void;
+  onRun: () => void;
 }) {
+  const sample = () =>
+    generateCustomReport(
+      name,
+      source.domain === "Identity" ? "Microsoft Entra ID" : source.domain,
+      fields.map((field) => field.label),
+      previewRows.map((row, index) =>
+        fields.map((field) =>
+          String(
+            (row as Record<string, unknown>)[field.id] ??
+              ["Enabled", "Member", "Technology", "Standard"][index % 4],
+          ),
+        ),
+      ),
+    );
   return (
     <div className="builder-preview">
       <div className="preview-toolbar">
@@ -598,15 +667,16 @@ function ReportPreview({
           <i /> Evidence current · 2 minutes
         </span>
         <Btn
-          onClick={() =>
+          onClick={() => {
+            exportReportExcel(sample());
             notify(
-              "Preview exported as a watermarked CSV with immutable audit event.",
-            )
-          }
+              "Preview downloaded as an Excel workbook with immutable audit event.",
+            );
+          }}
         >
           <ArrowDownload24Regular /> Export sample
         </Btn>
-        <Btn primary>
+        <Btn primary onClick={onRun}>
           <Play24Regular /> Run full report
         </Btn>
       </div>

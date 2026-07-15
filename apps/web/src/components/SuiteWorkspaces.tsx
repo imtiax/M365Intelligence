@@ -52,6 +52,12 @@ import {
   suiteModules,
   type CatalogueReport,
 } from "@/data/suite";
+import { GeneratedReportViewer } from "@/components/GeneratedReportViewer";
+import {
+  dashboardFor,
+  generateCatalogueReport,
+  type GeneratedReport,
+} from "@/lib/reporting";
 
 type Props = { page: string; notify: (message: string) => void };
 
@@ -302,11 +308,20 @@ function Explorer({ notify }: { notify: (m: string) => void }) {
 }
 
 function Reporting({ notify }: { notify: (m: string) => void }) {
+  const [view, setView] = useState<"dashboards" | "catalogue">("dashboards");
   const [query, setQuery] = useState("");
   const [workload, setWorkload] = useState("All workloads");
   const [selected, setSelected] = useState<CatalogueReport | null>(null);
   const [favorites, setFavorites] = useState(false);
   const [scheduled, setScheduled] = useState(false);
+  const [dashboardWorkload, setDashboardWorkload] = useState(
+    suiteModules[0].name,
+  );
+  const [generated, setGenerated] = useState<GeneratedReport | null>(null);
+  const dashboard = dashboardFor(dashboardWorkload);
+  const dashboardReports = reportCatalogue
+    .filter((report) => report.workload === dashboardWorkload)
+    .slice(0, 6);
   const workloads = [
     "All workloads",
     ...Array.from(new Set(reportCatalogue.map((r) => r.workload))),
@@ -372,96 +387,307 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
           tone="purple"
         />
       </div>
-      <div className="report-workspace">
-        <aside className="report-tree">
-          <strong>WORKLOADS</strong>
-          {workloads.map((w) => (
-            <button
-              className={workload === w ? "selected" : ""}
-              key={w}
-              onClick={() => setWorkload(w)}
-            >
-              <Folder24Regular />
-              <span>{w}</span>
-              <b>
-                {w === "All workloads"
-                  ? 947
-                  : reportCatalogue.filter((r) => r.workload === w).length * 9 +
-                    4}
-              </b>
-            </button>
-          ))}
-          <strong>MY WORKSPACE</strong>
-          <button
-            className={favorites ? "selected" : ""}
-            onClick={() => setFavorites(!favorites)}
-          >
-            <Sparkle24Filled />
-            <span>Favorites</span>
-            <b>29</b>
-          </button>
-          <button
-            className={scheduled ? "selected" : ""}
-            onClick={() => setScheduled(!scheduled)}
-          >
-            <CalendarClock24Regular />
-            <span>Scheduled reports</span>
-            <b>67</b>
-          </button>
-        </aside>
-        <section className="report-results">
-          <div className="catalogue-toolbar">
-            <label>
-              <Search20Regular />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search report name, category, or field…"
-              />
-            </label>
-            <button>
-              <Filter24Regular /> Advanced filters
-            </button>
-            <span>{filtered.length} shown</span>
-          </div>
-          <div className="catalogue-list">
-            <div className="catalogue-head">
-              <span>Report</span>
-              <span>Workload</span>
-              <span>Rows</span>
-              <span>Freshness</span>
-              <span />
-            </div>
-            {filtered.map((r) => (
-              <button key={r.id} onClick={() => setSelected(r)}>
-                <span className="catalogue-name">
-                  <i>
-                    <DocumentBulletList24Regular />
-                  </i>
-                  <span>
-                    <strong>{r.name}</strong>
-                    <small>
-                      {r.id} · {r.category} · {r.description}
-                    </small>
-                  </span>
-                  {r.favorite && <em>★</em>}
+      <div className="report-mode-tabs">
+        <button
+          className={view === "dashboards" ? "selected" : ""}
+          onClick={() => setView("dashboards")}
+        >
+          <DataTrending24Regular /> Admin center dashboards
+        </button>
+        <button
+          className={view === "catalogue" ? "selected" : ""}
+          onClick={() => setView("catalogue")}
+        >
+          <DocumentBulletList24Regular /> Report catalogue
+        </button>
+      </div>
+      {view === "dashboards" && (
+        <div className="admin-dashboard-layout">
+          <aside className="admin-center-list">
+            <strong>ADMIN CENTERS</strong>
+            {suiteModules.map((module) => (
+              <button
+                key={module.name}
+                className={dashboardWorkload === module.name ? "selected" : ""}
+                onClick={() => setDashboardWorkload(module.name)}
+              >
+                <span style={{ background: module.accent }}>
+                  <CloudCheckmark24Regular />
                 </span>
-                <span>{r.workload}</span>
-                <span>{r.rows}</span>
-                <span>
-                  <i className="fresh-dot" />
-                  {r.updated} ago
-                </span>
-                <ChevronRight20Regular />
+                <div>
+                  <b>{module.name}</b>
+                  <small>
+                    {module.family} · {module.reports} reports
+                  </small>
+                </div>
+                <em>{module.health}%</em>
               </button>
             ))}
-          </div>
-        </section>
-      </div>
+          </aside>
+          <section className="admin-dashboard">
+            <header>
+              <div>
+                <small>
+                  {suiteModules
+                    .find((module) => module.name === dashboardWorkload)
+                    ?.family.toUpperCase()}{" "}
+                  ADMIN CENTER
+                </small>
+                <h2>{dashboardWorkload} operational dashboard</h2>
+                <p>
+                  {
+                    suiteModules.find(
+                      (module) => module.name === dashboardWorkload,
+                    )?.description
+                  }
+                </p>
+              </div>
+              <span>
+                <i /> Data current · governed snapshot
+              </span>
+            </header>
+            <div className="admin-dashboard-metrics">
+              {dashboard.metrics.map((metric) => (
+                <article key={metric.label}>
+                  <small>{metric.label}</small>
+                  <strong>{metric.value}</strong>
+                  <span>{metric.detail}</span>
+                </article>
+              ))}
+            </div>
+            <div className="admin-dashboard-grid">
+              <article className="admin-health-card">
+                <header>
+                  <div>
+                    <strong>Operational posture</strong>
+                    <small>Health, coverage, risk, and freshness</small>
+                  </div>
+                  <b>
+                    {
+                      suiteModules.find(
+                        (module) => module.name === dashboardWorkload,
+                      )?.health
+                    }
+                    %
+                  </b>
+                </header>
+                {[
+                  "Configuration health",
+                  "Security coverage",
+                  "Data quality",
+                  "Collection freshness",
+                ].map((label, index) => {
+                  const score = Math.max(
+                    76,
+                    (suiteModules.find(
+                      (module) => module.name === dashboardWorkload,
+                    )?.health ?? 90) -
+                      index * 3 +
+                      (index === 2 ? 4 : 0),
+                  );
+                  return (
+                    <div className="admin-health-row" key={label}>
+                      <span>{label}</span>
+                      <i>
+                        <b style={{ width: `${score}%` }} />
+                      </i>
+                      <em>{score}%</em>
+                    </div>
+                  );
+                })}
+              </article>
+              <article className="admin-trend-card">
+                <header>
+                  <strong>30-day activity and risk trend</strong>
+                  <small>Normalized daily signals</small>
+                </header>
+                <div>
+                  {[42, 58, 49, 72, 63, 81, 74, 88, 69, 76, 91, 83].map(
+                    (value, index) => (
+                      <i
+                        key={index}
+                        style={{ height: `${value}%` }}
+                        title={`Day ${index + 1}: ${value}`}
+                      />
+                    ),
+                  )}
+                </div>
+                <footer>
+                  <span>01 Jul</span>
+                  <span>15 Jul</span>
+                </footer>
+              </article>
+            </div>
+            <section className="admin-dashboard-table">
+              <header>
+                <div>
+                  <strong>Priority data view</strong>
+                  <small>Highest-value records for this admin center</small>
+                </div>
+                <button
+                  onClick={() =>
+                    setGenerated(generateCatalogueReport(dashboardReports[0]))
+                  }
+                >
+                  <Play24Regular />
+                  Generate full dashboard report
+                </button>
+              </header>
+              <div className="admin-data-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      {dashboard.columns.map((column) => (
+                        <th key={column}>{column}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dashboard.rows.slice(0, 5).map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {row.map((cell, index) => (
+                          <td key={`${index}-${cell}`}>{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            <section className="admin-quick-reports">
+              <header>
+                <strong>Recommended reports</strong>
+                <small>
+                  Generate, review, and export without leaving the dashboard
+                </small>
+              </header>
+              <div>
+                {dashboardReports.map((report) => (
+                  <button
+                    key={report.id}
+                    onClick={() =>
+                      setGenerated(generateCatalogueReport(report))
+                    }
+                  >
+                    <DocumentBulletList24Regular />
+                    <span>
+                      <b>{report.name}</b>
+                      <small>
+                        {report.category} · {report.rows} rows
+                      </small>
+                    </span>
+                    <Play24Regular />
+                  </button>
+                ))}
+              </div>
+            </section>
+          </section>
+        </div>
+      )}
+      {view === "catalogue" && (
+        <div className="report-workspace">
+          <aside className="report-tree">
+            <strong>WORKLOADS</strong>
+            {workloads.map((w) => (
+              <button
+                className={workload === w ? "selected" : ""}
+                key={w}
+                onClick={() => setWorkload(w)}
+              >
+                <Folder24Regular />
+                <span>{w}</span>
+                <b>
+                  {w === "All workloads"
+                    ? 947
+                    : reportCatalogue.filter((r) => r.workload === w).length *
+                        9 +
+                      4}
+                </b>
+              </button>
+            ))}
+            <strong>MY WORKSPACE</strong>
+            <button
+              className={favorites ? "selected" : ""}
+              onClick={() => setFavorites(!favorites)}
+            >
+              <Sparkle24Filled />
+              <span>Favorites</span>
+              <b>29</b>
+            </button>
+            <button
+              className={scheduled ? "selected" : ""}
+              onClick={() => setScheduled(!scheduled)}
+            >
+              <CalendarClock24Regular />
+              <span>Scheduled reports</span>
+              <b>67</b>
+            </button>
+          </aside>
+          <section className="report-results">
+            <div className="catalogue-toolbar">
+              <label>
+                <Search20Regular />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search report name, category, or field…"
+                />
+              </label>
+              <button>
+                <Filter24Regular /> Advanced filters
+              </button>
+              <span>{filtered.length} shown</span>
+            </div>
+            <div className="catalogue-list">
+              <div className="catalogue-head">
+                <span>Report</span>
+                <span>Workload</span>
+                <span>Rows</span>
+                <span>Freshness</span>
+                <span />
+              </div>
+              {filtered.map((r) => (
+                <button key={r.id} onClick={() => setSelected(r)}>
+                  <span className="catalogue-name">
+                    <i>
+                      <DocumentBulletList24Regular />
+                    </i>
+                    <span>
+                      <strong>{r.name}</strong>
+                      <small>
+                        {r.id} · {r.category} · {r.description}
+                      </small>
+                    </span>
+                    {r.favorite && <em>★</em>}
+                  </span>
+                  <span>{r.workload}</span>
+                  <span>{r.rows}</span>
+                  <span>
+                    <i className="fresh-dot" />
+                    {r.updated} ago
+                  </span>
+                  <ChevronRight20Regular />
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
       {selected && (
         <ReportDrawer
           report={selected}
           onClose={() => setSelected(null)}
+          notify={notify}
+          onRun={() => {
+            setGenerated(generateCatalogueReport(selected));
+            setSelected(null);
+          }}
+        />
+      )}
+      {generated && (
+        <GeneratedReportViewer
+          report={generated}
+          onClose={() => setGenerated(null)}
           notify={notify}
         />
       )}
@@ -473,10 +699,12 @@ function ReportDrawer({
   report,
   onClose,
   notify,
+  onRun,
 }: {
   report: CatalogueReport;
   onClose: () => void;
   notify: (m: string) => void;
+  onRun: () => void;
 }) {
   const [tab, setTab] = useState("Preview");
   return (
@@ -583,11 +811,12 @@ function ReportDrawer({
           </Btn>
           <Btn
             primary
-            onClick={() =>
+            onClick={() => {
               notify(
                 `${report.name} generated locally with ${report.rows} rows.`,
-              )
-            }
+              );
+              onRun();
+            }}
           >
             <Play24Regular /> Run report
           </Btn>

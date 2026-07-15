@@ -7,8 +7,8 @@ The repository includes a production-buildable Next.js client showcase, a NestJS
 ## What is working
 
 - Secure local authentication with scrypt password hashing, signed HttpOnly sessions, throttling, protected routes, and security headers.
-- Twenty-three product workspaces and 408 interactive controls across the complete presentation experience.
-- Report catalogue, custom report builder, report preview/scheduling/security, dashboard designer, filtering, drawers, exports, governed demo workflows, administration, global search, and persistent browser drafts.
+- Twenty-three product workspaces and hundreds of interactive controls across the complete presentation experience.
+- Ten workload-specific admin-center dashboards, a 947-report catalogue, generated result viewers with populated rows and KPI summaries, working PDF/Excel downloads, a custom report builder, report scheduling/security, dashboard designer, filtering, drawers, governed demo workflows, administration, global search, and persistent browser drafts.
 - Production Next.js build, browser smoke suite, control inventory, Docker topology, NestJS API, PostgreSQL/TimescaleDB, Redis, RabbitMQ, optional OpenSearch, optional Ollama, and observability assets.
 
 The bundled dataset and workflow results are synthetic. Live Microsoft Graph collectors and real Microsoft 365 mutations are an integration boundary, not silently simulated production functionality. See [Connect Microsoft 365](#connect-microsoft-365).
@@ -120,6 +120,8 @@ npm.cmd test
 ```
 
 The browser suite authenticates, opens all 23 workspaces, exercises report/dashboard persistence, shell controls, governed workflows, administration, configuration, and search. The control audit inventories every visible button and input on every routed view.
+
+Reporting verification also switches through all ten admin-center dashboards, generates catalogue and custom reports, confirms populated result rows, and validates downloaded PDF and Excel files.
 
 ## Repository map
 

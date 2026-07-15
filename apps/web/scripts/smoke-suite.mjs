@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -10,6 +10,8 @@ const chrome =
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const debugPort = 9333;
 const profile = join(tmpdir(), `aegis-chrome-${process.pid}`);
+const downloadPath = join(process.cwd(), "artifacts");
+const smokeStartedAt = Date.now();
 const child = spawn(
   chrome,
   [
@@ -81,10 +83,28 @@ async function waitFor(expression, label) {
   );
   throw new Error(`Timed out waiting for ${label}; current heading: ${actual}`);
 }
+async function waitForDownload(extension) {
+  for (let i = 0; i < 80; i++) {
+    const files = await readdir(downloadPath).catch(() => []);
+    const matches = files.filter((file) => file.endsWith(extension));
+    for (const match of matches) {
+      const details = await stat(join(downloadPath, match));
+      if (details.size > 100 && details.mtimeMs >= smokeStartedAt)
+        return { file: match, bytes: details.size };
+    }
+    await delay(250);
+  }
+  throw new Error(`Timed out waiting for ${extension} report download.`);
+}
 
 try {
   await send("Runtime.enable");
   await send("Page.enable");
+  await mkdir(downloadPath, { recursive: true });
+  await send("Page.setDownloadBehavior", {
+    behavior: "allow",
+    downloadPath,
+  });
   await waitFor(
     "location.pathname==='/login'&&document.querySelector('form')",
     "login page",
@@ -147,6 +167,79 @@ try {
       throw new Error(`Deep link mismatch for ${label}`);
     verified.push(label);
   }
+  // Exercise every admin-center dashboard and a complete report generation/export flow.
+  await evaluate(
+    `(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Reporting')).click();return true})()`,
+  );
+  await waitFor(
+    "document.querySelector('h1')?.textContent.includes('Microsoft 365 report center')",
+    "report center",
+  );
+  const adminCenters = await evaluate(
+    "document.querySelectorAll('.admin-center-list>button').length",
+  );
+  if (adminCenters !== 10)
+    throw new Error(
+      `Expected 10 admin-center dashboards, found ${adminCenters}.`,
+    );
+  for (const buttonIndex of Array.from({ length: adminCenters }, (_, i) => i)) {
+    await evaluate(
+      `document.querySelectorAll('.admin-center-list>button')[${buttonIndex}].click()`,
+    );
+    await waitFor(
+      `document.querySelectorAll('.admin-dashboard-metrics article').length===4`,
+      `admin dashboard ${buttonIndex + 1}`,
+    );
+  }
+  const adminDashboardShot = await send("Page.captureScreenshot", {
+    format: "png",
+    captureBeyondViewport: false,
+  });
+  await writeFile(
+    "artifacts/smoke-admin-center-dashboard.png",
+    Buffer.from(adminDashboardShot.data, "base64"),
+  );
+  await evaluate(
+    "document.querySelector('.admin-quick-reports button').click()",
+  );
+  await waitFor(
+    "document.querySelectorAll('.generated-table-wrap tbody tr').length>0",
+    "generated report result rows",
+  );
+  await evaluate(
+    `([...document.querySelectorAll('.generated-actions button')].find(x=>x.textContent.includes('Download Excel'))).click()`,
+  );
+  const excelDownload = await waitForDownload(".xls");
+  await evaluate(
+    `([...document.querySelectorAll('.generated-actions button')].find(x=>x.textContent.includes('Download PDF'))).click()`,
+  );
+  const pdfDownload = await waitForDownload(".pdf");
+  await evaluate("document.querySelector('.close-generated').click()");
+  await waitFor(
+    "!document.querySelector('.generated-report')",
+    "report viewer close",
+  );
+  // Verify catalogue reports use the same result engine.
+  await evaluate(
+    `([...document.querySelectorAll('.report-mode-tabs button')].find(x=>x.textContent.includes('Report catalogue'))).click()`,
+  );
+  await waitFor(
+    "!!document.querySelector('.report-workspace')",
+    "report catalogue",
+  );
+  await evaluate("document.querySelector('.catalogue-list button').click()");
+  await waitFor(
+    "!!document.querySelector('.suite-drawer')",
+    "report configuration drawer",
+  );
+  await evaluate(
+    `([...document.querySelectorAll('.drawer-actions button')].find(x=>x.textContent.includes('Run report'))).click()`,
+  );
+  await waitFor(
+    "document.querySelectorAll('.generated-table-wrap tbody tr').length>0",
+    "catalogue generated report",
+  );
+  await evaluate("document.querySelector('.close-generated').click()");
   // Exercise the custom report builder beyond page rendering.
   await evaluate(
     `(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Custom reports')).click();return true})()`,
@@ -183,6 +276,14 @@ try {
     "!!document.querySelector('.result-table')",
     "report result preview",
   );
+  await evaluate(
+    `([...document.querySelectorAll('.preview-toolbar button')].find(x=>x.textContent.includes('Run full report'))).click()`,
+  );
+  await waitFor(
+    "document.querySelectorAll('.generated-table-wrap tbody tr').length>0",
+    "custom generated report",
+  );
+  await evaluate("document.querySelector('.close-generated').click()");
   await evaluate(
     `([...document.querySelectorAll('.builder-tabs button')].find(x=>x.textContent.trim()==='schedule')).click()`,
   );
@@ -391,6 +492,15 @@ try {
           security: true,
           saved: true,
           screenshot: "artifacts/smoke-custom-report-builder.png",
+        },
+        reporting: {
+          adminCenters,
+          generatedRows: true,
+          catalogueGeneration: true,
+          customGeneration: true,
+          excelDownload,
+          pdfDownload,
+          screenshot: "artifacts/smoke-admin-center-dashboard.png",
         },
         dashboardDesigner: { initialWidgets, finalWidgets, persistedWidgets },
         shell: { theme: true, tenantSelector: true, notifications: true },
