@@ -1,0 +1,157 @@
+name: m365-intelligence-platform
+
+services:
+  edge:
+    image: nginx:1.29-alpine
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks: [edge, app]
+    read_only: true
+    tmpfs: [/var/cache/nginx, /var/run]
+    restart: unless-stopped
+
+  web:
+    build: ./apps/web
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      AEGIS_AUTH_USERNAME: ${AEGIS_AUTH_USERNAME}
+      AEGIS_AUTH_PASSWORD_SALT: ${AEGIS_AUTH_PASSWORD_SALT}
+      AEGIS_AUTH_PASSWORD_HASH: ${AEGIS_AUTH_PASSWORD_HASH}
+      AEGIS_SESSION_SECRET: ${AEGIS_SESSION_SECRET}
+      AEGIS_COOKIE_SECURE: ${AEGIS_COOKIE_SECURE:-true}
+    expose: ["3000"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [app]
+    read_only: true
+    tmpfs: [/tmp]
+    restart: unless-stopped
+
+  api:
+    build: ./apps/api
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+      AUTH_MODE: development
+      WEB_ORIGIN: http://localhost:8080
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      OPENSEARCH_URL: http://opensearch:9200
+      OLLAMA_URL: http://ollama:11434
+      M365_GRAPH_ENABLED: ${M365_GRAPH_ENABLED:-false}
+      M365_TENANT_ID: ${M365_TENANT_ID:-}
+      M365_CLIENT_ID: ${M365_CLIENT_ID:-}
+      M365_CLOUD: ${M365_CLOUD:-global}
+      M365_GRAPH_BASE_URL: ${M365_GRAPH_BASE_URL:-https://graph.microsoft.com/v1.0}
+      M365_CERTIFICATE_THUMBPRINT: ${M365_CERTIFICATE_THUMBPRINT:-}
+      M365_CERTIFICATE_PATH: ${M365_CERTIFICATE_PATH:-/run/secrets/m365-collector.pem}
+    expose: ["3001"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3001/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    networks: [app, data]
+    read_only: true
+    tmpfs: [/tmp]
+    restart: unless-stopped
+
+  postgres:
+    image: timescale/timescaledb:2.20.3-pg17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [data]
+    restart: unless-stopped
+
+  redis:
+    image: redis:8.0-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [data]
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes: ["rabbitmq-data:/var/lib/rabbitmq"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks: [data]
+    restart: unless-stopped
+
+  opensearch:
+    image: opensearchproject/opensearch:3.1.0
+    profiles: ["search"]
+    environment:
+      discovery.type: single-node
+      plugins.security.disabled: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    volumes: ["opensearch-data:/usr/share/opensearch/data"]
+    networks: [data]
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:0.9.6
+    profiles: ["ai"]
+    volumes: ["ollama-data:/root/.ollama"]
+    networks: [data]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.4.2
+    profiles: ["observability"]
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=15d"]
+    volumes:
+      - ./infra/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks: [app]
+    restart: unless-stopped
+
+networks:
+  edge: {}
+  app: { internal: true }
+  data: { internal: true }
+
+volumes:
+  postgres-data: {}
+  redis-data: {}
+  rabbitmq-data: {}
+  opensearch-data: {}
+  ollama-data: {}
+  prometheus-data: {}

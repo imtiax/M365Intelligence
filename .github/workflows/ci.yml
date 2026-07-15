@@ -1,0 +1,67 @@
+name: build-test-secure
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [api, web]
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - if: matrix.app == 'api'
+        run: npm test
+      - run: npm audit --audit-level=high
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+
+  containers:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [api, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: apps/${{ matrix.app }}
+          load: true
+          tags: m365ops-${{ matrix.app }}:${{ github.sha }}
+      - uses: aquasecurity/trivy-action@0.32.0
+        with:
+          image-ref: m365ops-${{ matrix.app }}:${{ github.sha }}
+          format: sarif
+          output: trivy-${{ matrix.app }}.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-${{ matrix.app }}.sarif
+

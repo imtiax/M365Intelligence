@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: m365ops-app
+resources: [platform.yaml]
+images:
+  - name: registry.example.invalid/m365ops-api
+    newTag: 0.1.0
+  - name: registry.example.invalid/m365ops-web
+    newTag: 0.1.0
+
