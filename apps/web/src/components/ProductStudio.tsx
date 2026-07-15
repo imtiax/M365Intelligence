@@ -52,6 +52,7 @@ import {
   generateCustomReport,
   type GeneratedReport,
 } from "@/lib/reporting";
+import { runRuntimeReport } from "@/lib/runtime-api";
 
 type Props = { page: string; notify: (message: string) => void };
 function Header({
@@ -135,6 +136,7 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
   const [visual, setVisual] = useState("Table");
   const [saved, setSaved] = useState(false);
   const [generated, setGenerated] = useState<GeneratedReport | null>(null);
+  const [reportRunning, setReportRunning] = useState(false);
   useEffect(() => {
     try {
       const stored = localStorage.getItem("aegis.customReport");
@@ -201,7 +203,7 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
       `Custom report “${name}” saved with ${selected.length} fields, ${filters.length} filters, and role-aware access.`,
     );
   };
-  const buildGeneratedReport = () => {
+  const buildGeneratedReport = async () => {
     const workloadMap: Record<string, string> = {
       Identity: "Microsoft Entra ID",
       "Exchange Online": "Exchange Online",
@@ -211,30 +213,26 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
       "Licensing & Cost": "Licensing & Cost",
       "Unified Audit": "Microsoft Purview",
     };
-    const rows = Array.from({ length: 25 }, (_, index) => {
-      const seed = previewRows[index % previewRows.length] as Record<
-        string,
-        unknown
-      >;
-      return selectedFields.map((field) =>
-        String(
-          seed[field.id] ??
-            [
-              "Enabled",
-              "Member",
-              "Technology",
-              "Standard",
-              `Record ${index + 1}`,
-            ][index % 5],
+    setReportRunning(true);
+    notify(`${name} submitted to the persistent custom-report runtime.`);
+    try {
+      setGenerated(
+        await runRuntimeReport(
+          name,
+          workloadMap[source.domain] ?? source.domain,
+          selectedFields.map((field) => field.label),
         ),
       );
-    });
-    return generateCustomReport(
-      name,
-      workloadMap[source.domain] ?? source.domain,
-      selectedFields.map((field) => field.label),
-      rows,
-    );
+      notify(`${name} completed from persisted tenant resources.`);
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Custom report runtime failed.",
+      );
+    } finally {
+      setReportRunning(false);
+    }
   };
   return (
     <>
@@ -605,7 +603,8 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
           filters={filters.length}
           visual={visual}
           notify={notify}
-          onRun={() => setGenerated(buildGeneratedReport())}
+          onRun={() => void buildGeneratedReport()}
+          running={reportRunning}
         />
       )}{" "}
       {tab === "schedule" && <ScheduleDesigner notify={notify} />}{" "}
@@ -630,6 +629,7 @@ function ReportPreview({
   visual,
   notify,
   onRun,
+  running,
 }: {
   name: string;
   source: (typeof semanticSources)[number];
@@ -638,6 +638,7 @@ function ReportPreview({
   visual: string;
   notify: (m: string) => void;
   onRun: () => void;
+  running: boolean;
 }) {
   const sample = () =>
     generateCustomReport(
@@ -677,7 +678,7 @@ function ReportPreview({
           <ArrowDownload24Regular /> Export sample
         </Btn>
         <Btn primary onClick={onRun}>
-          <Play24Regular /> Run full report
+          <Play24Regular /> {running ? "Generating..." : "Run full report"}
         </Btn>
       </div>
       <div className="result-table">

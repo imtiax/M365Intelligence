@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Alert24Regular,
   Apps24Regular,
@@ -53,11 +53,12 @@ import {
   type CatalogueReport,
 } from "@/data/suite";
 import { GeneratedReportViewer } from "@/components/GeneratedReportViewer";
+import { dashboardFor, type GeneratedReport } from "@/lib/reporting";
 import {
-  dashboardFor,
-  generateCatalogueReport,
-  type GeneratedReport,
-} from "@/lib/reporting";
+  getAdminCenters,
+  runRuntimeReport,
+  type RuntimeAdminCenter,
+} from "@/lib/runtime-api";
 
 type Props = { page: string; notify: (message: string) => void };
 
@@ -318,6 +319,13 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
     suiteModules[0].name,
   );
   const [generated, setGenerated] = useState<GeneratedReport | null>(null);
+  const [runtimeCenters, setRuntimeCenters] = useState<RuntimeAdminCenter[]>(
+    [],
+  );
+  const [runtimeState, setRuntimeState] = useState<
+    "connecting" | "online" | "offline"
+  >("connecting");
+  const [generating, setGenerating] = useState<string | null>(null);
   const dashboard = dashboardFor(dashboardWorkload);
   const dashboardReports = reportCatalogue
     .filter((report) => report.workload === dashboardWorkload)
@@ -341,6 +349,28 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
         .slice(0, 30),
     [query, workload, favorites, scheduled],
   );
+  useEffect(() => {
+    getAdminCenters()
+      .then((response) => {
+        setRuntimeCenters(response.items);
+        setRuntimeState("online");
+      })
+      .catch(() => setRuntimeState("offline"));
+  }, []);
+  const generate = async (report: CatalogueReport) => {
+    setGenerating(report.id);
+    notify(`${report.name} queued in the persistent report runtime.`);
+    try {
+      setGenerated(await runRuntimeReport(report.name, report.workload));
+      notify(
+        `${report.name} completed with persisted rows and audit evidence.`,
+      );
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Report runtime failed.");
+    } finally {
+      setGenerating(null);
+    }
+  };
   return (
     <>
       <Header
@@ -442,8 +472,11 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
                   }
                 </p>
               </div>
-              <span>
+              <span className={`runtime-${runtimeState}`}>
                 <i /> Data current · governed snapshot
+                {runtimeState === "online" &&
+                  ` · ${runtimeCenters.reduce((total, item) => total + item.total, 0).toLocaleString()} persisted objects`}
+                {runtimeState === "offline" && " · runtime API offline"}
               </span>
             </header>
             <div className="admin-dashboard-metrics">
@@ -525,12 +558,13 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
                   <small>Highest-value records for this admin center</small>
                 </div>
                 <button
-                  onClick={() =>
-                    setGenerated(generateCatalogueReport(dashboardReports[0]))
-                  }
+                  onClick={() => void generate(dashboardReports[0])}
+                  disabled={generating !== null}
                 >
                   <Play24Regular />
-                  Generate full dashboard report
+                  {generating
+                    ? "Generating..."
+                    : "Generate full dashboard report"}
                 </button>
               </header>
               <div className="admin-data-scroll">
@@ -565,9 +599,8 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
                 {dashboardReports.map((report) => (
                   <button
                     key={report.id}
-                    onClick={() =>
-                      setGenerated(generateCatalogueReport(report))
-                    }
+                    onClick={() => void generate(report)}
+                    disabled={generating !== null}
                   >
                     <DocumentBulletList24Regular />
                     <span>
@@ -679,7 +712,7 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
           onClose={() => setSelected(null)}
           notify={notify}
           onRun={() => {
-            setGenerated(generateCatalogueReport(selected));
+            void generate(selected);
             setSelected(null);
           }}
         />

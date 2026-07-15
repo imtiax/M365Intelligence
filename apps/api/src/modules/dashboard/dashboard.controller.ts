@@ -1,15 +1,15 @@
-import { Controller, Get, Req } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
-import { DashboardService } from './dashboard.service';
+import { Controller, Get, Req } from "@nestjs/common";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import type { Request } from "express";
+import { DashboardService } from "./dashboard.service";
 
-@ApiTags('dashboard')
+@ApiTags("dashboard")
 @ApiBearerAuth()
-@Controller('api/v1/dashboard')
+@Controller("api/v1/dashboard")
 export class DashboardController {
   constructor(private readonly dashboard: DashboardService) {}
 
-  @Get('overview')
+  @Get("overview")
   overview(@Req() request: Request) {
     return this.dashboard.overview(request.tenantContext!.tenantId);
   }

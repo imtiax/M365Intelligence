@@ -121,6 +121,10 @@ try {
   );
   // Wait for the client bundle to hydrate before exercising React event handlers.
   await delay(1800);
+  await waitFor(
+    "document.querySelector('.runtime-live')?.classList.contains('online')",
+    "real-time runtime connection",
+  );
   const modules = [
     ["Explorer 360", "Microsoft 365 Explorer"],
     ["Dashboard designer", "Custom dashboard designer"],
@@ -175,6 +179,10 @@ try {
     "document.querySelector('h1')?.textContent.includes('Microsoft 365 report center')",
     "report center",
   );
+  await waitFor(
+    "document.querySelector('.admin-dashboard>header>span')?.textContent.includes('7,850 persisted objects')",
+    "persisted dashboard resources",
+  );
   const adminCenters = await evaluate(
     "document.querySelectorAll('.admin-center-list>button').length",
   );
@@ -203,7 +211,7 @@ try {
     "document.querySelector('.admin-quick-reports button').click()",
   );
   await waitFor(
-    "document.querySelectorAll('.generated-table-wrap tbody tr').length>0",
+    "document.querySelectorAll('.generated-table-wrap tbody tr').length===250",
     "generated report result rows",
   );
   await evaluate(
@@ -236,7 +244,7 @@ try {
     `([...document.querySelectorAll('.drawer-actions button')].find(x=>x.textContent.includes('Run report'))).click()`,
   );
   await waitFor(
-    "document.querySelectorAll('.generated-table-wrap tbody tr').length>0",
+    "document.querySelectorAll('.generated-table-wrap tbody tr').length===250",
     "catalogue generated report",
   );
   await evaluate("document.querySelector('.close-generated').click()");
@@ -280,7 +288,7 @@ try {
     `([...document.querySelectorAll('.preview-toolbar button')].find(x=>x.textContent.includes('Run full report'))).click()`,
   );
   await waitFor(
-    "document.querySelectorAll('.generated-table-wrap tbody tr').length>0",
+    `document.querySelectorAll('.generated-table-wrap tbody tr').length===250&&document.querySelectorAll('.generated-table-wrap thead th').length===${finalFields}`,
     "custom generated report",
   );
   await evaluate("document.querySelector('.close-generated').click()");
@@ -400,11 +408,15 @@ try {
     "governed action dialog",
   );
   await evaluate(
-    `([...document.querySelectorAll('.action-dialog footer button')].find(x=>x.textContent.includes('Run demo workflow'))).click()`,
+    `([...document.querySelectorAll('.action-dialog footer button')].find(x=>x.textContent.includes('Run governed workflow'))).click()`,
   );
   await waitFor(
-    "document.querySelector('.toast')?.textContent.includes('completed successfully')",
+    "document.querySelector('.toast')?.textContent.includes('completed:')",
     "governed workflow completion",
+  );
+  await waitFor(
+    "!document.querySelector('.runtime-live')?.textContent.includes('0 events')",
+    "real-time workflow event delivery",
   );
   // Confirm all administration tabs render distinct operational content.
   await evaluate(

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentType, ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert24Regular,
   Apps24Regular,
@@ -78,6 +78,7 @@ import {
   exportReportPdf,
   generateCustomReport,
 } from "@/lib/reporting";
+import { runRuntimeWorkflow, runtimeEventUrl } from "@/lib/runtime-api";
 
 type Icon = ComponentType<{ className?: string }>;
 type NavItem = { label: string; icon: Icon; badge?: string };
@@ -2149,13 +2150,23 @@ function ActionDialog({
   action,
   onClose,
   onComplete,
+  onExecute,
 }: {
   action: DemoAction;
   onClose: () => void;
   onComplete: (message: string) => void;
+  onExecute: (
+    action: DemoAction,
+    scope: string,
+    justification: string,
+  ) => Promise<string>;
 }) {
   const [scope, setScope] = useState("Apex Financial Group · Demo tenant");
   const [owner, setOwner] = useState("Alex Morgan");
+  const [justification, setJustification] = useState(
+    "First end-to-end acceptance execution of the governed product workflow.",
+  );
+  const [executing, setExecuting] = useState(false);
   return (
     <div className="modal-backdrop action-modal-backdrop" onMouseDown={onClose}>
       <div className="action-dialog" onMouseDown={(e) => e.stopPropagation()}>
@@ -2187,7 +2198,10 @@ function ActionDialog({
             </label>
             <label>
               Change justification
-              <textarea defaultValue="Client demonstration of the governed product workflow." />
+              <textarea
+                value={justification}
+                onChange={(event) => setJustification(event.target.value)}
+              />
             </label>
           </div>
         </section>
@@ -2198,7 +2212,7 @@ function ActionDialog({
               "Validate authorization and scope",
               "Generate local preview or dry run",
               "Capture required approval",
-              "Execute simulated demo operation",
+              "Execute persistent local operation",
               "Verify result and record audit evidence",
             ].map((step, index) => (
               <span key={step}>
@@ -2212,10 +2226,11 @@ function ActionDialog({
         <div className="action-warning">
           <ShieldCheckmark24Regular />
           <span>
-            <strong>Safe demonstration mode</strong>
+            <strong>Persistent acceptance runtime</strong>
             <small>
-              No Microsoft 365 resource will be changed. The completed result is
-              stored only in the local presentation session.
+              Authorization, dry run, independent approval, execution, result,
+              and chained audit evidence are persisted locally. Microsoft 365
+              changes remain disabled until tenant credentials are configured.
             </small>
           </span>
         </div>
@@ -2233,13 +2248,24 @@ function ActionDialog({
           </button>
           <button
             className="primary-button"
-            onClick={() =>
-              onComplete(
-                `${action.title} completed successfully in safe demo mode.`,
-              )
-            }
+            disabled={executing}
+            onClick={async () => {
+              setExecuting(true);
+              try {
+                onComplete(await onExecute(action, scope, justification));
+              } catch (error) {
+                onComplete(
+                  error instanceof Error
+                    ? error.message
+                    : "Workflow runtime failed.",
+                );
+              } finally {
+                setExecuting(false);
+              }
+            }}
           >
-            <Play24Regular /> Run demo workflow
+            <Play24Regular />
+            {executing ? "Executing workflow..." : "Run governed workflow"}
           </button>
         </footer>
       </div>
@@ -2269,9 +2295,16 @@ export default function Home() {
   const [tenantOpen, setTenantOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [lightTheme, setLightTheme] = useState(false);
+  const [runtimeOnline, setRuntimeOnline] = useState(false);
+  const [runtimeEvents, setRuntimeEvents] = useState(0);
+  const toastTimer = useRef<number | null>(null);
   const notify = (message: string) => {
+    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
     setToast(message);
-    window.setTimeout(() => setToast(""), 4000);
+    toastTimer.current = window.setTimeout(() => {
+      setToast("");
+      toastTimer.current = null;
+    }, 4000);
   };
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -2294,6 +2327,13 @@ export default function Home() {
     setLightTheme(localStorage.getItem("aegis.theme") === "light");
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
+  }, []);
+  useEffect(() => {
+    const stream = new EventSource(runtimeEventUrl());
+    stream.onopen = () => setRuntimeOnline(true);
+    stream.onmessage = () => setRuntimeEvents((count) => count + 1);
+    stream.onerror = () => setRuntimeOnline(false);
+    return () => stream.close();
   }, []);
   const toggleTheme = () =>
     setLightTheme((value) => {
@@ -2541,6 +2581,14 @@ export default function Home() {
             <Sparkle24Filled />
             Ask Aegis AI
           </button>
+          <span
+            className={`runtime-live ${runtimeOnline ? "online" : "offline"}`}
+          >
+            <i />
+            {runtimeOnline
+              ? `Runtime live · ${runtimeEvents} events`
+              : "Runtime offline"}
+          </span>
           <button
             className="icon-button"
             aria-label="Theme"
@@ -2639,6 +2687,19 @@ export default function Home() {
           onComplete={(message) => {
             setAction(null);
             notify(message);
+          }}
+          onExecute={async (selectedAction, scope, justification) => {
+            const workflow = await runRuntimeWorkflow(
+              selectedAction.title,
+              scope,
+              justification,
+            );
+            if (workflow.state !== "completed")
+              throw new Error(
+                workflow.execution?.message ??
+                  `Workflow ended in ${workflow.state}.`,
+              );
+            return `${selectedAction.title} completed: ${workflow.execution?.succeeded ?? 0} succeeded, audit ID ${workflow.id}.`;
           }}
         />
       )}

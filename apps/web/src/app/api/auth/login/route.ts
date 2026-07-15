@@ -18,7 +18,11 @@ function clientKey(request: NextRequest): string {
 
 function sameOrigin(request: NextRequest): boolean {
   const origin = request.headers.get('origin');
-  return !origin || origin === request.nextUrl.origin;
+  if (!origin) return true;
+  const host = request.headers.get('host');
+  if (!host) return false;
+  const publicOrigin = `${request.nextUrl.protocol}//${host}`;
+  return origin === request.nextUrl.origin || origin === publicOrigin;
 }
 
 export async function POST(request: NextRequest) {

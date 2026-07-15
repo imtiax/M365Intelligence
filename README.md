@@ -8,7 +8,7 @@ The repository includes a production-buildable Next.js client showcase, a NestJS
 
 - Secure local authentication with scrypt password hashing, signed HttpOnly sessions, throttling, protected routes, and security headers.
 - Twenty-three product workspaces and hundreds of interactive controls across the complete presentation experience.
-- Ten workload-specific admin-center dashboards, a 947-report catalogue, generated result viewers with populated rows and KPI summaries, working PDF/Excel downloads, a custom report builder, report scheduling/security, dashboard designer, filtering, drawers, governed demo workflows, administration, global search, and persistent browser drafts.
+- Ten workload-specific admin-center dashboards, a 947-report catalogue, API-backed report jobs with populated rows and KPI summaries, working PDF/Excel downloads, a custom report builder, report scheduling/security, dashboard designer, filtering, drawers, approval-controlled persistent workflows, real-time events, tamper-evident audit history, administration, global search, and persistent browser drafts.
 - Production Next.js build, browser smoke suite, control inventory, Docker topology, NestJS API, PostgreSQL/TimescaleDB, Redis, RabbitMQ, optional OpenSearch, optional Ollama, and observability assets.
 
 The bundled dataset and workflow results are synthetic. Live Microsoft Graph collectors and real Microsoft 365 mutations are an integration boundary, not silently simulated production functionality. See [Connect Microsoft 365](#connect-microsoft-365).
@@ -21,6 +21,22 @@ The bundled dataset and workflow results are synthetic. Live Microsoft Graph col
 - Node.js 22 LTS or newer and npm
 - Git
 - Docker Desktop only if you want the complete infrastructure stack
+
+### Full end-to-end acceptance environment (recommended)
+
+After cloning the repository, install both applications and generate the local login once:
+
+```powershell
+cd apps\web
+npm.cmd install
+npm.cmd run auth:setup
+cd ..\api
+npm.cmd install
+cd ..\..
+powershell -ExecutionPolicy Bypass -File .\scripts\start-acceptance.ps1 -ResetData
+```
+
+Open `http://localhost:3008/login`. This starts the production web build plus the persistent API runtime on port `3001`, seeds 7,850 deterministic resources across ten admin centers, and enables report execution, governed workflows, rollback, audit history, and live events. See the [end-to-end testing guide](docs/END-TO-END-TESTING.md) for the automated and manual acceptance checklist.
 
 ### Frontend showcase on port 3008
 
@@ -140,6 +156,7 @@ Useful documents:
 - [Security architecture](docs/architecture/security.md)
 - [Threat model](docs/architecture/threat-model.md)
 - [Roadmap and production gates](docs/roadmap.md)
+- [End-to-end acceptance testing](docs/END-TO-END-TESTING.md)
 
 ## Security
 
