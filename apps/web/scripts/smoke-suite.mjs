@@ -96,6 +96,25 @@ async function waitForDownload(extension) {
   }
   throw new Error(`Timed out waiting for ${extension} report download.`);
 }
+async function downloadSnapshot(extension) {
+  const snapshot = new Map();
+  for (const file of (await readdir(downloadPath).catch(() => [])).filter((item) => item.endsWith(extension))) {
+    snapshot.set(file, (await stat(join(downloadPath, file))).mtimeMs);
+  }
+  return snapshot;
+}
+async function waitForNewDownload(extension, previousFiles) {
+  for (let i = 0; i < 80; i++) {
+    const files = await readdir(downloadPath).catch(() => []);
+    for (const file of files.filter((item) => item.endsWith(extension))) {
+      const details = await stat(join(downloadPath, file));
+      if (details.size > 100 && details.mtimeMs >= smokeStartedAt && details.mtimeMs > (previousFiles.get(file) ?? 0))
+        return { file, bytes: details.size };
+    }
+    await delay(250);
+  }
+  throw new Error(`Timed out waiting for a new ${extension} artifact.`);
+}
 
 try {
   await send("Runtime.enable");
@@ -133,6 +152,43 @@ try {
     "document.querySelector('.enterprise-demo')?.textContent.includes('Global Enterprise Holdings')&&document.querySelector('.enterprise-demo')?.textContent.includes('5,000')",
     "5,000-user enterprise simulation",
   );
+  const browserReset = await evaluate("fetch('/api/runtime/api/v1/simulation/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(async r=>({status:r.status,body:await r.text()}))");
+  if (browserReset.status !== 201) throw new Error(`Browser runtime reset failed: ${JSON.stringify(browserReset)}`);
+  // Exercise the complete finding ownership and remediation journey.
+  await evaluate(`(()=>{const row=[...document.querySelectorAll('.findings-data button.data-row')].find(x=>x.textContent.includes('FND-1029'));if(!row)return false;row.click();return true})()`);
+  await waitFor("!!document.querySelector('[data-testid=\"finding-drawer-FND-1029\"]')", "dormant E5 finding drawer");
+  await waitFor("document.querySelector('.finding-case-status')?.textContent.trim()==='unassigned'", "unassigned finding case");
+  await evaluate("document.querySelector('[data-testid=\"assign-finding\"]').click()");
+  await waitFor("!!document.querySelector('[data-testid=\"assignment-dialog\"]')", "assignment form");
+  await evaluate(`(()=>{const input=document.querySelector('[data-testid="assignment-note"]');const setter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;setter.call(input,'');input.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('[data-testid="save-assignment"]').click();return true})()`);
+  await delay(250);
+  if (!(await evaluate("!!document.querySelector('[data-testid=\"assignment-dialog\"]')"))) throw new Error("Required assignment note did not block submission.");
+  await evaluate(`(()=>{const input=document.querySelector('[data-testid="assignment-note"]');const setter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;setter.call(input,'Validate leave, service-account, and legal-hold exceptions before reclaiming licenses.');input.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('[data-testid="save-assignment"]').click();return true})()`);
+  await waitFor("!document.querySelector('[data-testid=\"assignment-dialog\"]')", "assignment saved");
+  await waitFor("document.querySelector('[data-testid=\"finding-drawer-FND-1029\"]')?.textContent.includes('Omar Rahman')&&!!document.querySelector('[data-testid=\"finding-activity\"]')", "persisted finding assignment");
+  await evaluate("location.reload()");
+  await waitFor("document.querySelector('h1')?.textContent.includes('Enterprise posture')", "finding assignment reload");
+  await delay(1200);
+  await evaluate(`(()=>{const row=[...document.querySelectorAll('.findings-data button.data-row')].find(x=>x.textContent.includes('FND-1029'));row.click();return true})()`);
+  await waitFor("document.querySelector('[data-testid=\"finding-drawer-FND-1029\"]')?.textContent.includes('Omar Rahman')", "assignment survives reload");
+  await evaluate("document.querySelector('[data-testid=\"draft-remediation\"]').click()");
+  await waitFor("!!document.querySelector('[data-testid=\"remediation-dialog\"]')", "remediation form");
+  await evaluate(`(()=>{const label=[...document.querySelectorAll('.exception-review label')].find(x=>x.textContent.includes('Legal hold'));label.querySelector('input').click();document.querySelector('[data-testid="submit-remediation"]').click();return true})()`);
+  await waitFor("document.querySelector('.action-error')?.textContent.includes('legal_hold')", "mandatory license exception validation");
+  await evaluate(`(()=>{const label=[...document.querySelectorAll('.exception-review label')].find(x=>x.textContent.includes('Legal hold'));label.querySelector('input').click();document.querySelector('[data-testid="submit-remediation"]').click();return true})()`);
+  await waitFor("!document.querySelector('[data-testid=\"remediation-dialog\"]')", "remediation submitted");
+  await waitFor("document.querySelector('[data-testid=\"linked-workflow\"]')?.textContent.includes('pending approval')", "finding workflow link");
+  await evaluate("location.reload()");
+  await waitFor("document.querySelector('h1')?.textContent.includes('Enterprise posture')", "finding remediation reload");
+  await delay(1200);
+  await evaluate(`(()=>{const row=[...document.querySelectorAll('.findings-data button.data-row')].find(x=>x.textContent.includes('FND-1029'));row.click();return true})()`);
+  await waitFor("document.querySelector('[data-testid=\"linked-workflow\"]')?.textContent.includes('pending approval')", "remediation survives reload");
+  await evaluate("document.querySelector('[data-testid=\"linked-workflow\"]').click()");
+  await waitFor("document.querySelector('h1')?.textContent.includes('Automation center')", "linked Automation queue");
+  await waitFor("document.querySelector('.compact-table')?.textContent.includes('Remediate FND-1029')", "linked workflow visible in Automation queue");
+  await evaluate(`(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Command center')).click();return true})()`);
+  await waitFor("document.querySelector('h1')?.textContent.includes('Enterprise posture')", "return to command center");
+  await waitFor("!!document.querySelector('.scenario-selector button')", "command-center scenario selector reload");
   await evaluate(`([...document.querySelectorAll('.scenario-selector button')].find(x=>x.textContent.includes('License Optimization'))).click()`);
   await waitFor(
     "[...document.querySelectorAll('.scenario-selector button')].some(x=>x.classList.contains('selected')&&x.textContent.includes('License Optimization'))",
@@ -168,7 +224,7 @@ try {
   ];
   const governedActionLabels = [
     "Dashboard library", "Run investigation", "Access review", "New policy analysis",
-    "Delivery history", "+ New alert policy", "Job history", "New custom job",
+    "+ New alert policy", "Job history", "New custom job",
     "Execution history", "New playbook", "Export queue", "Advanced filters",
     "Policy library", "+ New request", "Message templates", "New agent",
     "Access reviews", "+ Create delegated role", "Collector settings", "Explore graph",
@@ -199,12 +255,61 @@ try {
     for (const actionLabel of pageActions) {
       await evaluate(`(()=>{const button=[...document.querySelectorAll('main button')].find(x=>(x.textContent||'').trim().replace(/\\s+/g,' ')===${JSON.stringify(actionLabel)});button.click();return true})()`);
       await waitFor("!!document.querySelector('.action-dialog')", `${actionLabel} governed dialog`);
-      await evaluate(`([...document.querySelectorAll('.action-dialog footer button')].find(x=>x.textContent.includes('Cancel'))).click()`);
-      await waitFor("!document.querySelector('.action-dialog')", `${actionLabel} dialog close`);
+      await evaluate(`([...document.querySelectorAll('.action-dialog footer button')].find(x=>x.textContent.includes('Save draft'))).click()`);
+      await waitFor("!document.querySelector('.action-dialog')", `${actionLabel} persisted draft close`);
+      await waitFor("document.querySelector('.toast')?.textContent.includes('draft')", `${actionLabel} persisted draft confirmation`);
       testedGovernedActions.add(actionLabel);
     }
     verified.push(label);
   }
+  const operationalExports = [];
+  for (const [module, heading, label] of [
+    ["Security", "Security operations center", "Export incidents"],
+    ["Auditing", "Microsoft 365 audit explorer", "Export evidence"],
+    ["Compliance", "Continuous compliance", "Evidence pack"],
+    ["Usage analytics", "Microsoft 365 adoption analytics", "Adoption pack"],
+    ["Value center", "Business value center", "Export proposal"],
+  ]) {
+    await evaluate(`(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith(${JSON.stringify(module)})).click();return true})()`);
+    await waitFor(`document.querySelector('h1')?.textContent.includes(${JSON.stringify(heading)})`, `${module} export workspace`);
+    const before = await downloadSnapshot(".pdf");
+    await evaluate(`(()=>{const button=[...document.querySelectorAll('main button')].find(x=>x.textContent.trim().replace(/\\s+/g,' ')===${JSON.stringify(label)});if(!button)return false;button.click();return true})()`);
+    const artifact = await waitForNewDownload(".pdf", before);
+    const header = (await readFile(join(downloadPath, artifact.file))).subarray(0, 8).toString("ascii");
+    if (!header.startsWith("%PDF-")) throw new Error(`${label} did not generate a valid PDF.`);
+    operationalExports.push({ label, ...artifact });
+  }
+  await evaluate(`(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Auditing')).click();return true})()`);
+  await waitFor("document.querySelector('h1')?.textContent.includes('Microsoft 365 audit explorer')", "audit stateful actions");
+  await evaluate("document.querySelector('.audit-events>button').click()");
+  await waitFor("!!document.querySelector('.suite-drawer')", "audit event detail");
+  await evaluate(`([...document.querySelectorAll('.suite-drawer .drawer-actions button')].find(x=>x.textContent.includes('Add to case'))).click()`);
+  await evaluate("document.querySelector('.drawer-head button').click()");
+  await waitFor("document.querySelector('[data-testid=\"audit-action-outcome\"]')?.textContent.includes('1 event')", "audit case attachment outcome");
+  await evaluate(`([...document.querySelectorAll('.page-heading button')].find(x=>x.textContent.includes('Create alert'))).click()`);
+  await waitFor("document.querySelector('[data-testid=\"audit-action-outcome\"]')?.textContent.includes('is active')", "audit alert outcome");
+  await evaluate(`(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Alerts')).click();return true})()`);
+  await waitFor("document.querySelector('h1')?.textContent.includes('Intelligent alert policies')", "alert delivery action");
+  await evaluate("document.querySelector('.policy-grid article button').click()");
+  await waitFor("document.querySelector('[data-testid=\"alert-delivery-history\"]')?.textContent.includes('Delivered')", "alert delivery result");
+  await evaluate(`(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Reminders')).click();return true})()`);
+  await waitFor("document.querySelector('h1')?.textContent.includes('Reminder and follow-up agents')", "reminder preview action");
+  await evaluate("document.querySelector('.agent-grid article>button').click()");
+  await waitFor("!!document.querySelector('[data-testid=\"reminder-message-preview\"]')", "rendered reminder message");
+  await evaluate("document.querySelector('[data-testid=\"reminder-message-preview\"] .drawer-head button').click()");
+  await evaluate(`(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Delegation')).click();return true})()`);
+  await waitFor("document.querySelector('h1')?.textContent.includes('Least-privilege delegation')", "delegation review action");
+  await evaluate("document.querySelector('.delegation-grid article footer button').click()");
+  await waitFor("!!document.querySelector('[data-testid=\"delegation-access-review\"]')", "delegation review decision");
+  await evaluate(`([...document.querySelectorAll('[data-testid="delegation-access-review"] .drawer-actions button')].find(x=>x.textContent.includes('Approve 90 days'))).click()`);
+  await waitFor("document.querySelector('.delegation-grid article footer')?.textContent.includes('Reviewed · 90 days')", "delegation decision outcome");
+  await evaluate(`(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Hybrid AD')).click();return true})()`);
+  await waitFor("document.querySelector('h1')?.textContent.includes('Hybrid Active Directory operations')", "hybrid actions");
+  await evaluate(`([...document.querySelectorAll('.page-heading button')].find(x=>x.textContent.includes('Run health scan'))).click()`);
+  await waitFor("document.querySelector('[data-testid=\"hybrid-scan-result\"]')?.textContent.includes('HEALTH SCAN COMPLETED')", "hybrid scan result");
+  await evaluate("document.querySelector('.domain-grid article>button').click()");
+  await waitFor("!!document.querySelector('[data-testid=\"hybrid-topology\"]')", "hybrid topology result");
+  await evaluate("document.querySelector('[data-testid=\"hybrid-topology\"] .drawer-head button').click()");
   await evaluate(`(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('AI analyst')).click();return true})()`);
   await waitFor("!!document.querySelector('.ai-input input')", "AI analyst input");
   await evaluate(`(()=>{const input=document.querySelector('.ai-input input');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'Show me security problems');input.dispatchEvent(new Event('input',{bubbles:true}));return true})()`);
@@ -289,6 +394,9 @@ try {
   testedGovernedActions.add("Advanced filters");
   const missingGovernedActions = governedActionLabels.filter((label) => !testedGovernedActions.has(label));
   if (missingGovernedActions.length) throw new Error(`Governed CTA coverage is incomplete: ${missingGovernedActions.join(', ')}`);
+  const actionWorkflowInventory = await evaluate("fetch('/api/runtime/api/v1/workflows').then(r=>r.json())");
+  const persistentActionDrafts = actionWorkflowInventory.items.filter((item) => item.state === "draft" && item.type.startsWith("module-")).length;
+  if (persistentActionDrafts < testedGovernedActions.size) throw new Error(`Expected at least ${testedGovernedActions.size} persisted module drafts; received ${persistentActionDrafts}.`);
   await evaluate("document.querySelector('.catalogue-list button').click()");
   await waitFor(
     "!!document.querySelector('.suite-drawer')",
@@ -357,6 +465,10 @@ try {
     "!!document.querySelector('.schedule-designer')",
     "report schedule designer",
   );
+  await evaluate(`([...document.querySelectorAll('.schedule-actions button')].find(x=>x.textContent.includes('Validate delivery'))).click()`);
+  await waitFor("document.querySelector('.toast')?.textContent.includes('Schedule validation passed')", "schedule validation outcome");
+  await evaluate(`([...document.querySelectorAll('.schedule-actions button')].find(x=>x.textContent.includes('Activate schedule'))).click()`);
+  await waitFor("document.querySelector('.schedule-actions small')?.textContent.includes('Active · version')", "persisted report schedule");
   await evaluate(
     `([...document.querySelectorAll('.builder-tabs button')].find(x=>x.textContent.trim()==='security')).click()`,
   );
@@ -364,6 +476,10 @@ try {
     "!!document.querySelector('.report-security')",
     "report security policy",
   );
+  await evaluate(`([...document.querySelectorAll('.schedule-actions button')].find(x=>x.textContent.includes('Simulate personas'))).click()`);
+  await waitFor("document.querySelector('.toast')?.textContent.includes('Access simulation')", "report persona simulation");
+  await evaluate(`([...document.querySelectorAll('.schedule-actions button')].find(x=>x.textContent.includes('Save security policy'))).click()`);
+  await waitFor("document.querySelector('.schedule-actions small')?.textContent.includes('Saved · version')", "persisted report security policy");
   await evaluate(
     `([...document.querySelectorAll('.builder-tabs button')].find(x=>x.textContent.trim()==='design')).click()`,
   );
@@ -470,7 +586,7 @@ try {
     "governed action dialog",
   );
   await evaluate(
-    `([...document.querySelectorAll('.action-dialog footer button')].find(x=>x.textContent.includes('Run governed workflow'))).click()`,
+    `([...document.querySelectorAll('.action-dialog footer button')].find(x=>x.textContent.includes('Submit for approval'))).click()`,
   );
   await waitFor(
     "document.querySelector('.toast')?.textContent.includes('independent approval')",
@@ -524,6 +640,26 @@ try {
   }
   await evaluate(`(()=>{const b=[...document.querySelectorAll('.configuration-layout>aside>button')].find(x=>x.textContent.includes('Private AI'));b.click();return true})()`);
   await waitFor("document.querySelector('.configuration-layout main h2')?.textContent.includes('Private AI')", "private AI configuration");
+  const originalConfigurationValue = await evaluate("document.querySelector('.configuration-layout main input')?.value");
+  await evaluate(`(()=>{const input=document.querySelector('.configuration-layout main input');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'');input.dispatchEvent(new Event('input',{bubbles:true}));[...document.querySelectorAll('.configuration-layout main button')].find(x=>x.textContent.includes('Test configuration')).click();return true})()`);
+  await waitFor("!!document.querySelector('.configuration-layout main [aria-invalid=\"true\"]')", "configuration invalid-field rejection");
+  await evaluate(`(()=>{const input=document.querySelector('.configuration-layout main input');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,${JSON.stringify(originalConfigurationValue)});input.dispatchEvent(new Event('input',{bubbles:true}));return true})()`);
+  await evaluate(`(()=>{const b=[...document.querySelectorAll('.configuration-layout>aside>button')].find(x=>x.textContent.includes('Identity & access'));b.click();return true})()`);
+  await waitFor("document.querySelector('.configuration-layout main h2')?.textContent.includes('Identity & access')", "identity configuration security baseline");
+  await evaluate("document.querySelector('.configuration-layout main input[type=checkbox]').click()");
+  await evaluate(`(()=>{const b=[...document.querySelectorAll('.configuration-layout>aside>button')].find(x=>x.textContent.includes('Private AI'));b.click();return true})()`);
+  await waitFor("document.querySelector('.configuration-layout main h2')?.textContent.includes('Private AI')", "return to private AI configuration");
+  await evaluate(`([...document.querySelectorAll('.page-heading button')].find(x=>x.textContent.includes('Save changes'))).click()`);
+  await waitFor("document.querySelector('.configuration-layout>aside>button.selected')?.textContent.includes('Identity & access')&&!!document.querySelector('.configuration-layout main input[type=checkbox][aria-invalid=true]')", "cross-section security validation blocks save");
+  await evaluate("document.querySelector('.configuration-layout main input[type=checkbox]').click()");
+  await evaluate(`([...document.querySelectorAll('.page-heading button')].find(x=>x.textContent.includes('Validate all'))).click()`);
+  await waitFor("document.querySelector('.page-heading')?.textContent.includes('ALL DISPLAYED CONTROLS VALIDATED')", "complete configuration validation");
+  const configurationVersionBefore = await evaluate("Number((document.querySelector('.configuration-layout main header')?.textContent.match(/CONFIGURATION VERSION (\\d+)/)||[])[1])");
+  await evaluate(`([...document.querySelectorAll('.page-heading button')].find(x=>x.textContent.includes('Save changes'))).click()`);
+  await waitFor(`document.querySelector('.configuration-layout main header')?.textContent.includes('CONFIGURATION VERSION ${configurationVersionBefore + 1}')`, "versioned configuration save");
+  await evaluate("location.reload()");
+  await waitFor("document.querySelector('h1')?.textContent.includes('Platform configuration')", "configuration reload");
+  await waitFor(`document.querySelector('.configuration-layout main header')?.textContent.includes('CONFIGURATION VERSION ${configurationVersionBefore + 1}')`, "configuration survives reload");
   await evaluate(`(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Connection center')).click();return true})()`);
   await waitFor("document.querySelector('h1')?.textContent.includes('Connection center')", "connection center workflow");
   await evaluate("document.querySelector('.connector-grid article button').click()");
@@ -597,12 +733,16 @@ try {
           pdfDownload,
           screenshot: "artifacts/smoke-admin-center-dashboard.png",
         },
+        operationalExports,
+        suiteActionOutcomes: 5,
         dashboardDesigner: { initialWidgets, finalWidgets, persistedWidgets },
         shell: { theme: true, tenantSelector: true, notifications: true },
+        findingLifecycle: { assignment: true, reloadPersistence: true, exceptionValidation: true, remediation: "pending_approval", automationLink: true },
         governedWorkflow: true,
         governedCtas: testedGovernedActions.size,
+        persistentActionDrafts,
         administrationTabs: 5,
-        configuration: { privateAI: true },
+        configuration: { privateAI: true, validation: true, versionedPersistence: true },
         globalSearchResults: searchResults,
         screenshot: "artifacts/smoke-explorer360.png",
       },

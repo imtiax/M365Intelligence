@@ -1,4 +1,4 @@
-import { ForbiddenException } from "@nestjs/common";
+import { ConflictException, ForbiddenException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import { rmSync } from "node:fs";
 import { join } from "node:path";
@@ -137,6 +137,56 @@ describe("OperationsService acceptance logic", () => {
     expect(failed.execution?.message).toContain("no target changes");
   });
 
+  it("persists an independent rejection decision and prevents execution", () => {
+    const workflow = service.createWorkflow(
+      DEMO_TENANT,
+      "requester@apex.local",
+      randomUUID(),
+      {
+        title: "Reject unsafe scope",
+        type: "approval-rejection",
+        targetScope: "Unvalidated acceptance scope",
+        justification: "Verify rejection evidence",
+      },
+    );
+    service.submitWorkflow(
+      DEMO_TENANT,
+      workflow.id,
+      "requester@apex.local",
+      randomUUID(),
+    );
+    expect(() =>
+      service.rejectWorkflow(
+        DEMO_TENANT,
+        workflow.id,
+        "requester@apex.local",
+        randomUUID(),
+        "Self decision",
+      ),
+    ).toThrow(ForbiddenException);
+    const rejected = service.rejectWorkflow(
+      DEMO_TENANT,
+      workflow.id,
+      "approver@apex.local",
+      randomUUID(),
+      "Business owner evidence is missing.",
+    );
+    expect(rejected.state).toBe("rejected");
+    expect(rejected.decisions?.at(-1)).toMatchObject({
+      actorId: "approver@apex.local",
+      decision: "rejected",
+      comment: "Business owner evidence is missing.",
+    });
+    expect(() =>
+      service.executeWorkflow(
+        DEMO_TENANT,
+        workflow.id,
+        "engine@apex.local",
+        randomUUID(),
+      ),
+    ).toThrow(ConflictException);
+  });
+
   it("maintains a verifiable chained audit history", () => {
     const audit = service.audit(DEMO_TENANT);
     expect(audit.length).toBeGreaterThan(10);
@@ -147,5 +197,6 @@ describe("OperationsService acceptance logic", () => {
           item.previousHash === audit[index + 1].hash,
       ),
     ).toBe(true);
+    expect(service.auditIntegrity(DEMO_TENANT)).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import type { ComponentType, FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert24Regular,
@@ -71,7 +71,7 @@ import {
   type Severity,
 } from "@/data/demo";
 import { SuiteWorkspace } from "@/components/SuiteWorkspaces";
-import { reportCatalogue } from "@/data/suite";
+import { adoption, auditActivities, reportCatalogue } from "@/data/suite";
 import { ProductStudio } from "@/components/ProductStudio";
 import { DemoModePanel, LiveCompliancePanel, LiveLicensePanel, LiveSecurityPanel, User360Workspace } from "@/components/EnterpriseDemo";
 import { CommercialWorkspaces } from "@/components/CommercialWorkspaces";
@@ -79,8 +79,21 @@ import {
   exportReportExcel,
   exportReportPdf,
   generateCustomReport,
+  type GeneratedReport,
 } from "@/lib/reporting";
-import { askDemoAi, getRuntimeWorkflows, runRuntimeWorkflow, runtimeEventUrl, transitionRuntimeWorkflow, type RuntimeWorkflow } from "@/lib/runtime-api";
+import {
+  askDemoAi,
+  assignRuntimeFinding,
+  createRuntimeWorkflowDraft,
+  createRuntimeFindingRemediation,
+  getRuntimeFindingCase,
+  getRuntimeWorkflows,
+  runRuntimeWorkflow,
+  runtimeEventUrl,
+  transitionRuntimeWorkflow,
+  type RuntimeFindingCaseView,
+  type RuntimeWorkflow,
+} from "@/lib/runtime-api";
 import { canOpenModule, canRunChanges } from "@/lib/access";
 import { roleLabels, type PlatformRole } from "@/lib/identity";
 
@@ -142,6 +155,21 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   },
 ];
 const allNavigation = navGroups.flatMap((group) => group.items);
+type ShellNotification = {
+  id: string;
+  title: string;
+  detail: string;
+  time: string;
+  target: string;
+  read: boolean;
+};
+const DEFAULT_NOTIFICATIONS: ShellNotification[] = [
+  { id: "identity-mfa", title: "Critical identity finding", detail: "45 privileged MFA gaps", time: "2m", target: "Identity", read: false },
+  { id: "intune-delay", title: "Intune collection delayed", detail: "18 minutes behind SLA", time: "6m", target: "Management", read: false },
+  { id: "workflow-approval", title: "Workflow awaiting approval", detail: "License reclamation · 87 users", time: "18m", target: "Automations", read: false },
+  { id: "report-ready", title: "Scheduled report ready", detail: "Board Cyber Risk Briefing", time: "1h", target: "Reporting", read: false },
+];
+const NOTIFICATION_STORAGE_KEY = "aegis.shell.notifications.v1";
 const slugFor = (label: string) =>
   label
     .toLowerCase()
@@ -184,14 +212,23 @@ function Button({
   children,
   primary = false,
   onClick,
+  disabled = false,
+  title,
+  "data-testid": testId,
 }: {
   children: ReactNode;
   primary?: boolean;
   onClick?: () => void;
+  disabled?: boolean;
+  title?: string;
+  "data-testid"?: string;
 }) {
   return (
     <button
       className={primary ? "primary-button" : "secondary-button"}
+      data-testid={testId}
+      disabled={disabled}
+      title={title}
       onClick={onClick}
     >
       {children}
@@ -298,7 +335,7 @@ function FindingsTable({
         <span>Status</span>
       </div>
       {items.map((item) => (
-        <button className="data-row" key={item.id} onClick={() => onOpen(item)}>
+        <button className="data-row" data-testid={`finding-row-${item.id}`} key={item.id} onClick={() => onOpen(item)}>
           <span className="entity-cell">
             <i className={`entity-icon ${item.severity}`}>
               <ShieldError24Regular />
@@ -1298,13 +1335,43 @@ function ReportsPage({ onPreview }: { onPreview: (name: string) => void }) {
 function AutomationsPage({ notify, roles, username }: { notify: (message: string) => void; roles: PlatformRole[]; username?: string }) {
   const [selected, setSelected] = useState(workflows[0]);
   const [runtimeWorkflows, setRuntimeWorkflows] = useState<RuntimeWorkflow[]>([]);
-  const refreshRuntime = () => getRuntimeWorkflows().then((body) => setRuntimeWorkflows(body.items)).catch(() => setRuntimeWorkflows([]));
-  useEffect(() => { refreshRuntime(); }, []);
-  const transition = async (workflow: RuntimeWorkflow, action: "approve" | "execute" | "rollback") => {
+  const refreshRuntime = async () => {
     try {
-      const updated = await transitionRuntimeWorkflow(workflow.id, action);
+      const body = await getRuntimeWorkflows();
+      setRuntimeWorkflows(body.items);
+      return body.items;
+    } catch {
+      setRuntimeWorkflows([]);
+      return [];
+    }
+  };
+  useEffect(() => { refreshRuntime(); }, []);
+  const transition = async (workflow: RuntimeWorkflow, action: "approve" | "reject" | "execute" | "rollback") => {
+    try {
+      const updated = await transitionRuntimeWorkflow(
+        workflow.id,
+        action,
+        action === "reject" ? "Rejected during organization approval review; revise scope or exception evidence." : `${action} decision recorded from the Automation center.`,
+      );
       notify(`${updated.title} moved to ${updated.state.replaceAll("_", " ")}.`);
-      refreshRuntime();
+      if (action === "execute" && updated.state === "running") {
+        for (let attempt = 0; attempt < 40; attempt++) {
+          await new Promise((resolve) => window.setTimeout(resolve, 200));
+          const items = await refreshRuntime();
+          const current = items.find((item) => item.id === workflow.id);
+          if (current && current.state !== "running") {
+            notify(
+              current.execution
+                ? `${current.title} ${current.state}: ${current.execution.succeeded} changed, ${current.execution.skipped ?? 0} excluded, ${current.execution.affected} evaluated.`
+                : `${current.title} moved to ${current.state.replaceAll("_", " ")}.`,
+            );
+            return;
+          }
+        }
+        notify(`${updated.title} is still running; the queue will refresh when the runtime emits its next result.`);
+        return;
+      }
+      await refreshRuntime();
     } catch (error) { notify(error instanceof Error ? error.message : "Workflow transition failed."); }
   };
   return (
@@ -1356,15 +1423,16 @@ function AutomationsPage({ notify, roles, username }: { notify: (message: string
           <div className="compact-head"><span>Workflow</span><span>Requester</span><span>State</span><span>Approver</span><span>Result</span><span>Allowed action</span></div>
           {runtimeWorkflows.slice(0, 12).map((workflow) => (
             <div className="compact-row" key={workflow.id}>
-              <span><strong>{workflow.title}</strong><small>{workflow.id.slice(0, 8)}</small></span>
+              <span><strong>{workflow.title}</strong><small>{workflow.sourceFindingId ? `${workflow.sourceFindingId} · ` : ""}{workflow.id.slice(0, 8)}</small></span>
               <span>{workflow.requestedBy}</span>
               <b className="status active">{workflow.state.replaceAll("_", " ")}</b>
               <span>{workflow.approver ?? "Not assigned"}</span>
-              <span>{workflow.execution ? `${workflow.execution.succeeded}/${workflow.execution.affected} succeeded` : "Not executed"}</span>
+              <span>{workflow.execution ? `${workflow.execution.succeeded} changed${workflow.execution.skipped ? ` · ${workflow.execution.skipped} excluded` : ""} / ${workflow.execution.affected} evaluated` : "Not executed"}</span>
               <span>
-                {workflow.state === "pending_approval" && roles.some((role) => ["platform-admin", "security-admin"].includes(role)) && workflow.requestedBy !== username && <button onClick={() => transition(workflow, "approve")}>Approve</button>}
+                {workflow.state === "pending_approval" && roles.some((role) => ["platform-admin", "security-admin"].includes(role)) && workflow.requestedBy !== username && <><button onClick={() => transition(workflow, "approve")}>Approve</button><button onClick={() => transition(workflow, "reject")}>Reject</button></>}
                 {workflow.state === "approved" && roles.some((role) => ["platform-admin", "m365-admin"].includes(role)) && <button onClick={() => transition(workflow, "execute")}>Execute</button>}
                 {workflow.state === "completed" && roles.some((role) => ["platform-admin", "m365-admin"].includes(role)) && <button onClick={() => transition(workflow, "rollback")}>Rollback</button>}
+                {workflow.state === "pending_approval" && workflow.requestedBy === username && <small>Independent approver required</small>}
                 {!(["pending_approval", "approved", "completed"].includes(workflow.state)) && <small>No action</small>}
               </span>
             </div>
@@ -1827,22 +1895,43 @@ function AdminPage({ notify }: { notify: (m: string) => void }) {
 
 function FindingDrawer({
   finding,
+  caseView,
+  loading,
+  canModify,
   onClose,
-  onAction,
+  onAssign,
+  onRemediation,
+  onOpenWorkflow,
 }: {
   finding: Finding;
+  caseView: RuntimeFindingCaseView | null;
+  loading: boolean;
+  canModify: boolean;
   onClose: () => void;
-  onAction: (m: string) => void;
+  onAssign: () => void;
+  onRemediation: () => void;
+  onOpenWorkflow: () => void;
 }) {
+  const caseState = caseView?.case;
+  const caseStatus = caseState?.status.replaceAll("_", " ") ?? finding.status;
+  const linkedWorkflowState = caseView?.remediationWorkflow?.state;
+  const hasActiveRemediation = Boolean(
+    linkedWorkflowState &&
+      !["failed", "rejected", "rolled_back"].includes(linkedWorkflowState),
+  );
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
-      <aside className="detail-drawer" onMouseDown={(e) => e.stopPropagation()}>
+      <aside
+        className="detail-drawer"
+        data-testid={`finding-drawer-${finding.id}`}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="drawer-head">
           <span>
             <SeverityPill value={finding.severity} />
             <small>{finding.id}</small>
           </span>
-          <button onClick={onClose}>×</button>
+          <button aria-label="Close finding" onClick={onClose}>×</button>
         </div>
         <h2>{finding.title}</h2>
         <p className="drawer-sub">
@@ -1862,7 +1951,7 @@ function FindingDrawer({
           </div>
           <div>
             <small>Status</small>
-            <strong>{finding.status}</strong>
+            <strong className="finding-case-status">{caseStatus}</strong>
           </div>
         </div>
         <section>
@@ -1882,6 +1971,27 @@ function FindingDrawer({
           <p>{finding.recommendation}</p>
         </section>
         <section>
+          <h3>Required action workflow</h3>
+          <ol className="finding-required-actions">
+            {(
+              finding.id === "FND-1029"
+                ? [
+                    "Assign a FinOps owner, priority, due date, and accountability note.",
+                    "Review all 87 candidates for leave, service-account, legal-hold, dependency, and business exceptions.",
+                    "Save the remediation plan or submit it for an independent approval decision.",
+                    "After approval, an M365 administrator executes the eligible cohort; excluded assignments remain licensed.",
+                    "Verify per-assignment outcomes, realized savings, audit evidence, and rollback readiness.",
+                  ]
+                : [
+                    "Assign an accountable owner and due date.",
+                    "Validate affected objects and record approved exceptions.",
+                    "Submit a governed remediation plan for independent approval.",
+                    "Execute, verify the result, and retain rollback evidence.",
+                  ]
+            ).map((step, index) => <li key={step}><b>{index + 1}</b><span>{step}</span></li>)}
+          </ol>
+        </section>
+        <section>
           <h3>Control mappings</h3>
           <div className="tag-list">
             {finding.framework.map((f) => (
@@ -1893,7 +2003,7 @@ function FindingDrawer({
           <h3>Accountability</h3>
           <div className="owner-row">
             <span>
-              Owner<strong>{finding.owner}</strong>
+              Control owner<strong>{finding.owner}</strong>
             </span>
             <span>
               Automation
@@ -1905,28 +2015,250 @@ function FindingDrawer({
             </span>
           </div>
         </section>
+        <section className="finding-case-section" aria-busy={loading}>
+          <h3>Finding case</h3>
+          {loading && <p>Loading tenant-scoped assignment and workflow state…</p>}
+          {!loading && caseState && (
+            <>
+              <div className="finding-case-grid">
+                <span>
+                  Assignee
+                  <strong>{caseState.assignee?.displayName ?? "Not assigned"}</strong>
+                  <small>{caseState.assignee?.team ?? "Select an accountable owner"}</small>
+                </span>
+                <span>
+                  Priority
+                  <strong>{caseState.priority ?? "Not set"}</strong>
+                  <small>{caseState.dueAt ? `Due ${new Date(caseState.dueAt).toLocaleDateString()}` : "No due date"}</small>
+                </span>
+              </div>
+              {caseState.note && <p className="finding-case-note">{caseState.note}</p>}
+              {caseState.remediationWorkflowId && (
+                <button className="linked-workflow" data-testid="linked-workflow" onClick={onOpenWorkflow}>
+                  <Apps24Regular />
+                  <span>
+                    <strong>Remediation workflow</strong>
+                    <small>{caseState.remediationWorkflowId} · {caseStatus}</small>
+                  </span>
+                  Open in Automations
+                </button>
+              )}
+            </>
+          )}
+        </section>
+        {!!caseState?.activity.length && (
+          <section data-testid="finding-activity">
+            <h3>Activity history</h3>
+            <div className="finding-activity">
+              {[...caseState.activity].reverse().map((item) => (
+                <article key={item.id}>
+                  <i />
+                  <span>
+                    <strong>{item.summary}</strong>
+                    <small>{item.actorId} · {new Date(item.occurredAt).toLocaleString()}</small>
+                  </span>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
         <div className="drawer-actions">
           <Button
-            onClick={() =>
-              onAction(
-                `${finding.id} assigned to the current investigation queue.`,
-              )
-            }
+            data-testid="assign-finding"
+            disabled={loading || !canModify}
+            title={!canModify ? "Your organization role has read-only finding access." : "Assign an accountable owner"}
+            onClick={onAssign}
           >
-            Assign finding
+            {caseState?.assignee ? "Reassign finding" : "Assign finding"}
           </Button>
-          <Button
-            primary
-            onClick={() =>
-              onAction(
-                `Remediation workflow drafted for ${finding.id}; no live action was performed.`,
-              )
-            }
-          >
-            <Apps24Regular /> Draft remediation
-          </Button>
+          {finding.automation && (
+            <Button
+              primary
+              data-testid="draft-remediation"
+              disabled={loading || !canModify || hasActiveRemediation || !caseState?.assignee}
+              title={
+                !canModify
+                  ? "Your organization role cannot create remediation workflows."
+                  : !caseState?.assignee
+                    ? "Assign an accountable owner before creating remediation."
+                  : hasActiveRemediation
+                    ? "An active remediation workflow is already linked."
+                    : linkedWorkflowState
+                      ? `Create a revised remediation after ${linkedWorkflowState.replaceAll("_", " ")}.`
+                      : "Create a governed remediation plan"
+              }
+              onClick={onRemediation}
+            >
+              <Apps24Regular /> Draft remediation
+            </Button>
+          )}
         </div>
       </aside>
+    </div>
+  );
+}
+
+const findingAssignees = [
+  { id: "omar.rahman@apex.local", name: "Omar Rahman", team: "FinOps" },
+  { id: "fatima.noor@apex.local", name: "Fatima Noor", team: "M365 Operations" },
+  { id: "amira.malik@apex.local", name: "Amira Malik", team: "Compliance Office" },
+  { id: "nadia.almasi@apex.local", name: "Nadia Almasi", team: "Security Operations" },
+];
+
+function FindingActionDialog({
+  finding,
+  mode,
+  onClose,
+  onAssign,
+  onRemediation,
+}: {
+  finding: Finding;
+  mode: "assign" | "remediation";
+  onClose: () => void;
+  onAssign: (value: {
+    assigneeId: string;
+    assigneeName: string;
+    team: string;
+    priority: "low" | "medium" | "high" | "urgent";
+    dueAt: string;
+    note: string;
+  }) => Promise<void>;
+  onRemediation: (value: {
+    title: string;
+    targetScope: string;
+    justification: string;
+    exceptionReview: string[];
+    submitForApproval: boolean;
+  }) => Promise<void>;
+}) {
+  const [assigneeId, setAssigneeId] = useState(findingAssignees[0].id);
+  const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">(
+    finding.severity === "critical" ? "urgent" : finding.severity === "high" ? "high" : "medium",
+  );
+  const [dueAt, setDueAt] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+  const [note, setNote] = useState(`Validate the ${finding.affected} affected objects and document business exceptions before action.`);
+  const [title, setTitle] = useState(`Remediate ${finding.id}: ${finding.title}`);
+  const [targetScope, setTargetScope] = useState(`${finding.affected} evidence-backed ${finding.category.toLowerCase()} objects from ${finding.id}`);
+  const [justification, setJustification] = useState(finding.recommendation);
+  const [exceptions, setExceptions] = useState<string[]>(
+    finding.category === "Licensing"
+      ? ["leave", "service_accounts", "legal_hold"]
+      : ["business_exceptions", "dependencies"],
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const execute = async (submitForApproval = false) => {
+    setBusy(true);
+    setError("");
+    try {
+      if (mode === "assign") {
+        const assignee = findingAssignees.find((item) => item.id === assigneeId)!;
+        await onAssign({
+          assigneeId: assignee.id,
+          assigneeName: assignee.name,
+          team: assignee.team,
+          priority,
+          dueAt: new Date(`${dueAt}T17:00:00.000Z`).toISOString(),
+          note,
+        });
+      } else {
+        await onRemediation({ title, targetScope, justification, exceptionReview: exceptions, submitForApproval });
+      }
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "The finding action failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const submitAssignment = (event: FormEvent) => {
+    event.preventDefault();
+    void execute();
+  };
+  const toggleException = (value: string) =>
+    setExceptions((items) => items.includes(value) ? items.filter((item) => item !== value) : [...items, value]);
+
+  return (
+    <div className="modal-backdrop action-modal-backdrop" onMouseDown={onClose}>
+      <div
+        className="action-dialog finding-action-dialog"
+        data-testid={mode === "assign" ? "assignment-dialog" : "remediation-dialog"}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header>
+          <span>{mode === "assign" ? <Person24Regular /> : <Apps24Regular />}</span>
+          <div>
+            <small>{finding.id} · GOVERNED FINDING ACTION</small>
+            <h2>{mode === "assign" ? "Assign accountable ownership" : "Create remediation workflow"}</h2>
+            <p>{finding.title}</p>
+          </div>
+          <button aria-label="Close finding action" onClick={onClose}>×</button>
+        </header>
+        {mode === "assign" ? (
+          <form onSubmit={submitAssignment}>
+            <section className="action-form">
+              <label>
+                Assignee
+                <select data-testid="assignment-assignee" value={assigneeId} onChange={(event) => setAssigneeId(event.target.value)}>
+                  {findingAssignees.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.team}</option>)}
+                </select>
+              </label>
+              <label>
+                Priority
+                <select data-testid="assignment-priority" value={priority} onChange={(event) => setPriority(event.target.value as typeof priority)}>
+                  <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option>
+                </select>
+              </label>
+              <label>
+                Due date
+                <input data-testid="assignment-due" type="date" min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)} required value={dueAt} onChange={(event) => setDueAt(event.target.value)} />
+              </label>
+              <label>
+                Team
+                <input data-testid="assignment-team" readOnly value={findingAssignees.find((item) => item.id === assigneeId)?.team ?? ""} />
+              </label>
+              <label>
+                Assignment note
+                <textarea data-testid="assignment-note" required maxLength={600} value={note} onChange={(event) => setNote(event.target.value)} />
+              </label>
+            </section>
+            {error && <p className="action-error" role="alert">{error}</p>}
+            <footer>
+              <button className="secondary-button" type="button" onClick={onClose}>Cancel</button>
+              <button className="primary-button" data-testid="save-assignment" disabled={busy} type="submit">{busy ? "Assigning…" : "Save assignment"}</button>
+            </footer>
+          </form>
+        ) : (
+          <>
+            <section className="action-form">
+              <label>Workflow title<input data-testid="remediation-title" required value={title} onChange={(event) => setTitle(event.target.value)} /></label>
+              <label>Target scope<input data-testid="remediation-scope" required value={targetScope} onChange={(event) => setTargetScope(event.target.value)} /></label>
+              <label>Justification<textarea data-testid="remediation-justification" required value={justification} onChange={(event) => setJustification(event.target.value)} /></label>
+            </section>
+            <section>
+              <h3>Mandatory exception review</h3>
+              <div className="exception-review">
+                {[
+                  ["leave", "Leave / absence"],
+                  ["service_accounts", "Service accounts"],
+                  ["legal_hold", "Legal hold"],
+                  ["dependencies", "Workload dependencies"],
+                  ["business_exceptions", "Business exceptions"],
+                ].map(([value, label]) => (
+                  <label key={value}><input type="checkbox" checked={exceptions.includes(value)} onChange={() => toggleException(value)} /> {label}</label>
+                ))}
+              </div>
+            </section>
+            <div className="action-warning"><ShieldCheckmark24Regular /><span><strong>No live Microsoft 365 change occurs at this step</strong><small>The plan is persisted locally and must pass independent approval before execution.</small></span></div>
+            {error && <p className="action-error" role="alert">{error}</p>}
+            <footer>
+              <button className="secondary-button" onClick={onClose}>Cancel</button>
+              <button className="secondary-button" data-testid="create-remediation-draft" disabled={busy || !title || !targetScope || !justification} onClick={() => void execute(false)}>{busy ? "Saving…" : "Save draft"}</button>
+              <button className="primary-button" data-testid="submit-remediation" disabled={busy || !title || !targetScope || !justification} onClick={() => void execute(true)}>{busy ? "Submitting…" : "Submit for approval"}</button>
+            </footer>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -2193,15 +2525,23 @@ function ActionDialog({
   action,
   onClose,
   onComplete,
+  onSaveDraft,
   onExecute,
 }: {
   action: DemoAction;
   onClose: () => void;
   onComplete: (message: string) => void;
+  onSaveDraft: (
+    action: DemoAction,
+    scope: string,
+    justification: string,
+    owner: string,
+  ) => Promise<string>;
   onExecute: (
     action: DemoAction,
     scope: string,
     justification: string,
+    owner: string,
   ) => Promise<string>;
 }) {
   const [scope, setScope] = useState("Global Enterprise Holdings · Demo tenant");
@@ -2210,6 +2550,7 @@ function ActionDialog({
     "First end-to-end acceptance execution of the governed product workflow.",
   );
   const [executing, setExecuting] = useState(false);
+  const [actionError, setActionError] = useState("");
   return (
     <div className="modal-backdrop action-modal-backdrop" onMouseDown={onClose}>
       <div className="action-dialog" onMouseDown={(e) => e.stopPropagation()}>
@@ -2283,9 +2624,18 @@ function ActionDialog({
           </button>
           <button
             className="secondary-button"
-            onClick={() =>
-              onComplete(`${action.title} draft saved for ${owner}.`)
-            }
+            disabled={executing || !scope || !owner || !justification}
+            onClick={async () => {
+              setExecuting(true);
+              setActionError("");
+              try {
+                onComplete(await onSaveDraft(action, scope, justification, owner));
+              } catch (error) {
+                setActionError(error instanceof Error ? error.message : "Workflow draft could not be saved.");
+              } finally {
+                setExecuting(false);
+              }
+            }}
           >
             <Save24Regular /> Save draft
           </button>
@@ -2294,49 +2644,262 @@ function ActionDialog({
             disabled={executing}
             onClick={async () => {
               setExecuting(true);
+              setActionError("");
               try {
-                onComplete(await onExecute(action, scope, justification));
+                onComplete(await onExecute(action, scope, justification, owner));
               } catch (error) {
-                onComplete(
-                  error instanceof Error
-                    ? error.message
-                    : "Workflow runtime failed.",
-                );
+                setActionError(error instanceof Error ? error.message : "Workflow runtime failed.");
               } finally {
                 setExecuting(false);
               }
             }}
           >
             <Play24Regular />
-            {executing ? "Executing workflow..." : "Run governed workflow"}
+            {executing ? "Submitting workflow..." : "Submit for approval"}
           </button>
         </footer>
+        {actionError && <p className="action-error" role="alert">{actionError}</p>}
       </div>
     </div>
   );
 }
 
-function downloadDemoFile(label: string) {
-  const content = `Aegis M365 Platform\n${label}\nGenerated: ${new Date().toISOString()}\nTenant: Global Enterprise Holdings\nClassification: Confidential · Synthetic demo data\n\nThis locally generated demonstration artifact contains no customer Microsoft 365 data.\n`;
-  const blob = new Blob([content], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `aegis-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.txt`;
-  anchor.click();
-  URL.revokeObjectURL(url);
+const shellExportLabels = [
+  "Export incidents",
+  "Export evidence",
+  "Evidence pack",
+  "Adoption pack",
+  "Export proposal",
+] as const;
+
+type ShellExportLabel = (typeof shellExportLabels)[number];
+type ProposalAssumptions = {
+  users: number;
+  admins: number;
+  hourlyRate: number;
+  toolOverlap: number;
+};
+
+const defaultProposalAssumptions: ProposalAssumptions = {
+  users: 12500,
+  admins: 18,
+  hourlyRate: 75,
+  toolOverlap: 180000,
+};
+
+function isShellExportLabel(value: string): value is ShellExportLabel {
+  return shellExportLabels.some((label) => label === value);
+}
+
+function readProposalAssumptions(container: HTMLElement): ProposalAssumptions {
+  const values = Array.from(
+    container.querySelectorAll<HTMLInputElement>(".roi-inputs input[type='number']"),
+  ).map((input) => Number(input.value));
+  if (values.length !== 4 || values.some((value) => !Number.isFinite(value))) {
+    return defaultProposalAssumptions;
+  }
+  return {
+    users: values[0],
+    admins: values[1],
+    hourlyRate: values[2],
+    toolOverlap: values[3],
+  };
+}
+
+function createShellExportReport(
+  label: ShellExportLabel,
+  proposal: ProposalAssumptions = defaultProposalAssumptions,
+): GeneratedReport {
+  const generatedAt = new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "medium",
+  }).format(new Date());
+  const base = {
+    id: `LOCAL-${label.toUpperCase().replace(/[^A-Z]+/g, "-")}-${Date.now()}`,
+    generatedAt,
+    sourceFreshness: "Verified local synthetic snapshot",
+  };
+
+  if (label === "Export incidents") {
+    return {
+      ...base,
+      name: "Security Incident Register - Local Demo Snapshot",
+      workload: "Microsoft Defender XDR",
+      description:
+        "Synthetic incident evidence generated and retained inside this local demonstration instance.",
+      totalRows: String(securitySignals.length),
+      columns: ["Observed", "Detection", "Entity", "Source", "Severity", "State"],
+      rows: securitySignals.map((signal) => [
+        signal.time,
+        signal.type,
+        signal.entity,
+        signal.source,
+        signal.severity,
+        signal.state,
+      ]),
+      metrics: [
+        { label: "Active incidents", value: "24", detail: "3 require immediate action" },
+        {
+          label: "High / critical",
+          value: String(securitySignals.filter((signal) => ["High", "Critical"].includes(signal.severity)).length),
+          detail: "Signals included in this extract",
+        },
+        { label: "Mean time to contain", value: "18m", detail: "Seven minutes faster month over month" },
+        { label: "Alert fidelity", value: "94.6%", detail: "1,842 signals correlated locally" },
+      ],
+    };
+  }
+
+  if (label === "Export evidence") {
+    return {
+      ...base,
+      name: "Unified Audit Evidence Extract - Local Demo Snapshot",
+      workload: "Microsoft 365 Unified Audit",
+      description:
+        "Synthetic normalized activities exported from the local audit evidence workspace.",
+      totalRows: String(auditActivities.length),
+      columns: ["Time", "Workload", "Activity", "Actor", "Target", "Result", "Risk", "Location"],
+      rows: auditActivities.map((activity) => [
+        activity.time,
+        activity.workload,
+        activity.activity,
+        activity.actor,
+        activity.target,
+        activity.result,
+        activity.risk,
+        activity.location,
+      ]),
+      metrics: [
+        { label: "Evidence events", value: String(auditActivities.length), detail: "Normalized local records" },
+        {
+          label: "Workloads",
+          value: String(new Set(auditActivities.map((activity) => activity.workload)).size),
+          detail: "Microsoft 365 services represented",
+        },
+        {
+          label: "High / critical",
+          value: String(auditActivities.filter((activity) => ["High", "Critical"].includes(activity.risk)).length),
+          detail: "Priority events in extract",
+        },
+        { label: "Data boundary", value: "LOCAL", detail: "Synthetic evidence; no customer data" },
+      ],
+    };
+  }
+
+  if (label === "Evidence pack") {
+    return {
+      ...base,
+      name: "Continuous Compliance Evidence Pack - Local Demo Snapshot",
+      workload: "Microsoft Purview and Compliance",
+      description:
+        "Synthetic control exceptions and evidence status assembled locally for assessment review.",
+      totalRows: String(failedControls.length),
+      columns: ["Control", "Framework", "Exception", "Owner", "Due", "Severity", "Evidence state"],
+      rows: failedControls.map((control) => [
+        control.id,
+        control.framework,
+        control.name,
+        control.owner,
+        control.due,
+        control.severity,
+        "Review required",
+      ]),
+      metrics: [
+        { label: "Overall compliance", value: "86%", detail: "Synthetic assessment posture" },
+        { label: "Failed controls", value: "41", detail: "7 critical or high" },
+        { label: "Evidence freshness", value: "94%", detail: "18 items older than 30 days" },
+        { label: "Frameworks", value: String(controls.length), detail: "ISO, NIST, CIS, SOC 2 and GDPR" },
+      ],
+    };
+  }
+
+  if (label === "Adoption pack") {
+    return {
+      ...base,
+      name: "Microsoft 365 Adoption and Value Pack - Local Demo Snapshot",
+      workload: "Microsoft 365 Usage Analytics",
+      description:
+        "Synthetic service adoption, utilization depth, and opportunity data generated locally.",
+      totalRows: String(adoption.length),
+      columns: ["Service", "Active users", "Eligible users", "Adoption", "Trend", "Usage depth"],
+      rows: adoption.map((service) => [
+        service.service,
+        service.active.toLocaleString("en-US"),
+        service.eligible.toLocaleString("en-US"),
+        `${service.adoption}%`,
+        `${service.trend > 0 ? "+" : ""}${service.trend}%`,
+        `${service.depth}%`,
+      ]),
+      metrics: [
+        { label: "Active users", value: "11,942", detail: "95.7% of synthetic workforce" },
+        { label: "Collaboration index", value: "82/100", detail: "Up 4.2 points this quarter" },
+        { label: "Low-adoption users", value: "1,284", detail: "Six campaigns recommended" },
+        { label: "License value realized", value: "91.7%", detail: "USD 28K equivalent uplift" },
+      ],
+    };
+  }
+
+  const hoursReturned = Math.round(proposal.admins * 22 * 12 * 0.48);
+  const administrativeCapacity = hoursReturned * proposal.hourlyRate;
+  const licenseOptimization = Math.round(proposal.users * 3.34 * 12);
+  const totalAnnualValue = administrativeCapacity + licenseOptimization + proposal.toolOverlap;
+  return {
+    ...base,
+    name: "Aegis M365 Illustrative Business Value Proposal",
+    workload: "Executive Value Engineering",
+    description:
+      "Illustrative local business case; validate pricing, labor allocation, and adoption assumptions with the client.",
+    totalRows: "4",
+    columns: ["Value lever", "Model assumption", "Annual value", "Client validation required"],
+    rows: [
+      [
+        "Administrative capacity",
+        `${proposal.admins} admins; 48% of 22 hours/month`,
+        `$${administrativeCapacity.toLocaleString("en-US")}`,
+        "Validate loaded rate and recoverable hours",
+      ],
+      [
+        "License optimization",
+        `${proposal.users.toLocaleString("en-US")} users; $3.34/user/month`,
+        `$${licenseOptimization.toLocaleString("en-US")}`,
+        "Validate SKU mix and reclaim eligibility",
+      ],
+      [
+        "Tool consolidation",
+        "Current annual overlap",
+        `$${proposal.toolOverlap.toLocaleString("en-US")}`,
+        "Validate contracts and retirement dates",
+      ],
+      [
+        "Illustrative total",
+        "Capacity plus hard-dollar opportunity",
+        `$${totalAnnualValue.toLocaleString("en-US")}`,
+        "Approve benefits baseline before commitment",
+      ],
+    ],
+    metrics: [
+      { label: "Estimated annual value", value: `$${totalAnnualValue.toLocaleString("en-US")}`, detail: "Illustrative, not a contractual commitment" },
+      { label: "Capacity returned", value: `${hoursReturned.toLocaleString("en-US")}h`, detail: "Annual administrative capacity" },
+      { label: "Users modeled", value: proposal.users.toLocaleString("en-US"), detail: "Current on-screen proposal input" },
+      { label: "Illustrative payback", value: "11 months", detail: "Validate against final commercial terms" },
+    ],
+  };
 }
 
 export default function Home() {
   const [active, setActive] = useState("Command center");
   const [sidebar, setSidebar] = useState(false);
   const [finding, setFinding] = useState<Finding | null>(null);
+  const [findingCase, setFindingCase] = useState<RuntimeFindingCaseView | null>(null);
+  const [findingCaseLoading, setFindingCaseLoading] = useState(false);
+  const [findingAction, setFindingAction] = useState<"assign" | "remediation" | null>(null);
   const [report, setReport] = useState<string | null>(null);
   const [toast, setToast] = useState("");
   const [globalQuery, setGlobalQuery] = useState("");
   const [action, setAction] = useState<DemoAction | null>(null);
   const [tenantOpen, setTenantOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<ShellNotification[]>(DEFAULT_NOTIFICATIONS);
   const [lightTheme, setLightTheme] = useState(false);
   const [runtimeOnline, setRuntimeOnline] = useState(false);
   const [runtimeEvents, setRuntimeEvents] = useState(0);
@@ -2367,6 +2930,28 @@ export default function Home() {
       .then(setIdentity)
       .catch(() => window.location.assign("/login"));
   }, []);
+  useEffect(() => {
+    if (!finding) {
+      setFindingCase(null);
+      setFindingAction(null);
+      return;
+    }
+    let current = true;
+    setFindingCaseLoading(true);
+    getRuntimeFindingCase(finding.id)
+      .then((value) => {
+        if (current) setFindingCase(value);
+      })
+      .catch((error) => {
+        if (current) notify(error instanceof Error ? error.message : "Finding case could not be loaded.");
+      })
+      .finally(() => {
+        if (current) setFindingCaseLoading(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, [finding?.id]);
   const availableNavigation = useMemo(
     () => identity ? allNavigation.filter((item) => canOpenModule(identity.roles, item.label)) : allNavigation.filter((item) => item.label === "Command center"),
     [identity],
@@ -2390,6 +2975,23 @@ export default function Home() {
     return () => window.removeEventListener("hashchange", sync);
   }, [availableNavigation]);
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem(NOTIFICATION_STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Array<{ id?: unknown; read?: unknown }>;
+      if (!Array.isArray(saved)) throw new Error("Invalid notification state");
+      setNotifications(
+        DEFAULT_NOTIFICATIONS.map((item) => ({
+          ...item,
+          read:
+            saved.find((candidate) => candidate.id === item.id)?.read === true,
+        })),
+      );
+    } catch {
+      localStorage.removeItem(NOTIFICATION_STORAGE_KEY);
+    }
+  }, []);
+  useEffect(() => {
     const stream = new EventSource(runtimeEventUrl());
     stream.onopen = () => setRuntimeOnline(true);
     stream.onmessage = () => setRuntimeEvents((count) => count + 1);
@@ -2402,23 +3004,39 @@ export default function Home() {
       localStorage.setItem("aegis.theme", next ? "light" : "dark");
       return next;
     });
-  const handleGlobalAction = (event: React.MouseEvent<HTMLDivElement>) => {
+  const updateNotifications = (
+    update: (current: ShellNotification[]) => ShellNotification[],
+  ) =>
+    setNotifications((current) => {
+      const next = update(current);
+      localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  const unreadNotifications = notifications.filter((item) => !item.read).length;
+  const handleGlobalAction = async (event: React.MouseEvent<HTMLDivElement>) => {
     const button = (event.target as HTMLElement).closest("button");
-    if (!button || button.closest("nav")) return;
+    if (!button || button.closest("nav") || button.dataset.localAction === "true") return;
     const text = (button.textContent || button.getAttribute("aria-label") || "")
       .trim()
       .replace(/\s+/g, " ");
-    if (
-      [
-        "Export incidents",
-        "Export evidence",
-        "Export proposal",
-        "Adoption pack",
-        "Evidence pack",
-      ].includes(text)
-    ) {
-      downloadDemoFile(text);
-      notify(`${text} generated and downloaded locally.`);
+    if (isShellExportLabel(text)) {
+      const generatedReport = createShellExportReport(
+        text,
+        text === "Export proposal"
+          ? readProposalAssumptions(event.currentTarget)
+          : undefined,
+      );
+      notify(`${text} PDF is being generated from the verified local synthetic snapshot.`);
+      try {
+        await exportReportPdf(generatedReport);
+        notify(`${text} generated and downloaded locally as a populated PDF.`);
+      } catch (error) {
+        notify(
+          error instanceof Error
+            ? `${text} failed: ${error.message}`
+            : `${text} could not be generated.`,
+        );
+      }
       return;
     }
     if (text === "Create report") {
@@ -2670,50 +3288,59 @@ export default function Home() {
           <button
             className="icon-button alert-button"
             aria-label="Notifications"
+            title={`${unreadNotifications} unread notifications`}
             onClick={() => setNotificationsOpen((value) => !value)}
           >
             <Alert24Regular />
-            <i />
+            {unreadNotifications > 0 && <i />}
           </button>
           {notificationsOpen && (
             <div className="topbar-popover notification-popover">
               <header>
                 <div>
                   <strong>Notification center</strong>
-                  <small>4 unread · Local event stream</small>
+                  <small>{unreadNotifications} unread · Local event stream</small>
                 </div>
                 <button
                   onClick={() => {
+                    updateNotifications((current) =>
+                      current.map((item) => ({ ...item, read: true })),
+                    );
                     setNotificationsOpen(false);
-                    notify("All notifications marked as read.");
+                    notify("All notifications marked as read and saved in this browser.");
                   }}
                 >
                   Mark all read
                 </button>
               </header>
-              {[
-                ["Critical identity finding", "45 privileged MFA gaps", "2m"],
-                ["Intune collection delayed", "18 minutes behind SLA", "6m"],
-                [
-                  "Workflow awaiting approval",
-                  "License reclamation · 87 users",
-                  "18m",
-                ],
-                ["Scheduled report ready", "Board Cyber Risk Briefing", "1h"],
-              ].map(([title, detail, time]) => (
+              {notifications.map((item) => (
                 <button
-                  key={title}
+                  key={item.id}
+                  className={item.read ? "read" : undefined}
                   onClick={() => {
+                    updateNotifications((current) =>
+                      current.map((candidate) =>
+                        candidate.id === item.id
+                          ? { ...candidate, read: true }
+                          : candidate,
+                      ),
+                    );
                     setNotificationsOpen(false);
-                    notify(`${title} opened.`);
+                    if (availableNavigation.some((module) => module.label === item.target)) {
+                      navigateTo(item.target);
+                      notify(`${item.title} opened in ${item.target}.`);
+                    } else {
+                      navigateTo("Command center");
+                      notify(`${item.title} acknowledged. Your role cannot open ${item.target}.`);
+                    }
                   }}
                 >
-                  <i />
+                  {!item.read && <i />}
                   <span>
-                    <b>{title}</b>
-                    <small>{detail}</small>
+                    <b>{item.title}</b>
+                    <small>{item.detail}</small>
                   </span>
-                  <em>{time}</em>
+                  <em>{item.time}</em>
                 </button>
               ))}
             </div>
@@ -2741,10 +3368,39 @@ export default function Home() {
       {finding && (
         <FindingDrawer
           finding={finding}
+          caseView={findingCase}
+          loading={findingCaseLoading}
+          canModify={!!identity && canRunChanges(identity.roles)}
           onClose={() => setFinding(null)}
-          onAction={(m) => {
-            notify(m);
+          onAssign={() => setFindingAction("assign")}
+          onRemediation={() => setFindingAction("remediation")}
+          onOpenWorkflow={() => {
             setFinding(null);
+            navigateTo("Automations");
+            notify("Linked remediation opened in the Automation approval queue.");
+          }}
+        />
+      )}
+      {finding && findingAction && (
+        <FindingActionDialog
+          finding={finding}
+          mode={findingAction}
+          onClose={() => setFindingAction(null)}
+          onAssign={async (assignment) => {
+            const updated = await assignRuntimeFinding(finding.id, assignment);
+            setFindingCase(updated);
+            setFindingAction(null);
+            notify(`${finding.id} assigned to ${assignment.assigneeName}; ownership and audit history persisted.`);
+          }}
+          onRemediation={async (remediation) => {
+            const updated = await createRuntimeFindingRemediation(finding.id, remediation);
+            setFindingCase(updated);
+            setFindingAction(null);
+            notify(
+              remediation.submitForApproval
+                ? `${finding.id} remediation submitted for independent approval.`
+                : `${finding.id} remediation draft persisted and linked to the finding.`,
+            );
           }}
         />
       )}
@@ -2759,12 +3415,25 @@ export default function Home() {
             setAction(null);
             notify(message);
           }}
-          onExecute={async (selectedAction, scope, justification) => {
+          onSaveDraft={async (selectedAction, scope, justification, owner) => {
+            if (!identity || !canRunChanges(identity.roles)) throw new Error("Your assigned organization role cannot create workflow drafts.");
+            const workflow = await createRuntimeWorkflowDraft(
+              selectedAction.title,
+              scope,
+              justification,
+              `module-${selectedAction.kind}`,
+              owner,
+            );
+            return `${selectedAction.title} draft ${workflow.id} saved for ${owner}.`;
+          }}
+          onExecute={async (selectedAction, scope, justification, owner) => {
             if (!identity || !canRunChanges(identity.roles)) throw new Error("Your assigned organization role cannot submit change workflows.");
             const workflow = await runRuntimeWorkflow(
               selectedAction.title,
               scope,
               justification,
+              `module-${selectedAction.kind}`,
+              owner,
             );
             if (workflow.state !== "pending_approval") throw new Error(workflow.execution?.message ?? `Workflow ended in ${workflow.state}.`);
             return `${selectedAction.title} submitted for independent approval. Workflow ID ${workflow.id}.`;

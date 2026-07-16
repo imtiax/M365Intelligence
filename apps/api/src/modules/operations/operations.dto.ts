@@ -47,6 +47,11 @@ export class CreateWorkflowDto {
   @IsNotEmpty()
   @MaxLength(600)
   justification!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  owner?: string;
 }
 
 export class WorkflowDecisionDto {
@@ -58,6 +63,6 @@ export class WorkflowDecisionDto {
 
 export class ListAuditQuery {
   @IsOptional()
-  @IsIn(["report", "workflow", "simulation", "runtime"])
+  @IsIn(["report", "workflow", "finding", "simulation", "runtime"])
   objectType?: string;
 }

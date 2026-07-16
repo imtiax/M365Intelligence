@@ -9,7 +9,7 @@ The repository includes a production-buildable Next.js application, a NestJS API
 - Secure local authentication with scrypt password hashing, signed HttpOnly sessions, throttling, protected routes, and security headers.
 - A deterministic enterprise generator with 5,000 detailed users, 28,900 Microsoft 365 objects, six customer scenarios, user 360, security incidents, identity risk, licensing, compliance, grounded AI, and continuous timeline events.
 - Twenty-seven product workspaces and hundreds of interactive controls, including a tenant-scoped Connection Center, Customer Portal, and role-restricted Super Admin commercial workspace.
-- Ten workload-specific admin-center dashboards, a 947-report catalogue, API-backed report jobs with populated rows and KPI summaries, working PDF/Excel downloads, a custom report builder, report scheduling/security, dashboard designer, filtering, drawers, approval-controlled persistent workflows, real-time events, tamper-evident audit history, administration, global search, and persistent browser drafts.
+- Ten workload-specific admin-center dashboards, a 947-report catalogue, API-backed report jobs with populated rows and KPI summaries, working PDF/Excel downloads, a custom report builder, report scheduling/security, dashboard designer, filtering, drawers, tenant-scoped finding assignment, approval-controlled remediation, explicit rejection, verified execution results, rollback, real-time events, tamper-evident audit history, administration, global search, and persistent browser drafts.
 - Production Next.js build, browser smoke suite, control inventory, Docker topology, NestJS API, PostgreSQL/TimescaleDB, Redis, RabbitMQ, optional OpenSearch, optional Ollama, and observability assets.
 
 The bundled dataset and workflow results are synthetic. Live Microsoft Graph collectors and real Microsoft 365 mutations are an integration boundary, not silently simulated production functionality. See [Connect Microsoft 365](#connect-microsoft-365).
@@ -148,7 +148,7 @@ npm.cmd run build
 npm.cmd test
 ```
 
-The browser suite authenticates, opens all 23 workspaces, exercises report/dashboard persistence, shell controls, governed workflows, administration, configuration, and search. The control audit inventories every visible button and input on every routed view.
+The browser suite authenticates and opens all 27 workspaces (Command Center plus 26 modules). It verifies the dormant-E5 finding lifecycle, reload persistence, exception validation, governed workflows, five populated PDF exports, report/dashboard persistence, schedule and security settings, shell controls, administration, configuration versioning, and search. The control audit inventories every visible button and input on every routed view.
 
 Reporting verification also switches through all ten admin-center dashboards, generates catalogue and custom reports, confirms populated result rows, and validates downloaded PDF and Excel files.
 
@@ -170,6 +170,7 @@ Useful documents:
 - [Threat model](docs/architecture/threat-model.md)
 - [Roadmap and production gates](docs/roadmap.md)
 - [End-to-end acceptance testing](docs/END-TO-END-TESTING.md)
+- [Functional acceptance matrix](docs/FUNCTIONAL-ACCEPTANCE-MATRIX.md)
 
 ## Security
 

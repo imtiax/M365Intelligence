@@ -131,12 +131,15 @@ export async function runRuntimeReport(
 export type RuntimeWorkflow = {
   id: string;
   title: string;
+  sourceFindingId?: string;
   requestedBy: string;
+  owner?: string;
   approver?: string;
   state:
     | "draft"
     | "pending_approval"
     | "approved"
+    | "rejected"
     | "running"
     | "completed"
     | "failed"
@@ -145,40 +148,143 @@ export type RuntimeWorkflow = {
     affected: number;
     succeeded: number;
     failed: number;
+    skipped?: number;
     message: string;
   };
 };
+
+export type RuntimeFindingCase = {
+  findingId: string;
+  status:
+    | "unassigned"
+    | "assigned"
+    | "remediation_draft"
+    | "pending_approval"
+    | "approved"
+    | "rejected"
+    | "running"
+    | "completed"
+    | "failed"
+    | "rolled_back";
+  assignee?: { id: string; displayName: string; team: string };
+  priority?: "low" | "medium" | "high" | "urgent";
+  dueAt?: string;
+  note?: string;
+  remediationWorkflowId?: string;
+  updatedAt: string;
+  updatedBy: string;
+  activity: Array<{
+    id: string;
+    type: string;
+    actorId: string;
+    occurredAt: string;
+    summary: string;
+  }>;
+};
+
+export type RuntimeFindingCaseView = {
+  finding: {
+    id: string;
+    title: string;
+    category: string;
+    automation: { available: boolean; approvalRequired: boolean };
+  };
+  case: RuntimeFindingCase;
+  remediationWorkflow?: RuntimeWorkflow;
+};
+
+export const getRuntimeFindingCase = (id: string) =>
+  request<RuntimeFindingCaseView>(
+    `/api/v1/findings/${encodeURIComponent(id)}/case`,
+  );
+
+export const assignRuntimeFinding = (
+  id: string,
+  assignment: {
+    assigneeId: string;
+    assigneeName: string;
+    team: string;
+    priority: "low" | "medium" | "high" | "urgent";
+    dueAt: string;
+    note: string;
+  },
+) =>
+  request<RuntimeFindingCaseView>(
+    `/api/v1/findings/${encodeURIComponent(id)}/assignments`,
+    { method: "POST", body: JSON.stringify(assignment) },
+  );
+
+export const createRuntimeFindingRemediation = (
+  id: string,
+  remediation: {
+    title: string;
+    targetScope: string;
+    justification: string;
+    exceptionReview: string[];
+    submitForApproval: boolean;
+  },
+) =>
+  request<RuntimeFindingCaseView>(
+    `/api/v1/findings/${encodeURIComponent(id)}/remediation`,
+    { method: "POST", body: JSON.stringify(remediation) },
+  );
 
 export async function getRuntimeWorkflows() {
   return request<{ items: RuntimeWorkflow[] }>("/api/v1/workflows");
 }
 
-export async function transitionRuntimeWorkflow(id: string, action: "approve" | "execute" | "rollback") {
-  return request<RuntimeWorkflow>(`/api/v1/workflows/${id}/${action}`, { method: "POST", body: "{}" });
+export async function transitionRuntimeWorkflow(
+  id: string,
+  action: "approve" | "reject" | "execute" | "rollback",
+  comment?: string,
+) {
+  return request<RuntimeWorkflow>(`/api/v1/workflows/${id}/${action}`, {
+    method: "POST",
+    body: JSON.stringify({ comment }),
+  });
 }
 
 export async function runRuntimeWorkflow(
   title: string,
   targetScope: string,
   justification: string,
+  type = "governed-demo-operation",
+  owner?: string,
 ) {
-  let workflow = await request<RuntimeWorkflow>(
-    "/api/v1/workflows",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        title,
-        type: "governed-demo-operation",
-        targetScope,
-        justification,
-      }),
-    },
+  let workflow = await createRuntimeWorkflowDraft(
+    title,
+    targetScope,
+    justification,
+    type,
+    owner,
   );
   workflow = await request<RuntimeWorkflow>(
     `/api/v1/workflows/${workflow.id}/submit`,
     { method: "POST", body: "{}" },
   );
   return workflow;
+}
+
+export async function createRuntimeWorkflowDraft(
+  title: string,
+  targetScope: string,
+  justification: string,
+  type = "governed-demo-operation",
+  owner?: string,
+) {
+  return request<RuntimeWorkflow>(
+    "/api/v1/workflows",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        title,
+        type,
+        targetScope,
+        justification,
+        owner,
+      }),
+    },
+  );
 }
 
 export function runtimeEventUrl() {

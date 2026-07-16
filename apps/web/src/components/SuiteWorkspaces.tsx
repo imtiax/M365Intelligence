@@ -88,15 +88,18 @@ function Btn({
   children,
   primary = false,
   onClick,
+  localAction = false,
 }: {
   children: ReactNode;
   primary?: boolean;
   onClick?: () => void;
+  localAction?: boolean;
 }) {
   return (
     <button
       className={primary ? "primary-button" : "secondary-button"}
       onClick={onClick}
+      data-local-action={localAction ? "true" : undefined}
     >
       {children}
     </button>
@@ -864,6 +867,8 @@ function Auditing({ notify }: { notify: (m: string) => void }) {
   const [workload, setWorkload] = useState("All workloads");
   const [highRisk, setHighRisk] = useState(false);
   const [result, setResult] = useState("Any");
+  const [caseEvents, setCaseEvents] = useState<string[]>([]);
+  const [savedAlert, setSavedAlert] = useState<string | null>(null);
   const [selected, setSelected] = useState<
     (typeof auditActivities)[number] | null
   >(null);
@@ -896,15 +901,25 @@ function Auditing({ notify }: { notify: (m: string) => void }) {
         </Btn>
         <Btn
           primary
-          onClick={() =>
-            notify(
-              "Audit search saved as a continuously evaluated alert policy.",
-            )
-          }
+          onClick={() => {
+            const name = `Audit policy · ${workload} · ${highRisk ? "High+" : "all risks"}`;
+            setSavedAlert(name);
+            notify(`${name} saved with ${events.length} current matches.`);
+          }}
         >
           <Alert24Regular /> Create alert
         </Btn>
       </Header>
+      {(savedAlert || caseEvents.length > 0) && (
+        <div className="demo-notice" data-testid="audit-action-outcome">
+          <span><CheckmarkCircle24Regular /></span>
+          <div>
+            <strong>AUDIT WORKFLOW STATE</strong>
+            <p>{savedAlert ? `${savedAlert} is active. ` : ""}{caseEvents.length} event{caseEvents.length === 1 ? "" : "s"} attached to CASE-4428.</p>
+          </div>
+          <b>LOCAL · PERSISTED IN SESSION</b>
+        </div>
+      )}
       <div className="report-summary">
         <Kpi label="EVENTS TODAY" value="184,216" detail="Across 8 workloads" />
         <Kpi
@@ -1080,19 +1095,20 @@ function Auditing({ notify }: { notify: (m: string) => void }) {
             </section>
             <div className="drawer-actions">
               <Btn
-                onClick={() =>
-                  notify("Audit event attached to investigation CASE-4428.")
-                }
+                onClick={() => {
+                  const key = `${selected.time}-${selected.activity}`;
+                  setCaseEvents((items) => items.includes(key) ? items : [...items, key]);
+                  notify("Audit event attached to investigation CASE-4428.");
+                }}
               >
                 Add to case
               </Btn>
               <Btn
                 primary
-                onClick={() =>
-                  notify(
-                    "Alert policy drafted from this audit activity pattern.",
-                  )
-                }
+                onClick={() => {
+                  setSavedAlert(`Alert from ${selected.activity}`);
+                  notify("Alert policy drafted from this audit activity pattern.");
+                }}
               >
                 <Alert24Regular /> Create alert
               </Btn>
@@ -1581,6 +1597,8 @@ function Governance({ notify }: { notify: (m: string) => void }) {
 }
 
 function Alerts({ notify }: { notify: (m: string) => void }) {
+  const [showDeliveryHistory, setShowDeliveryHistory] = useState(false);
+  const [deliveryResults, setDeliveryResults] = useState<Array<{ policy: string; channels: string; at: string }>>([]);
   return (
     <>
       <Header
@@ -1588,7 +1606,7 @@ function Alerts({ notify }: { notify: (m: string) => void }) {
         title="Intelligent alert policies"
         description="Detect meaningful Microsoft 365 changes and route enriched notifications without alert fatigue."
       >
-        <Btn>Delivery history</Btn>
+        <Btn localAction onClick={() => setShowDeliveryHistory((value) => !value)}>Delivery history</Btn>
         <Btn
           primary
           onClick={() =>
@@ -1600,6 +1618,19 @@ function Alerts({ notify }: { notify: (m: string) => void }) {
           + New alert policy
         </Btn>
       </Header>
+      {showDeliveryHistory && (
+        <Card title="Delivery test history" subtitle="Synthetic provider acknowledgements created by policy tests">
+          <div className="compact-table" data-testid="alert-delivery-history">
+            <div className="compact-head"><span>Policy</span><span>Channels</span><span>Result</span><span>Observed</span></div>
+            {deliveryResults.map((item) => (
+              <div className="compact-row" key={`${item.policy}-${item.at}`}>
+                <strong>{item.policy}</strong><span>{item.channels}</span><b className="status active">Delivered</b><span>{item.at}</span>
+              </div>
+            ))}
+            {!deliveryResults.length && <p className="suite-empty">No test deliveries in this session. Use Test on a policy to create a traceable result.</p>}
+          </div>
+        </Card>
+      )}
       <div className="report-summary">
         <Kpi label="ACTIVE POLICIES" value="48" detail="Across 9 workloads" />
         <Kpi
@@ -1651,9 +1682,12 @@ function Alerts({ notify }: { notify: (m: string) => void }) {
               <footer>
                 <span>{p.channels}</span>
                 <button
-                  onClick={() =>
-                    notify(`Test notification sent for “${p.name}”.`)
-                  }
+                  onClick={() => {
+                    const at = new Date().toLocaleTimeString();
+                    setDeliveryResults((items) => [{ policy: p.name, channels: p.channels, at }, ...items].slice(0, 20));
+                    setShowDeliveryHistory(true);
+                    notify(`Synthetic test delivery acknowledged for “${p.name}” across ${p.channels}.`);
+                  }}
                 >
                   Test
                 </button>
@@ -1702,6 +1736,7 @@ function Alerts({ notify }: { notify: (m: string) => void }) {
 }
 
 function Reminders({ notify }: { notify: (m: string) => void }) {
+  const [preview, setPreview] = useState<(typeof reminderAgents)[number] | null>(null);
   return (
     <>
       <Header
@@ -1778,9 +1813,10 @@ function Reminders({ notify }: { notify: (m: string) => void }) {
                 <dd>{a.next}</dd>
               </dl>
               <button
-                onClick={() =>
-                  notify(`Preview opened for the next “${a.name}” message.`)
-                }
+                onClick={() => {
+                  setPreview(a);
+                  notify(`Preview prepared for the next “${a.name}” message.`);
+                }}
               >
                 Preview next message
               </button>
@@ -1808,11 +1844,26 @@ function Reminders({ notify }: { notify: (m: string) => void }) {
           ))}
         </div>
       </Card>
+      {preview && (
+        <div className="modal-backdrop" onMouseDown={() => setPreview(null)}>
+          <aside className="detail-drawer suite-drawer" data-testid="reminder-message-preview" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="drawer-head"><span><CalendarClock24Regular /><small>LOCAL MESSAGE PREVIEW</small></span><button aria-label="Close reminder preview" onClick={() => setPreview(null)}>×</button></div>
+            <h2>{preview.name}</h2>
+            <p className="drawer-sub">Audience: {preview.audience} · Owner: {preview.owner}</p>
+            <section><h3>Subject</h3><p>Action required: complete {preview.name.toLowerCase()}</p></section>
+            <section><h3>Rendered message</h3><div className="evidence-box"><Mail24Regular /><p>Hello {'{{displayName}}'}, your required action remains incomplete. Please complete it before {'{{dueDate}}'} or contact {preview.owner} for an approved exception.</p><b>Synthetic preview · no message sent</b></div></section>
+            <section><h3>Delivery plan</h3><p>{preview.cadence} · next evaluated run {preview.next} · manager escalation enabled after final reminder.</p></section>
+            <div className="drawer-actions"><Btn onClick={() => setPreview(null)}>Close preview</Btn></div>
+          </aside>
+        </div>
+      )}
     </>
   );
 }
 
 function Delegation({ notify }: { notify: (m: string) => void }) {
+  const [reviewing, setReviewing] = useState<(typeof delegatedRoles)[number] | null>(null);
+  const [reviewDecisions, setReviewDecisions] = useState<Record<string, string>>({});
   return (
     <>
       <Header
@@ -1881,10 +1932,13 @@ function Delegation({ notify }: { notify: (m: string) => void }) {
               <footer>
                 <span>
                   <CalendarClock24Regular />
-                  {r.expires}
+                  {reviewDecisions[r.name] ?? r.expires}
                 </span>
                 <button
-                  onClick={() => notify(`Access review started for ${r.name}.`)}
+                  onClick={() => {
+                    setReviewing(r);
+                    notify(`Access review opened for ${r.name}.`);
+                  }}
                 >
                   Review
                 </button>
@@ -1893,6 +1947,21 @@ function Delegation({ notify }: { notify: (m: string) => void }) {
           ))}
         </div>
       </Card>
+      {reviewing && (
+        <div className="modal-backdrop" onMouseDown={() => setReviewing(null)}>
+          <aside className="detail-drawer suite-drawer" data-testid="delegation-access-review" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="drawer-head"><span><PeopleTeam24Regular /><small>ACCESS REVIEW</small></span><button aria-label="Close access review" onClick={() => setReviewing(null)}>×</button></div>
+            <h2>{reviewing.name}</h2>
+            <p className="drawer-sub">{reviewing.scope} · {reviewing.members} members · {reviewing.permissions} capabilities</p>
+            <section><h3>Effective access</h3><p>This review is scoped to the displayed delegated role. No Microsoft 365 directory role is changed by the local demonstration.</p></section>
+            <section><h3>Reviewer decision</h3><div className="owner-row"><span>Residual risk<strong>{reviewing.risk}</strong></span><span>Current expiry<strong>{reviewing.expires}</strong></span></div></section>
+            <div className="drawer-actions">
+              <Btn onClick={() => { setReviewDecisions((items) => ({ ...items, [reviewing.name]: "Revocation requested" })); notify(`${reviewing.name} revocation request recorded.`); setReviewing(null); }}>Request revoke</Btn>
+              <Btn primary onClick={() => { setReviewDecisions((items) => ({ ...items, [reviewing.name]: "Reviewed · 90 days" })); notify(`${reviewing.name} approved for 90 days in the local review record.`); setReviewing(null); }}>Approve 90 days</Btn>
+            </div>
+          </aside>
+        </div>
+      )}
       <div className="two-col">
         <Card title="Permission model" subtitle="Effective authorization flow">
           <div className="permission-flow">
@@ -1936,6 +2005,8 @@ function Delegation({ notify }: { notify: (m: string) => void }) {
 }
 
 function Hybrid({ notify }: { notify: (m: string) => void }) {
+  const [scan, setScan] = useState<{ at: string; healthy: number; warnings: number } | null>(null);
+  const [topology, setTopology] = useState<(typeof hybridHealth)[number] | null>(null);
   return (
     <>
       <Header
@@ -1946,15 +2017,24 @@ function Hybrid({ notify }: { notify: (m: string) => void }) {
         <Btn>Collector settings</Btn>
         <Btn
           primary
-          onClick={() =>
-            notify(
-              "Hybrid directory health scan queued for all four synthetic domains.",
-            )
-          }
+          onClick={() => {
+            const result = {
+              at: new Date().toLocaleString(),
+              healthy: hybridHealth.filter((item) => item.replication !== "Warning").length,
+              warnings: hybridHealth.filter((item) => item.replication === "Warning").length,
+            };
+            setScan(result);
+            notify(`Hybrid health scan completed: ${result.healthy} healthy, ${result.warnings} warning.`);
+          }}
         >
           <ArrowSync24Regular /> Run health scan
         </Btn>
       </Header>
+      {scan && (
+        <div className="demo-notice" data-testid="hybrid-scan-result">
+          <span><ArrowSync24Regular /></span><div><strong>HEALTH SCAN COMPLETED</strong><p>{scan.healthy} healthy domains · {scan.warnings} warning · observed {scan.at}</p></div><b>SYNTHETIC · LOCAL</b>
+        </div>
+      )}
       <div className="report-summary">
         <Kpi
           label="DIRECTORY OBJECTS"
@@ -2014,11 +2094,10 @@ function Hybrid({ notify }: { notify: (m: string) => void }) {
                 </span>
               </div>
               <button
-                onClick={() =>
-                  notify(
-                    `${d.name} topology opened with replication links and site coverage.`,
-                  )
-                }
+                onClick={() => {
+                  setTopology(d);
+                  notify(`${d.name} topology loaded from the local directory snapshot.`);
+                }}
               >
                 Explore topology <ChevronRight20Regular />
               </button>
@@ -2026,6 +2105,18 @@ function Hybrid({ notify }: { notify: (m: string) => void }) {
           ))}
         </div>
       </Card>
+      {topology && (
+        <div className="modal-backdrop" onMouseDown={() => setTopology(null)}>
+          <aside className="detail-drawer suite-drawer" data-testid="hybrid-topology" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="drawer-head"><span><Database24Regular /><small>DIRECTORY TOPOLOGY</small></span><button aria-label="Close topology" onClick={() => setTopology(null)}>×</button></div>
+            <h2>{topology.name}</h2><p className="drawer-sub">{topology.type} · local collector snapshot</p>
+            <section><h3>Topology summary</h3><div className="owner-row"><span>Controllers<strong>{topology.controllers}</strong></span><span>Objects<strong>{topology.objects}</strong></span></div></section>
+            <section><h3>Replication path</h3><div className="action-steps">{["Primary site → Hub controller", "Hub controller → Regional sites", "Regional sites → Entra Connect staging"].map((step, index) => <span key={step}><b>{index + 1}</b>{step}<CheckmarkCircle24Regular /></span>)}</div></section>
+            <section><h3>Collection evidence</h3><p>Last synchronization {topology.sync}. Replication state: {topology.replication}. This view uses synthetic directory metadata and performs no remote query.</p></section>
+            <div className="drawer-actions"><Btn onClick={() => setTopology(null)}>Close topology</Btn></div>
+          </aside>
+        </div>
+      )}
       <div className="two-col">
         <Card
           title="Identity synchronization"

@@ -48,7 +48,8 @@ try {
     if (status !== 200) throw new Error(`${username} login returned ${status}.`);
     await evaluate("location.assign('/')");
     await waitFor("location.pathname==='/'&&document.querySelector('.profile')?.textContent.trim()!=='--'", `${username} workspace`);
-    await delay(500);
+    await waitFor("document.querySelectorAll('nav button').length>1", `${username} authorized navigation`);
+    await delay(250);
     const modules = await evaluate("[...document.querySelectorAll('nav button')].map(x=>x.textContent.trim().replace(/\\d+$/,'').trim())");
     if (modules.length !== expectedCount) throw new Error(`${username} expected ${expectedCount} modules, received ${modules.length}: ${modules.join(', ')}`);
     if (username !== "admin@apex.local" && modules.includes("Administration")) throw new Error(`${username} can see Administration.`);

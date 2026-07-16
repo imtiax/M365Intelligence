@@ -91,8 +91,15 @@ export class LocalStateService {
         const parsed = JSON.parse(
           readFileSync(this.path, "utf8"),
         ) as RuntimeState;
-        if (parsed.version === 2 && parsed.enterprise && Array.isArray(parsed.resources))
+        if (
+          [2, 3].includes(parsed.version) &&
+          parsed.enterprise &&
+          Array.isArray(parsed.resources)
+        ) {
+          parsed.version = 3;
+          parsed.findingCases ??= [];
           return parsed;
+        }
       } catch {
         // A corrupt test state is replaced with a deterministic seed below.
       }
@@ -105,12 +112,13 @@ export class LocalStateService {
   private createSeed(): RuntimeState {
     const seededAt = new Date().toISOString();
     const state: RuntimeState = {
-      version: 2,
+      version: 3,
       seededAt,
       enterprise: createEnterpriseDemo(DEMO_TENANT),
       resources: seedResources(DEMO_TENANT),
       reportJobs: [],
       workflows: [],
+      findingCases: [],
       audit: [],
       events: [],
     };
@@ -186,7 +194,10 @@ export class LocalStateService {
     correlationId: string,
   ): AuditRecord {
     return this.mutate((state) => {
-      const previousHash = state.audit.at(-1)?.hash ?? "GENESIS";
+      const previousHash =
+        [...state.audit]
+          .reverse()
+          .find((item) => item.tenantId === tenantId)?.hash ?? "GENESIS";
       const record = {
         sequence: state.audit.length + 1,
         tenantId,

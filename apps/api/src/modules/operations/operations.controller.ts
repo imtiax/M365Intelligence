@@ -12,7 +12,7 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
-import { interval, map, merge, Observable } from "rxjs";
+import { filter, interval, map, merge, Observable } from "rxjs";
 import { LocalStateService } from "../runtime/local-state.service";
 import {
   CreateReportJobDto,
@@ -111,7 +111,7 @@ export class OperationsController {
   approve(
     @Req() request: Request,
     @Param("id") id: string,
-    @Body() _body: WorkflowDecisionDto,
+    @Body() body: WorkflowDecisionDto,
   ) {
     const context = request.tenantContext!;
     this.requireRole(context.roles, ["platform-admin", "security-admin"]);
@@ -120,6 +120,24 @@ export class OperationsController {
       id,
       context.actorId,
       request.correlationId!,
+      body.comment,
+    );
+  }
+
+  @Post("workflows/:id/reject")
+  reject(
+    @Req() request: Request,
+    @Param("id") id: string,
+    @Body() body: WorkflowDecisionDto,
+  ) {
+    const context = request.tenantContext!;
+    this.requireRole(context.roles, ["platform-admin", "security-admin"]);
+    return this.operations.rejectWorkflow(
+      context.tenantId,
+      id,
+      context.actorId,
+      request.correlationId!,
+      body.comment,
     );
   }
 
@@ -164,10 +182,8 @@ export class OperationsController {
     );
     return {
       items,
-      integrity: items.every(
-        (item, index) =>
-          index === items.length - 1 ||
-          item.previousHash === items[index + 1].hash,
+      integrity: this.operations.auditIntegrity(
+        request.tenantContext!.tenantId,
       ),
     };
   }
@@ -201,6 +217,7 @@ export class OperationsController {
   stream(@Req() request: Request): Observable<MessageEvent> {
     const tenantId = request.tenantContext!.tenantId;
     const events = this.store.events$.pipe(
+      filter((event) => event.tenantId === tenantId),
       map((event) => ({ id: event.id, data: event }) as MessageEvent),
     );
     const heartbeat = interval(15000).pipe(

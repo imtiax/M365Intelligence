@@ -5,7 +5,7 @@ import {
   NotFoundException,
   OnModuleInit,
 } from "@nestjs/common";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { LocalStateService } from "../runtime/local-state.service";
 import type {
   ReportJob,
@@ -28,6 +28,11 @@ export class OperationsService implements OnModuleInit {
       job.status = "queued";
       job.progress = 0;
       this.processReport(job.id);
+    }
+    for (const workflow of this.store
+      .snapshot()
+      .workflows.filter((item) => item.state === "running")) {
+      setTimeout(() => this.completeWorkflow(workflow.id), 250);
     }
   }
 
@@ -301,6 +306,7 @@ export class OperationsService implements OnModuleInit {
       targetScope: dto.targetScope,
       justification: dto.justification,
       requestedBy: actorId,
+      owner: dto.owner,
       state: "draft",
       createdAt: now,
       updatedAt: now,
@@ -368,6 +374,7 @@ export class OperationsService implements OnModuleInit {
     id: string,
     actorId: string,
     correlationId: string,
+    comment?: string,
   ) {
     const workflow = this.getWorkflow(tenantId, id);
     this.requireState(workflow, "pending_approval");
@@ -379,6 +386,15 @@ export class OperationsService implements OnModuleInit {
       workflow.state = "approved";
       workflow.approver = actorId;
       workflow.updatedAt = new Date().toISOString();
+      workflow.decisions = [
+        ...(workflow.decisions ?? []),
+        {
+          actorId,
+          decision: "approved",
+          comment,
+          occurredAt: workflow.updatedAt,
+        },
+      ];
       workflow.steps[2] = {
         ...workflow.steps[2],
         status: "passed",
@@ -391,6 +407,48 @@ export class OperationsService implements OnModuleInit {
       correlationId,
       "workflow.approved",
       "success",
+    );
+    return workflow;
+  }
+
+  rejectWorkflow(
+    tenantId: string,
+    id: string,
+    actorId: string,
+    correlationId: string,
+    comment?: string,
+  ) {
+    const workflow = this.getWorkflow(tenantId, id);
+    this.requireState(workflow, "pending_approval");
+    if (workflow.requestedBy === actorId)
+      throw new ForbiddenException(
+        "Separation of duties prevents self-rejection as the approval decision.",
+      );
+    this.store.mutate(() => {
+      workflow.state = "rejected";
+      workflow.approver = actorId;
+      workflow.updatedAt = new Date().toISOString();
+      workflow.decisions = [
+        ...(workflow.decisions ?? []),
+        {
+          actorId,
+          decision: "rejected",
+          comment,
+          occurredAt: workflow.updatedAt,
+        },
+      ];
+      workflow.steps[2] = {
+        ...workflow.steps[2],
+        status: "failed",
+        at: workflow.updatedAt,
+      };
+    });
+    this.auditWorkflow(
+      workflow,
+      actorId,
+      correlationId,
+      "workflow.rejected",
+      "rejected",
     );
     return workflow;
   }
@@ -426,14 +484,26 @@ export class OperationsService implements OnModuleInit {
   ) {
     const workflow = this.getWorkflow(tenantId, id);
     this.requireState(workflow, "completed");
-    this.store.mutate(() => {
+    this.store.mutate((state) => {
+      for (const snapshot of workflow.rollbackSnapshot ?? []) {
+        const resource = state.resources.find(
+          (item) =>
+            item.tenantId === tenantId && item.id === snapshot.resourceId,
+        );
+        if (resource) {
+          resource.details = { ...snapshot.details };
+          resource.updatedAt = snapshot.updatedAt;
+        }
+      }
       workflow.state = "rolled_back";
       workflow.updatedAt = new Date().toISOString();
       workflow.execution = {
         affected: workflow.execution?.affected ?? 0,
         succeeded: workflow.execution?.succeeded ?? 0,
         failed: 0,
+        skipped: workflow.execution?.skipped,
         message: "Rollback completed and verified.",
+        targetIds: workflow.execution?.targetIds,
       };
     });
     this.auditWorkflow(
@@ -454,11 +524,49 @@ export class OperationsService implements OnModuleInit {
     const shouldFail = workflow.targetScope
       .toLowerCase()
       .includes("failure-test");
-    const affected = Math.max(
-      1,
-      Math.min(250, (workflow.targetScope.length * 7) % 251),
-    );
+    const licenseTargets =
+      workflow.sourceFindingId === "FND-1029"
+        ? this.store
+            .snapshot()
+            .resources.filter(
+              (item) =>
+                item.tenantId === workflow.tenantId &&
+                item.workload === "Licensing & Cost" &&
+                item.details.licenseReclaimed !== true,
+            )
+            .slice(0, 87)
+        : [];
+    const affected = licenseTargets.length
+      ? licenseTargets.length
+      : Math.max(
+          1,
+          Math.min(250, (workflow.targetScope.length * 7) % 251),
+        );
     this.store.mutate(() => {
+      if (licenseTargets.length && !shouldFail) {
+        workflow.rollbackSnapshot = licenseTargets.map((resource) => ({
+          resourceId: resource.id,
+          details: { ...resource.details },
+          updatedAt: resource.updatedAt,
+        }));
+        licenseTargets.forEach((resource, index) => {
+          const exception =
+            index < 8
+              ? "leave"
+              : index < 15
+                ? "service_account"
+                : index < 20
+                  ? "legal_hold"
+                  : undefined;
+          resource.details.licenseAssigned = !!exception;
+          resource.details.licenseReclaimed = !exception;
+          resource.details.remediationDisposition = exception
+            ? `excluded_${exception}`
+            : "reclaimed";
+          resource.details.remediationFinding = workflow.sourceFindingId!;
+          resource.updatedAt = new Date().toISOString();
+        });
+      }
       workflow.state = shouldFail ? "failed" : "completed";
       workflow.updatedAt = new Date().toISOString();
       workflow.steps[3] = {
@@ -473,11 +581,19 @@ export class OperationsService implements OnModuleInit {
       };
       workflow.execution = {
         affected,
-        succeeded: shouldFail ? 0 : affected,
+        succeeded: shouldFail
+          ? 0
+          : licenseTargets.length
+            ? licenseTargets.length - 20
+            : affected,
         failed: shouldFail ? affected : 0,
+        skipped: shouldFail ? 0 : licenseTargets.length ? 20 : 0,
         message: shouldFail
           ? "Injected acceptance-test failure; no target changes were committed."
-          : "Execution completed, verified, and recorded.",
+          : licenseTargets.length
+            ? "87 dormant E5 assignments evaluated: 67 reclaimed and 20 excluded for leave, service-account, or legal-hold exceptions."
+            : "Execution completed, verified, and recorded.",
+        targetIds: licenseTargets.map((item) => item.id),
       };
     });
     this.auditWorkflow(
@@ -499,6 +615,22 @@ export class OperationsService implements OnModuleInit {
       )
       .slice(-500)
       .reverse();
+  }
+
+  auditIntegrity(tenantId: string) {
+    let previousHash = "GENESIS";
+    for (const item of this.store
+      .snapshot()
+      .audit.filter((record) => record.tenantId === tenantId)
+      .sort((left, right) => left.sequence - right.sequence)) {
+      if (item.previousHash !== previousHash) return false;
+      const expected = createHash("sha256")
+        .update(previousHash + JSON.stringify({ ...item, hash: "" }))
+        .digest("hex");
+      if (item.hash !== expected) return false;
+      previousHash = item.hash;
+    }
+    return true;
   }
 
   simulateTick(tenantId: string, actorId: string, correlationId: string) {
@@ -567,5 +699,41 @@ export class OperationsService implements OnModuleInit {
       state: workflow.state,
       title: workflow.title,
     });
+    if (workflow.sourceFindingId) {
+      const activityType = {
+        "workflow.approved": "workflow_approved",
+        "workflow.rejected": "workflow_rejected",
+        "workflow.execution_started": "execution_started",
+        "workflow.execution_completed": "execution_completed",
+        "workflow.rolled_back": "workflow_rolled_back",
+      }[action] as
+        | "workflow_approved"
+        | "workflow_rejected"
+        | "execution_started"
+        | "execution_completed"
+        | "workflow_rolled_back"
+        | undefined;
+      if (activityType) {
+        this.store.mutate((state) => {
+          const findingCase = state.findingCases.find(
+            (item) =>
+              item.tenantId === workflow.tenantId &&
+              item.findingId === workflow.sourceFindingId,
+          );
+          if (!findingCase) return;
+          findingCase.status =
+            workflow.state === "draft" ? "remediation_draft" : workflow.state;
+          findingCase.updatedAt = new Date().toISOString();
+          findingCase.updatedBy = actorId;
+          findingCase.activity.push({
+            id: randomUUID(),
+            type: activityType,
+            actorId,
+            occurredAt: findingCase.updatedAt,
+            summary: `${action.replaceAll("_", " ")} · workflow ${workflow.id} · ${workflow.execution?.message ?? workflow.state}`,
+          });
+        });
+      }
+    }
   }
 }

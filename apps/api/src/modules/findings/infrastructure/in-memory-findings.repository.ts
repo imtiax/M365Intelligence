@@ -9,9 +9,9 @@ const TENANT = "00000000-0000-4000-8000-000000000001";
 
 const seed: Finding[] = [
   {
-    id: "fnd_mfa_coverage",
+    id: "FND-1042",
     tenantId: TENANT,
-    title: "45 users lack phishing-resistant MFA",
+    title: "Privileged identities lack phishing-resistant MFA",
     category: "identity",
     severity: "critical",
     riskScore: 96,
@@ -25,9 +25,9 @@ const seed: Finding[] = [
     evidenceAsOf: "2026-07-15T08:14:00Z",
   },
   {
-    id: "fnd_external_sharing",
+    id: "FND-1038",
     tenantId: TENANT,
-    title: "12 sites allow unmanaged external sharing",
+    title: "Unmanaged external sharing remains enabled",
     category: "data",
     severity: "high",
     riskScore: 82,
@@ -42,9 +42,9 @@ const seed: Finding[] = [
     evidenceAsOf: "2026-07-15T08:05:00Z",
   },
   {
-    id: "fnd_dormant_e5",
+    id: "FND-1029",
     tenantId: TENANT,
-    title: "87 E5 licenses show no qualifying activity",
+    title: "Dormant E5 assignments show no qualifying activity",
     category: "license",
     severity: "medium",
     riskScore: 58,
@@ -59,9 +59,9 @@ const seed: Finding[] = [
     evidenceAsOf: "2026-07-15T07:58:00Z",
   },
   {
-    id: "fnd_device_compliance",
+    id: "FND-1034",
     tenantId: TENANT,
-    title: "23 active users operate only noncompliant devices",
+    title: "Users operate exclusively from noncompliant devices",
     category: "device",
     severity: "high",
     riskScore: 79,
@@ -74,6 +74,39 @@ const seed: Finding[] = [
     status: "remediating",
     automation: { available: false, approvalRequired: true },
     evidenceAsOf: "2026-07-15T07:51:00Z",
+  },
+  {
+    id: "FND-1021",
+    tenantId: TENANT,
+    title: "Legacy authentication observed in production",
+    category: "identity",
+    severity: "high",
+    riskScore: 76,
+    confidence: 0.93,
+    impact: "Password spray and MFA bypass risk persists through legacy protocols.",
+    affectedCount: 31,
+    recommendation:
+      "Confirm application owners, migrate protocol usage, then block legacy authentication.",
+    status: "active",
+    automation: { available: true, approvalRequired: true },
+    evidenceAsOf: "2026-07-15T07:44:00Z",
+  },
+  {
+    id: "FND-1014",
+    tenantId: TENANT,
+    title: "Retention policy drift across regulated mailboxes",
+    category: "compliance",
+    severity: "medium",
+    riskScore: 63,
+    confidence: 0.96,
+    impact:
+      "Required correspondence may not be retained consistently for regulatory discovery.",
+    affectedCount: 64,
+    recommendation:
+      "Restore the approved seven-year retention assignment and validate preservation.",
+    status: "remediating",
+    automation: { available: true, approvalRequired: true },
+    evidenceAsOf: "2026-07-15T07:31:00Z",
   },
 ];
 

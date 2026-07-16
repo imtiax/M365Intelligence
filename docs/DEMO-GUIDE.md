@@ -4,7 +4,7 @@
 
 The local showcase represents Global Enterprise Holdings, a synthetic logistics, manufacturing, and financial-services multinational with 5,000 users across 25 countries and 28,900 normalized Microsoft 365 objects. Every person, alert, control result, cost, finding, connector state, report, and workflow action is fictional. The UI displays persistent demo labeling; do not remove it when presenting generated data as a product capability.
 
-No Microsoft 365 tenant, internet connection, or external model is required for the showcase. Buttons simulate safe presentation flows and never change Microsoft 365.
+No Microsoft 365 tenant, internet connection, or external model is required for the showcase. Local finding assignments, remediation workflows, approvals, deterministic execution results, audit records, exports, and rollbacks are real within the local runtime; they never change Microsoft 365.
 
 ## Start locally
 
@@ -53,7 +53,7 @@ Open `http://localhost:8080`.
 
 ## Reset behavior
 
-The showcase is deterministic and client-side. Refreshing clears temporary filters, drawers, previews, and notifications. Saved custom-report definitions, dashboard widgets, and theme preference persist in browser local storage so a presentation can continue after reload. Clear site data for `localhost:3008` to return those items to defaults. No client presentation action modifies Microsoft 365 or local infrastructure.
+The showcase is deterministic. Refreshing clears temporary filters, drawers, previews, and session-only outcomes. Finding cases, workflow drafts/transitions, audit activity, report jobs, and simulation state persist in the tenant-scoped local API; saved report definitions, dashboard widgets, safe configuration metadata, schedules, security policy, and theme preference persist in browser storage. Clear browser site data and use the simulation reset endpoint to return both layers to their baselines. No presentation action modifies Microsoft 365.
 
 ## Verification
 
@@ -66,8 +66,8 @@ npm.cmd run test:smoke
 npm.cmd run audit:controls
 ```
 
-The browser suite authenticates, visits all 23 workspaces, exercises the report and dashboard designers, shell controls, a governed workflow, administration tabs, configuration, persistence, and global search. The control audit inventories every visible button and input on every routed page.
+The browser suite authenticates, visits Command Center plus all 26 modules, exercises the cited finding workflow, reports and five operational exports, dashboard/report designers, shell controls, governed workflows, administration tabs, versioned configuration, persistence, and global search. The control audit inventories every visible button and input on every routed page.
 
 ## What is demonstrated versus integrated
 
-The showcase demonstrates intended workflows and presentation UX across the product. The API foundation, tenant boundary, local deployment assets, temporal schema, audit protections, health metrics, builds, and unit tests are executable. Live Microsoft Graph/workload collection, Entra production authentication, persistent workflow execution, ServiceNow delivery, and local model inference require the implementation phases and customer-specific credentials documented in `docs/roadmap.md`.
+The showcase demonstrates intended workflows and presentation UX across the product. The tenant boundary, local finding/workflow/report persistence, approval separation, rejection, rollback, audit protections, exports, health metrics, builds, and tests are executable. Live Microsoft Graph/workload collection and mutation, Entra production authentication, external notification/ServiceNow delivery, and live local-model inference require the implementation phases and customer-specific credentials documented in `docs/roadmap.md`.

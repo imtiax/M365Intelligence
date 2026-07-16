@@ -105,6 +105,63 @@ function Badge({
   return <span className={`studio-badge ${tone}`}>{children}</span>;
 }
 
+const LOCAL_STATE_SCHEMA_VERSION = 1 as const;
+
+type VersionedLocalState<T> = {
+  schemaVersion: typeof LOCAL_STATE_SCHEMA_VERSION;
+  version: number;
+  savedAt: string;
+  data: T;
+};
+
+function readVersionedLocalState<T>(
+  key: string,
+  isValidData: (value: unknown) => value is T,
+): VersionedLocalState<T> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<VersionedLocalState<unknown>>;
+    if (
+      parsed.schemaVersion !== LOCAL_STATE_SCHEMA_VERSION ||
+      typeof parsed.version !== "number" ||
+      !Number.isInteger(parsed.version) ||
+      parsed.version < 1 ||
+      typeof parsed.savedAt !== "string" ||
+      Number.isNaN(Date.parse(parsed.savedAt)) ||
+      !isValidData(parsed.data)
+    ) {
+      window.localStorage.removeItem(key);
+      return null;
+    }
+    return parsed as VersionedLocalState<T>;
+  } catch {
+    window.localStorage.removeItem(key);
+    return null;
+  }
+}
+
+function writeVersionedLocalState<T>(
+  key: string,
+  state: VersionedLocalState<T>,
+) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(state));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function formatLocalTimestamp(value: string | null) {
+  if (!value) return "Not saved in this browser";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
 function ReportBuilder({ notify }: { notify: (m: string) => void }) {
   const [sourceId, setSourceId] = useState("users");
   const source = semanticSources.find((s) => s.id === sourceId)!;
@@ -723,8 +780,116 @@ function ReportPreview({
   );
 }
 
+const REPORT_SCHEDULE_STORAGE_KEY = "aegis.customReport.schedule.v1";
+
+type ReportScheduleSettings = {
+  scheduleName: string;
+  frequency: string;
+  runDay: string;
+  runTime: string;
+  timeZone: string;
+  snapshot: string;
+  delivery: string;
+  recipients: string;
+  exportFormat: string;
+  retention: string;
+  encryption: string;
+};
+
+const DEFAULT_REPORT_SCHEDULE: ReportScheduleSettings = {
+  scheduleName: "Weekly privileged identity review",
+  frequency: "Weekly",
+  runDay: "Monday",
+  runTime: "08:00",
+  timeZone: "Asia/Dubai (UTC+04:00)",
+  snapshot: "Latest successful collection",
+  delivery: "Email and Microsoft Teams",
+  recipients: "Identity Operations; CISO Office",
+  exportFormat: "Encrypted Excel (.xlsx)",
+  retention: "90 days",
+  encryption: "Organization-managed encryption",
+};
+
+function isReportScheduleSettings(
+  value: unknown,
+): value is ReportScheduleSettings {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Record<string, unknown>;
+  return Object.keys(DEFAULT_REPORT_SCHEDULE).every(
+    (key) => typeof candidate[key] === "string",
+  );
+}
+
+function validateReportSchedule(settings: ReportScheduleSettings) {
+  const issues: string[] = [];
+  if (settings.scheduleName.trim().length < 3)
+    issues.push("Enter a schedule name.");
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(settings.runTime))
+    issues.push("Enter a valid 24-hour run time.");
+  if (
+    settings.delivery === "Email and Microsoft Teams" &&
+    !settings.recipients.trim()
+  )
+    issues.push("Enter at least one approved recipient.");
+  return issues;
+}
+
 function ScheduleDesigner({ notify }: { notify: (m: string) => void }) {
-  const [delivery, setDelivery] = useState("Email and Microsoft Teams");
+  const [settings, setSettings] = useState<ReportScheduleSettings>(
+    DEFAULT_REPORT_SCHEDULE,
+  );
+  const [version, setVersion] = useState(0);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    const restored = readVersionedLocalState(
+      REPORT_SCHEDULE_STORAGE_KEY,
+      isReportScheduleSettings,
+    );
+    if (!restored) return;
+    setSettings(restored.data);
+    setVersion(restored.version);
+    setSavedAt(restored.savedAt);
+  }, []);
+
+  const update = <K extends keyof ReportScheduleSettings>(
+    key: K,
+    value: ReportScheduleSettings[K],
+  ) => setSettings((current) => ({ ...current, [key]: value }));
+
+  const validateDelivery = () => {
+    const issues = validateReportSchedule(settings);
+    notify(
+      issues.length
+        ? `Schedule validation failed: ${issues.join(" ")}`
+        : "Schedule validation passed. Timing, recipients, and export policy are authorized.",
+    );
+    return issues.length === 0;
+  };
+
+  const activateSchedule = () => {
+    if (!validateDelivery()) return;
+    const nextVersion = version + 1;
+    const nextSavedAt = new Date().toISOString();
+    const saved = writeVersionedLocalState(REPORT_SCHEDULE_STORAGE_KEY, {
+      schemaVersion: LOCAL_STATE_SCHEMA_VERSION,
+      version: nextVersion,
+      savedAt: nextSavedAt,
+      // This payload contains presentation metadata only. No connector secret,
+      // credential, message content, or encryption key is stored in the browser.
+      data: { ...settings },
+    });
+    if (!saved) {
+      notify("Schedule activation failed because browser storage is unavailable.");
+      return;
+    }
+    setVersion(nextVersion);
+    setSavedAt(nextSavedAt);
+    notify(
+      `Report schedule activated using ${settings.delivery} as version ${nextVersion}.`,
+    );
+  };
+
   return (
     <div className="schedule-designer">
       <section>
@@ -740,11 +905,17 @@ function ScheduleDesigner({ notify }: { notify: (m: string) => void }) {
         <div className="form-grid">
           <label>
             Schedule name
-            <input defaultValue="Weekly privileged identity review" />
+            <input
+              value={settings.scheduleName}
+              onChange={(event) => update("scheduleName", event.target.value)}
+            />
           </label>
           <label>
             Frequency
-            <select>
+            <select
+              value={settings.frequency}
+              onChange={(event) => update("frequency", event.target.value)}
+            >
               <option>Weekly</option>
               <option>Daily</option>
               <option>Monthly</option>
@@ -753,7 +924,10 @@ function ScheduleDesigner({ notify }: { notify: (m: string) => void }) {
           </label>
           <label>
             Run day
-            <select>
+            <select
+              value={settings.runDay}
+              onChange={(event) => update("runDay", event.target.value)}
+            >
               <option>Monday</option>
               <option>Friday</option>
               <option>First business day</option>
@@ -761,11 +935,18 @@ function ScheduleDesigner({ notify }: { notify: (m: string) => void }) {
           </label>
           <label>
             Run time
-            <input type="time" defaultValue="08:00" />
+            <input
+              type="time"
+              value={settings.runTime}
+              onChange={(event) => update("runTime", event.target.value)}
+            />
           </label>
           <label>
             Time zone
-            <select>
+            <select
+              value={settings.timeZone}
+              onChange={(event) => update("timeZone", event.target.value)}
+            >
               <option>Asia/Dubai (UTC+04:00)</option>
               <option>UTC</option>
               <option>Europe/London</option>
@@ -773,7 +954,10 @@ function ScheduleDesigner({ notify }: { notify: (m: string) => void }) {
           </label>
           <label>
             Data snapshot
-            <select>
+            <select
+              value={settings.snapshot}
+              onChange={(event) => update("snapshot", event.target.value)}
+            >
               <option>Latest successful collection</option>
               <option>End of previous day</option>
               <option>Fixed historical date</option>
@@ -799,9 +983,9 @@ function ScheduleDesigner({ notify }: { notify: (m: string) => void }) {
             "ServiceNow attachment",
           ].map((x) => (
             <button
-              className={delivery === x ? "selected" : ""}
+              className={settings.delivery === x ? "selected" : ""}
               key={x}
-              onClick={() => setDelivery(x)}
+              onClick={() => update("delivery", x)}
             >
               <CheckmarkCircle24Regular />
               <span>
@@ -818,11 +1002,17 @@ function ScheduleDesigner({ notify }: { notify: (m: string) => void }) {
         <div className="form-grid">
           <label>
             Recipients
-            <input defaultValue="Identity Operations; CISO Office" />
+            <input
+              value={settings.recipients}
+              onChange={(event) => update("recipients", event.target.value)}
+            />
           </label>
           <label>
             Export format
-            <select>
+            <select
+              value={settings.exportFormat}
+              onChange={(event) => update("exportFormat", event.target.value)}
+            >
               <option>Encrypted Excel (.xlsx)</option>
               <option>PDF</option>
               <option>CSV</option>
@@ -831,7 +1021,10 @@ function ScheduleDesigner({ notify }: { notify: (m: string) => void }) {
           </label>
           <label>
             Retention
-            <select>
+            <select
+              value={settings.retention}
+              onChange={(event) => update("retention", event.target.value)}
+            >
               <option>90 days</option>
               <option>1 year</option>
               <option>7 years — compliance evidence</option>
@@ -839,7 +1032,10 @@ function ScheduleDesigner({ notify }: { notify: (m: string) => void }) {
           </label>
           <label>
             Password protection
-            <select>
+            <select
+              value={settings.encryption}
+              onChange={(event) => update("encryption", event.target.value)}
+            >
               <option>Organization-managed encryption</option>
               <option>One-time passphrase</option>
             </select>
@@ -847,19 +1043,15 @@ function ScheduleDesigner({ notify }: { notify: (m: string) => void }) {
         </div>
       </section>
       <div className="schedule-actions">
-        <Btn
-          onClick={() =>
-            notify(
-              "Schedule validation passed. Recipients and export policy are authorized.",
-            )
-          }
-        >
+        {savedAt && (
+          <small aria-live="polite">
+            Active · version {version} · {formatLocalTimestamp(savedAt)}
+          </small>
+        )}
+        <Btn onClick={validateDelivery}>
           Validate delivery
         </Btn>
-        <Btn
-          primary
-          onClick={() => notify(`Report schedule activated using ${delivery}.`)}
-        >
+        <Btn primary onClick={activateSchedule}>
           <CalendarClock24Regular /> Activate schedule
         </Btn>
       </div>
@@ -867,7 +1059,144 @@ function ScheduleDesigner({ notify }: { notify: (m: string) => void }) {
   );
 }
 
+const REPORT_ACCESS_STORAGE_KEY = "aegis.customReport.accessPolicy.v1";
+
+const REPORT_ACCESS_PRINCIPALS = [
+  {
+    principal: "Security Administrators",
+    access: "Edit",
+    scope: "All authorized tenant data",
+    export: "Allowed",
+  },
+  {
+    principal: "SOC Tier 1 Analysts",
+    access: "View",
+    scope: "Security and identity only",
+    export: "Denied",
+  },
+  {
+    principal: "CISO Office",
+    access: "View",
+    scope: "Executive aggregate",
+    export: "PDF only",
+  },
+  {
+    principal: "External Auditors",
+    access: "View",
+    scope: "Evidence snapshot",
+    export: "Watermarked",
+  },
+] as const;
+
+type ReportProtectionSettings = {
+  classification: string;
+  maskPersonalFields: boolean;
+  requireExportJustification: boolean;
+  blockExternalRecipients: boolean;
+  applyVisibleWatermark: boolean;
+};
+
+type StoredReportAccessPolicy = {
+  principals: Array<{
+    principal: string;
+    access: string;
+    scope: string;
+    export: string;
+  }>;
+  protection: ReportProtectionSettings;
+};
+
+const DEFAULT_REPORT_PROTECTION: ReportProtectionSettings = {
+  classification: "Confidential · Security",
+  maskPersonalFields: true,
+  requireExportJustification: true,
+  blockExternalRecipients: true,
+  applyVisibleWatermark: true,
+};
+
+function isStoredReportAccessPolicy(
+  value: unknown,
+): value is StoredReportAccessPolicy {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<StoredReportAccessPolicy>;
+  if (!Array.isArray(candidate.principals) || !candidate.protection) return false;
+  const protection = candidate.protection as unknown as Record<string, unknown>;
+  return (
+    typeof protection.classification === "string" &&
+    typeof protection.maskPersonalFields === "boolean" &&
+    typeof protection.requireExportJustification === "boolean" &&
+    typeof protection.blockExternalRecipients === "boolean" &&
+    typeof protection.applyVisibleWatermark === "boolean"
+  );
+}
+
 function ReportSecurity({ notify }: { notify: (m: string) => void }) {
+  const [protection, setProtection] = useState<ReportProtectionSettings>(
+    DEFAULT_REPORT_PROTECTION,
+  );
+  const [version, setVersion] = useState(0);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    const restored = readVersionedLocalState(
+      REPORT_ACCESS_STORAGE_KEY,
+      isStoredReportAccessPolicy,
+    );
+    if (!restored) return;
+    setProtection(restored.data.protection);
+    setVersion(restored.version);
+    setSavedAt(restored.savedAt);
+  }, []);
+
+  const updateProtection = <K extends keyof ReportProtectionSettings>(
+    key: K,
+    value: ReportProtectionSettings[K],
+  ) => setProtection((current) => ({ ...current, [key]: value }));
+
+  const simulatePersonas = () => {
+    const riskySettings = [
+      !protection.requireExportJustification && "export justification is off",
+      !protection.blockExternalRecipients && "external recipients are allowed",
+      !protection.applyVisibleWatermark && "watermarking is off",
+    ].filter(Boolean);
+    notify(
+      riskySettings.length
+        ? `Access simulation completed with ${riskySettings.length} advisor finding(s): ${riskySettings.join(
+            ", ",
+          )}.`
+        : `Access simulation passed for all ${REPORT_ACCESS_PRINCIPALS.length} configured personas.`,
+    );
+  };
+
+  const savePolicy = () => {
+    if (!protection.classification.trim()) {
+      notify("Security policy save failed: select a data classification.");
+      return;
+    }
+    const nextVersion = version + 1;
+    const nextSavedAt = new Date().toISOString();
+    const data: StoredReportAccessPolicy = {
+      principals: REPORT_ACCESS_PRINCIPALS.map((item) => ({ ...item })),
+      protection: { ...protection },
+    };
+    if (
+      !writeVersionedLocalState(REPORT_ACCESS_STORAGE_KEY, {
+        schemaVersion: LOCAL_STATE_SCHEMA_VERSION,
+        version: nextVersion,
+        savedAt: nextSavedAt,
+        // Principal names, access labels, and policy switches are demo metadata;
+        // report data and identity credentials are deliberately excluded.
+        data,
+      })
+    ) {
+      notify("Security policy save failed because browser storage is unavailable.");
+      return;
+    }
+    setVersion(nextVersion);
+    setSavedAt(nextSavedAt);
+    notify(`Local demo report-policy metadata saved as version ${nextVersion}; runtime authorization is enforced separately by the API.`);
+  };
+
   return (
     <div className="report-security">
       <section>
@@ -876,8 +1205,8 @@ function ReportSecurity({ notify }: { notify: (m: string) => void }) {
           <div>
             <h2>Report access policy</h2>
             <p>
-              Report visibility never expands the viewer’s underlying data
-              authorization.
+              Browser-persisted demo metadata for presentation design. Runtime
+              API authorization and export enforcement are separate production controls.
             </p>
           </div>
         </header>
@@ -889,28 +1218,17 @@ function ReportSecurity({ notify }: { notify: (m: string) => void }) {
             <span>Export</span>
             <span />
           </div>
-          {[
-            [
-              "Security Administrators",
-              "Edit",
-              "All authorized tenant data",
-              "Allowed",
-            ],
-            [
-              "SOC Tier 1 Analysts",
-              "View",
-              "Security and identity only",
-              "Denied",
-            ],
-            ["CISO Office", "View", "Executive aggregate", "PDF only"],
-            ["External Auditors", "View", "Evidence snapshot", "Watermarked"],
-          ].map((x) => (
-            <div key={x[0]}>
-              {x.map((v) => (
-                <span key={v}>{v}</span>
-              ))}
+          {REPORT_ACCESS_PRINCIPALS.map((rule) => (
+            <div key={rule.principal}>
+              <span>{rule.principal}</span>
+              <span>{rule.access}</span>
+              <span>{rule.scope}</span>
+              <span>{rule.export}</span>
               <button
-                onClick={() => notify(`${x[0]} access rule editor opened.`)}
+                aria-label={`Edit ${rule.principal} access rule`}
+                onClick={() =>
+                  notify(`${rule.principal} access rule editor opened.`)
+                }
               >
                 •••
               </button>
@@ -941,7 +1259,12 @@ function ReportSecurity({ notify }: { notify: (m: string) => void }) {
             <span>
               Classification<strong>Confidential · Security</strong>
             </span>
-            <select>
+            <select
+              value={protection.classification}
+              onChange={(event) =>
+                updateProtection("classification", event.target.value)
+              }
+            >
               <option>Confidential · Security</option>
               <option>Internal</option>
               <option>Restricted</option>
@@ -951,45 +1274,68 @@ function ReportSecurity({ notify }: { notify: (m: string) => void }) {
             <span>
               Mask personal fields<strong>Apply based on viewer role</strong>
             </span>
-            <input type="checkbox" defaultChecked />
+            <input
+              type="checkbox"
+              checked={protection.maskPersonalFields}
+              onChange={(event) =>
+                updateProtection("maskPersonalFields", event.target.checked)
+              }
+            />
           </label>
           <label>
             <span>
               Require export justification
               <strong>Captured in immutable audit</strong>
             </span>
-            <input type="checkbox" defaultChecked />
+            <input
+              type="checkbox"
+              checked={protection.requireExportJustification}
+              onChange={(event) =>
+                updateProtection(
+                  "requireExportJustification",
+                  event.target.checked,
+                )
+              }
+            />
           </label>
           <label>
             <span>
               Block external recipients
               <strong>Domain and guest validation</strong>
             </span>
-            <input type="checkbox" defaultChecked />
+            <input
+              type="checkbox"
+              checked={protection.blockExternalRecipients}
+              onChange={(event) =>
+                updateProtection("blockExternalRecipients", event.target.checked)
+              }
+            />
           </label>
           <label>
             <span>
               Apply visible watermark
               <strong>User, tenant, timestamp, classification</strong>
             </span>
-            <input type="checkbox" defaultChecked />
+            <input
+              type="checkbox"
+              checked={protection.applyVisibleWatermark}
+              onChange={(event) =>
+                updateProtection("applyVisibleWatermark", event.target.checked)
+              }
+            />
           </label>
         </div>
       </section>
       <div className="schedule-actions">
-        <Btn
-          onClick={() =>
-            notify("Access simulation passed for all four configured personas.")
-          }
-        >
+        {savedAt && (
+          <small aria-live="polite">
+            Saved · version {version} · {formatLocalTimestamp(savedAt)}
+          </small>
+        )}
+        <Btn onClick={simulatePersonas}>
           Simulate personas
         </Btn>
-        <Btn
-          primary
-          onClick={() =>
-            notify("Report access and data-protection policy saved.")
-          }
-        >
+        <Btn primary onClick={savePolicy}>
           Save security policy
         </Btn>
       </div>
@@ -1326,34 +1672,332 @@ function WidgetPreview({ type }: { type: string }) {
   );
 }
 
+const CONFIGURATION_STORAGE_KEY = "aegis.enterpriseConfiguration.v1";
+const BASE_CONFIGURATION_VERSION = 42;
+const SENSITIVE_CONFIGURATION_LABEL =
+  /password|client secret|access token|refresh token|private key|credential|connection string/i;
+const REQUIRED_CONFIGURATION_TOGGLES = new Set([
+  "Graph delta synchronization",
+  "Adaptive throttling",
+  "Raw payload minimization",
+  "Require MFA for administrators",
+  "Require phishing-resistant admin MFA",
+  "PostgreSQL row-level security",
+  "Field-level envelope encryption",
+  "Network egress denied",
+  "RBAC-filtered retrieval",
+  "Prompt and output filtering",
+  "Redact sensitive evidence",
+  "Delivery receipt audit",
+  "Mutual TLS",
+  "Signed webhook payloads",
+  "Immutable backup copy",
+  "Default-deny network policy",
+  "Signed-image admission",
+  "Tamper-evident audit chain",
+]);
+
+function createDefaultConfigurationState(): ConfigurationWorkspaceState {
+  return Object.fromEntries(
+    Object.entries(CONFIGURATION_DEFINITIONS).map(([id, definition]) => [
+      id,
+      {
+        fields: Object.fromEntries(
+          definition.fields.map(([label, value]) => [label, value]),
+        ),
+        toggles: Object.fromEntries(
+          definition.toggles.map(([label, , checked]) => [label, checked]),
+        ),
+      },
+    ]),
+  );
+}
+
+function sanitizeConfigurationSections(
+  sections: ConfigurationWorkspaceState,
+): ConfigurationWorkspaceState {
+  const defaults = createDefaultConfigurationState();
+  return Object.fromEntries(
+    Object.entries(CONFIGURATION_DEFINITIONS).map(([id, definition]) => {
+      const candidate = sections[id];
+      return [
+        id,
+        {
+          fields: Object.fromEntries(
+            definition.fields.map(([label]) => [
+              label,
+              SENSITIVE_CONFIGURATION_LABEL.test(label)
+                ? defaults[id].fields[label]
+                : typeof candidate?.fields[label] === "string"
+                  ? candidate.fields[label]
+                  : defaults[id].fields[label],
+            ]),
+          ),
+          toggles: Object.fromEntries(
+            definition.toggles.map(([label]) => [
+              label,
+              typeof candidate?.toggles[label] === "boolean"
+                ? candidate.toggles[label]
+                : defaults[id].toggles[label],
+            ]),
+          ),
+        },
+      ];
+    }),
+  );
+}
+
+function isStoredConfigurationWorkspace(
+  value: unknown,
+): value is StoredConfigurationWorkspace {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<StoredConfigurationWorkspace>;
+  if (
+    !candidate.sections ||
+    typeof candidate.sections !== "object" ||
+    typeof candidate.savedBy !== "string" ||
+    typeof candidate.lastSavedSection !== "string"
+  )
+    return false;
+  return Object.entries(CONFIGURATION_DEFINITIONS).every(([id, definition]) => {
+    const section = candidate.sections?.[id];
+    return Boolean(
+      section &&
+        definition.fields.every(
+          ([label]) => typeof section.fields?.[label] === "string",
+        ) &&
+        definition.toggles.every(
+          ([label]) => typeof section.toggles?.[label] === "boolean",
+        ),
+    );
+  });
+}
+
+function validateConfigurationSection(
+  id: string,
+  state: ConfigurationSectionState,
+) {
+  const errors: Record<string, string> = {};
+  for (const [label, , type] of CONFIGURATION_DEFINITIONS[id].fields) {
+    const value = state.fields[label]?.trim() ?? "";
+    if (!value) {
+      errors[label] = `${label} is required.`;
+      continue;
+    }
+    if (/^custom configuration/i.test(value)) {
+      errors[label] = "Select a concrete configuration value.";
+      continue;
+    }
+    if (type === "number" && (!Number.isFinite(Number(value)) || Number(value) < 0)) {
+      errors[label] = "Enter a valid non-negative number.";
+    }
+    if (
+      label === "Primary Microsoft tenant" &&
+      !/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/i.test(value)
+    )
+      errors[label] = "Enter a valid Microsoft tenant domain.";
+    if (label === "Application audience" && !value.startsWith("api://"))
+      errors[label] = "The audience must start with api://.";
+    if (label === "Inference endpoint") {
+      try {
+        const endpoint = new URL(value);
+        if (!["http:", "https:"].includes(endpoint.protocol))
+          errors[label] = "Use an HTTP or HTTPS endpoint.";
+      } catch {
+        errors[label] = "Enter a valid inference endpoint URL.";
+      }
+    }
+    if (label === "Email relay" && !/^[a-z0-9.-]+:\d{1,5}$/i.test(value))
+      errors[label] = "Enter the relay as host:port.";
+  }
+  for (const [label] of CONFIGURATION_DEFINITIONS[id].toggles) {
+    if (REQUIRED_CONFIGURATION_TOGGLES.has(label) && !state.toggles[label])
+      errors[label] = `${label} is mandatory for the validated security baseline.`;
+  }
+  return errors;
+}
+
 function Configuration({ notify }: { notify: (m: string) => void }) {
   const [active, setActive] = useState("tenant");
+  const [workspace, setWorkspace] = useState<ConfigurationWorkspaceState>(() =>
+    createDefaultConfigurationState(),
+  );
+  const [errors, setErrors] = useState<ConfigurationValidationErrors>({});
+  const [validatedAt, setValidatedAt] = useState<Record<string, string>>({});
+  const [hasValidatedAll, setHasValidatedAll] = useState(false);
+  const [version, setVersion] = useState(BASE_CONFIGURATION_VERSION);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
   const section = configurationSections.find((x) => x.id === active)!;
+  const totalControls = useMemo(
+    () =>
+      Object.values(CONFIGURATION_DEFINITIONS).reduce(
+        (count, definition) =>
+          count + definition.fields.length + definition.toggles.length,
+        0,
+      ),
+    [],
+  );
+  const errorCount = Object.values(errors).reduce(
+    (count, sectionErrors) => count + Object.keys(sectionErrors).length,
+    0,
+  );
+
+  useEffect(() => {
+    const restored = readVersionedLocalState(
+      CONFIGURATION_STORAGE_KEY,
+      isStoredConfigurationWorkspace,
+    );
+    if (!restored) return;
+    setWorkspace(sanitizeConfigurationSections(restored.data.sections));
+    setVersion(Math.max(BASE_CONFIGURATION_VERSION, restored.version));
+    setSavedAt(restored.savedAt);
+  }, []);
+
+  const validateOne = (id: string, announce = true) => {
+    const sectionErrors = validateConfigurationSection(id, workspace[id]);
+    setErrors((current) => ({ ...current, [id]: sectionErrors }));
+    setValidatedAt((current) => ({
+      ...current,
+      [id]: new Date().toISOString(),
+    }));
+    if (announce) {
+      const definition = CONFIGURATION_DEFINITIONS[id];
+      notify(
+        Object.keys(sectionErrors).length
+          ? `${definition.title} validation failed with ${Object.keys(sectionErrors).length} required-field issue(s).`
+          : `${definition.title} validation passed for ${definition.fields.length + definition.toggles.length} displayed controls.`,
+      );
+    }
+    return sectionErrors;
+  };
+
+  const validateAll = () => {
+    const allErrors: ConfigurationValidationErrors = {};
+    const validationTimes: Record<string, string> = {};
+    const now = new Date().toISOString();
+    Object.keys(CONFIGURATION_DEFINITIONS).forEach((id) => {
+      allErrors[id] = validateConfigurationSection(id, workspace[id]);
+      validationTimes[id] = now;
+    });
+    const failures = Object.values(allErrors).reduce(
+      (count, sectionErrors) => count + Object.keys(sectionErrors).length,
+      0,
+    );
+    setErrors(allErrors);
+    setValidatedAt(validationTimes);
+    setHasValidatedAll(true);
+    const firstInvalid = Object.keys(allErrors).find(
+      (id) => Object.keys(allErrors[id]).length,
+    );
+    if (firstInvalid) setActive(firstInvalid);
+    notify(
+      failures
+        ? `Configuration validation failed: ${failures} issue(s) require correction.`
+        : `Configuration validation completed: ${totalControls} displayed controls passed with 0 failures.`,
+    );
+  };
+
+  const saveChanges = () => {
+    const allErrors: ConfigurationValidationErrors = {};
+    const validationTimes: Record<string, string> = {};
+    const validated = new Date().toISOString();
+    Object.keys(CONFIGURATION_DEFINITIONS).forEach((id) => {
+      allErrors[id] = validateConfigurationSection(id, workspace[id]);
+      validationTimes[id] = validated;
+    });
+    const failures = Object.values(allErrors).reduce(
+      (count, sectionErrors) => count + Object.keys(sectionErrors).length,
+      0,
+    );
+    setErrors(allErrors);
+    setValidatedAt(validationTimes);
+    setHasValidatedAll(true);
+    if (failures) {
+      const firstInvalid = Object.keys(allErrors).find(
+        (id) => Object.keys(allErrors[id]).length,
+      );
+      if (firstInvalid) setActive(firstInvalid);
+      notify(
+        `Configuration was not saved. Correct all ${failures} cross-section validation issue(s) first.`,
+      );
+      return;
+    }
+    const nextVersion = version + 1;
+    const nextSavedAt = new Date().toISOString();
+    const safeSections = sanitizeConfigurationSections(workspace);
+    if (
+      !writeVersionedLocalState(CONFIGURATION_STORAGE_KEY, {
+        schemaVersion: LOCAL_STATE_SCHEMA_VERSION,
+        version: nextVersion,
+        savedAt: nextSavedAt,
+        data: {
+          sections: safeSections,
+          savedBy: "Local demo administrator",
+          lastSavedSection: active,
+        },
+      })
+    ) {
+      notify("Configuration save failed because browser storage is unavailable.");
+      return;
+    }
+    setWorkspace(safeSections);
+    setVersion(nextVersion);
+    setSavedAt(nextSavedAt);
+    notify(
+      `${section.name} configuration saved as version ${nextVersion} at ${formatLocalTimestamp(nextSavedAt)}.`,
+    );
+  };
+
+  const changeField = (label: string, value: string) => {
+    setWorkspace((current) => ({
+      ...current,
+      [active]: {
+        ...current[active],
+        fields: { ...current[active].fields, [label]: value },
+      },
+    }));
+    setErrors((current) => ({
+      ...current,
+      [active]: Object.fromEntries(
+        Object.entries(current[active] ?? {}).filter(([key]) => key !== label),
+      ),
+    }));
+  };
+
+  const changeToggle = (label: string, value: boolean) => {
+    setWorkspace((current) => ({
+      ...current,
+      [active]: {
+        ...current[active],
+        toggles: { ...current[active].toggles, [label]: value },
+      },
+    }));
+    setErrors((current) => ({
+      ...current,
+      [active]: Object.fromEntries(
+        Object.entries(current[active] ?? {}).filter(([key]) => key !== label),
+      ),
+    }));
+  };
+
   return (
     <>
       <Header
         path="PLATFORM / ENTERPRISE CONFIGURATION"
         title="Platform configuration"
-        description="Production-grade configuration for identity, collection, data, AI, integrations, resilience, and security."
+        description="Validated, browser-persisted demo metadata for identity, collection, data, AI, integrations, resilience, and security; it does not replace deployed control-plane enforcement."
       >
-        <Badge tone="gold">1 ADVISORY</Badge>
-        <Btn
-          onClick={() =>
-            notify(
-              "Configuration validation completed: 86 passed, 1 advisory, 0 failures.",
-            )
-          }
-        >
+        <Badge tone={errorCount ? "gold" : "teal"}>
+          {errorCount
+            ? `${errorCount} VALIDATION ISSUE${errorCount === 1 ? "" : "S"}`
+            : hasValidatedAll
+              ? "ALL DISPLAYED CONTROLS VALIDATED"
+              : "VALIDATION REQUIRED"}
+        </Badge>
+        <Btn onClick={validateAll}>
           <CheckmarkCircle24Regular /> Validate all
         </Btn>
-        <Btn
-          primary
-          onClick={() =>
-            notify(
-              `${section.name} configuration saved as a new audited version.`,
-            )
-          }
-        >
+        <Btn primary onClick={saveChanges}>
           <Save24Regular /> Save changes
         </Btn>
       </Header>
@@ -1361,8 +2005,16 @@ function Configuration({ notify }: { notify: (m: string) => void }) {
         <aside>
           <div className="config-health">
             <span>Configuration posture</span>
-            <strong>98%</strong>
-            <small>86 passed · 1 advisory</small>
+            <strong>
+              {hasValidatedAll
+                ? `${Math.round(((totalControls - errorCount) / totalControls) * 100)}%`
+                : "—"}
+            </strong>
+            <small>
+              {hasValidatedAll
+                ? `${totalControls - errorCount} passed · ${errorCount} failed`
+                : "Run validation to calculate"}
+            </small>
           </div>
           {configurationSections.map((s) => (
             <button
@@ -1390,9 +2042,19 @@ function Configuration({ notify }: { notify: (m: string) => void }) {
                 <p>{section.description}</p>
               </div>
             </div>
-            <Badge>CONFIGURATION VERSION 42</Badge>
+            <Badge>CONFIGURATION VERSION {version}</Badge>
           </header>
-          <ConfigPanel id={section.id} notify={notify} />
+          <ConfigPanel
+            id={section.id}
+            state={workspace[section.id]}
+            errors={errors[section.id] ?? {}}
+            validatedAt={validatedAt[section.id] ?? null}
+            version={version}
+            savedAt={savedAt}
+            onFieldChange={changeField}
+            onToggleChange={changeToggle}
+            onTest={() => validateOne(section.id)}
+          />
         </main>
       </div>
     </>
@@ -1419,23 +2081,15 @@ function ConfigIcon({ id }: { id: string }) {
                     : ShieldCheckmark24Regular;
   return <Icon />;
 }
-function ConfigPanel({
-  id,
-  notify,
-}: {
-  id: string;
-  notify: (m: string) => void;
-}) {
-  const configs: Record<
-    string,
-    {
-      title: string;
-      description: string;
-      fields: [string, string, string][];
-      toggles: [string, string, boolean][];
-      status: string;
-    }
-  > = {
+type ConfigurationDefinition = {
+  title: string;
+  description: string;
+  fields: [string, string, "text" | "number" | "select"][];
+  toggles: [string, string, boolean][];
+  status: string;
+};
+
+const CONFIGURATION_DEFINITIONS: Record<string, ConfigurationDefinition> = {
     tenant: {
       title: "Organization boundary",
       description:
@@ -1494,7 +2148,7 @@ function ConfigPanel({
         ["Identity provider", "Microsoft Entra ID (OIDC)", "select"],
         ["Application audience", "api://aegis-platform", "text"],
         ["Session lifetime", "8 hours", "select"],
-        ["Break-glass accounts", "2 configured", "number"],
+        ["Break-glass accounts", "2", "number"],
       ],
       toggles: [
         [
@@ -1552,7 +2206,7 @@ function ConfigPanel({
         ["Inference endpoint", "http://ollama:11434", "text"],
         ["Primary model", "Phi-4 · local quantized", "select"],
         ["Context window", "16,384 tokens", "select"],
-        ["Maximum response", "2,048 tokens", "number"],
+        ["Maximum response", "2048", "number"],
       ],
       toggles: [
         ["Network egress denied", "AI runtime cannot access internet", true],
@@ -1601,7 +2255,7 @@ function ConfigPanel({
       fields: [
         ["ITSM platform", "ServiceNow · Production", "select"],
         ["SIEM destination", "Microsoft Sentinel · local forwarder", "select"],
-        ["Webhook allow-list", "6 approved destinations", "number"],
+        ["Webhook allow-list", "6", "number"],
         ["Default timeout", "15 seconds", "select"],
       ],
       toggles: [
@@ -1665,21 +2319,62 @@ function ConfigPanel({
       ],
       status: "86 controls passing",
     },
-  };
-  const c = configs[id];
+};
+
+type ConfigurationSectionState = {
+  fields: Record<string, string>;
+  toggles: Record<string, boolean>;
+};
+
+type ConfigurationWorkspaceState = Record<string, ConfigurationSectionState>;
+type ConfigurationValidationErrors = Record<string, Record<string, string>>;
+type StoredConfigurationWorkspace = {
+  sections: ConfigurationWorkspaceState;
+  savedBy: string;
+  lastSavedSection: string;
+};
+
+function ConfigPanel({
+  id,
+  state,
+  errors,
+  validatedAt,
+  version,
+  savedAt,
+  onFieldChange,
+  onToggleChange,
+  onTest,
+}: {
+  id: string;
+  state: ConfigurationSectionState;
+  errors: Record<string, string>;
+  validatedAt: string | null;
+  version: number;
+  savedAt: string | null;
+  onFieldChange: (label: string, value: string) => void;
+  onToggleChange: (label: string, value: boolean) => void;
+  onTest: () => void;
+}) {
+  const c = CONFIGURATION_DEFINITIONS[id];
   return (
     <div className="config-panel">
       <div className="config-status">
         <div>
           <CheckmarkCircle24Regular />
           <span>
-            <strong>{c.status}</strong>
-            <small>Last validated 4 minutes ago</small>
+            <strong>
+              {Object.keys(errors).length
+                ? `${Object.keys(errors).length} validation issue(s)`
+                : c.status}
+            </strong>
+            <small>
+              {validatedAt
+                ? `Last validated ${formatLocalTimestamp(validatedAt)}`
+                : "Not validated in this session"}
+            </small>
           </span>
         </div>
-        <button
-          onClick={() => notify(`${c.title} validation passed in demo mode.`)}
-        >
+        <button onClick={onTest}>
           <Play24Regular /> Test configuration
         </button>
       </div>
@@ -1687,34 +2382,74 @@ function ConfigPanel({
         <h3>{c.title}</h3>
         <p>{c.description}</p>
         <div className="enterprise-form">
-          {c.fields.map(([label, value, type]) => (
-            <label key={label}>
-              {label}
-              {type === "select" ? (
-                <select defaultValue={value}>
-                  <option>{value}</option>
-                  <option>Custom configuration…</option>
-                </select>
-              ) : (
-                <input type={type} defaultValue={value} />
-              )}
-              <small>Configured through encrypted platform settings</small>
-            </label>
-          ))}
+          {c.fields.map(([label, defaultValue, type], index) => {
+            const errorId = `config-${id}-${index}-error`;
+            return (
+              <label key={label}>
+                {label}
+                {type === "select" ? (
+                  <select
+                    value={state.fields[label]}
+                    aria-invalid={Boolean(errors[label])}
+                    aria-describedby={errors[label] ? errorId : undefined}
+                    onChange={(event) =>
+                      onFieldChange(label, event.target.value)
+                    }
+                  >
+                    <option>{defaultValue}</option>
+                    <option>Custom configuration…</option>
+                  </select>
+                ) : (
+                  <input
+                    type={type}
+                    value={state.fields[label]}
+                    aria-invalid={Boolean(errors[label])}
+                    aria-describedby={errors[label] ? errorId : undefined}
+                    onChange={(event) =>
+                      onFieldChange(label, event.target.value)
+                    }
+                  />
+                )}
+                {errors[label] ? (
+                  <small id={errorId} role="alert" style={{ color: "#f0a0a0" }}>
+                    {errors[label]}
+                  </small>
+                ) : (
+                  <small>Required non-sensitive configuration metadata</small>
+                )}
+              </label>
+            );
+          })}
         </div>
       </section>
       <section>
         <h3>Security and behavior</h3>
         <div className="config-toggles">
-          {c.toggles.map(([title, description, checked]) => (
-            <label key={String(title)}>
-              <span>
-                <strong>{title}</strong>
-                <small>{description}</small>
-              </span>
-              <input type="checkbox" defaultChecked={Boolean(checked)} />
-            </label>
-          ))}
+          {c.toggles.map(([title, description], index) => {
+            const errorId = `config-${id}-toggle-${index}-error`;
+            return (
+              <label key={String(title)}>
+                <span>
+                  <strong>{title}</strong>
+                  <small>{description}</small>
+                  {errors[title] && (
+                    <small id={errorId} role="alert" style={{ color: "#f0a0a0" }}>
+                      {errors[title]}
+                    </small>
+                  )}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={state.toggles[title]}
+                  aria-invalid={Boolean(errors[title])}
+                  aria-describedby={errors[title] ? errorId : undefined}
+                  onChange={(event) =>
+                    onToggleChange(title, event.target.checked)
+                  }
+                />
+              </label>
+            );
+          })}
         </div>
       </section>
       <section>
@@ -1722,15 +2457,19 @@ function ConfigPanel({
         <div className="change-control">
           <span>
             <small>Current version</small>
-            <strong>42 · approved by Platform CAB</strong>
+            <strong>{version} · locally versioned configuration</strong>
           </span>
           <span>
             <small>Last changed</small>
-            <strong>Sarah Ibrahim · 14 Jul 16:42</strong>
+            <strong>{formatLocalTimestamp(savedAt)}</strong>
           </span>
           <span>
             <small>Rollback point</small>
-            <strong>Version 41 · available</strong>
+            <strong>
+              {version > BASE_CONFIGURATION_VERSION
+                ? `Version ${version - 1} · metadata retained`
+                : "No local rollback version yet"}
+            </strong>
           </span>
         </div>
       </section>

@@ -37,6 +37,7 @@ export type WorkflowState =
   | "draft"
   | "pending_approval"
   | "approved"
+  | "rejected"
   | "running"
   | "completed"
   | "failed"
@@ -50,10 +51,18 @@ export type Workflow = {
   targetScope: string;
   justification: string;
   requestedBy: string;
+  owner?: string;
   approver?: string;
+  decisions?: Array<{
+    actorId: string;
+    decision: "approved" | "rejected";
+    comment?: string;
+    occurredAt: string;
+  }>;
   state: WorkflowState;
   createdAt: string;
   updatedAt: string;
+  sourceFindingId?: string;
   steps: Array<{
     name: string;
     status: "pending" | "passed" | "failed";
@@ -63,8 +72,60 @@ export type Workflow = {
     affected: number;
     succeeded: number;
     failed: number;
+    skipped?: number;
     message: string;
+    targetIds?: string[];
   };
+  rollbackSnapshot?: Array<{
+    resourceId: string;
+    details: Record<string, string | number | boolean>;
+    updatedAt: string;
+  }>;
+};
+
+export type FindingCaseActivity = {
+  id: string;
+  type:
+    | "assigned"
+    | "reassigned"
+    | "remediation_drafted"
+    | "remediation_submitted"
+    | "workflow_approved"
+    | "workflow_rejected"
+    | "execution_started"
+    | "execution_completed"
+    | "workflow_rolled_back";
+  actorId: string;
+  occurredAt: string;
+  summary: string;
+};
+
+export type FindingCase = {
+  findingId: string;
+  tenantId: string;
+  status:
+    | "unassigned"
+    | "assigned"
+    | "remediation_draft"
+    | "pending_approval"
+    | "approved"
+    | "rejected"
+    | "running"
+    | "completed"
+    | "failed"
+    | "rolled_back";
+  assignee?: {
+    id: string;
+    displayName: string;
+    team: string;
+  };
+  priority?: "low" | "medium" | "high" | "urgent";
+  dueAt?: string;
+  note?: string;
+  remediationWorkflowId?: string;
+  updatedAt: string;
+  updatedBy: string;
+  activity: FindingCaseActivity[];
 };
 
 export type AuditRecord = {
@@ -96,6 +157,7 @@ export type RuntimeState = {
   resources: ResourceRecord[];
   reportJobs: ReportJob[];
   workflows: Workflow[];
+  findingCases: FindingCase[];
   audit: AuditRecord[];
   events: RuntimeEvent[];
 };

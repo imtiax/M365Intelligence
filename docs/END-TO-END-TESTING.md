@@ -93,7 +93,7 @@ $env:AEGIS_SMOKE_PASSWORD = '<password printed by auth:setup>'
 npm.cmd run test:smoke
 ```
 
-The browser suite logs in, visits all 23 modules, switches all ten admin dashboards, generates catalogue and custom reports through the API, validates result rows, downloads and validates PDF/Excel output, submits a governed workflow for independent approval, tests shell controls and administration, and captures screenshots under the ignored `apps/web/artifacts` directory.
+The browser suite logs in, visits Command Center plus all 26 modules, completes and reload-checks the dormant-E5 assignment/remediation flow, switches all ten admin dashboards, generates catalogue and custom reports through the API, validates result rows, downloads and validates report Excel/PDF plus five populated operational PDFs, creates persistent governed drafts, tests suite action outcomes, versioned configuration, shell controls and administration, and captures screenshots under the ignored `apps/web/artifacts` directory.
 
 Organization role and cross-persona workflow test:
 

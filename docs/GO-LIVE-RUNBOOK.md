@@ -34,8 +34,13 @@ The script validates:
 - Enterprise simulation counts and persistence.
 - All authenticated navigation modules and deep links.
 - Reports, populated results, valid SpreadsheetML Excel and PDF files.
+- Five operational exports with populated domain rows, KPIs, local-snapshot disclosure, and valid PDF headers.
 - Custom report design, preview, schedule, security, and save.
+- Finding assignment with owner, team, priority, future due date, note, reload persistence, and activity history.
+- Dormant-E5 exception review for leave, service-account, and legal-hold candidates before submission.
 - Governed request, independent approval, execution, rollback, and audit integrity.
+- Exact dormant-E5 outcome accounting: 87 evaluated, 67 reclaimed, and 20 documented exclusions in the deterministic acceptance dataset.
+- Rejection decisions and tenant-isolated real-time events.
 - Six API roles and six UI navigation personas.
 - Every visible control has an accessible name and is not silently disabled.
 - Public landing desktop/mobile rendering, local CTAs, hash targets, and product screenshots.
@@ -80,7 +85,8 @@ Any missing row above is a `NO-GO` for public production even when the demonstra
 - Reset synthetic data if a deterministic presentation baseline is required.
 - Select the customer scenario appropriate to the audience.
 - Generate one admin-center report and open both Excel and PDF outputs.
-- Complete one governed workflow across requester, approver, and executor personas.
+- Open finding `FND-1029`, assign it to FinOps, complete all three exception reviews, and submit the remediation.
+- Complete the linked workflow across requester, independent approver, and Microsoft 365 executor personas; verify 87 outcomes, the audit activity, and rollback.
 - Open Connection Center, Customer Portal, and Super Admin and explain the data boundary.
 - State clearly that screenshots, identities, events, entitlement, and Microsoft connectors are evaluation data.
 
@@ -92,3 +98,4 @@ Rollback immediately when authentication, tenant isolation, report integrity, au
 
 Retain the release commit, build logs, test JSON, SBOM, scan results, approvals, deployment timestamp, image digests, configuration hashes, database migration version, rollback result, and post-deployment observations according to the release evidence policy.
 
+The per-module behavior and integration boundaries accepted by this gate are recorded in [FUNCTIONAL-ACCEPTANCE-MATRIX.md](FUNCTIONAL-ACCEPTANCE-MATRIX.md).
