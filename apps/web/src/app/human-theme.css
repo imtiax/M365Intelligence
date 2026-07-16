@@ -997,3 +997,43 @@ body {
     animation-iteration-count: 1 !important;
   }
 }
+
+.session-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #f2f1ec;
+  color: #24313a;
+  font: 600 14px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+
+.session-loading .brand-mark {
+  color: #fff;
+}
+
+[data-guided-demo-target="true"] {
+  position: relative;
+  outline: 4px solid #b7791f !important;
+  outline-offset: 5px !important;
+  scroll-margin-block: 160px 300px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-guided-demo-target="true"] {
+    scroll-behavior: auto;
+  }
+}
+
+@media (forced-colors: active) {
+  [data-guided-demo-target="true"] {
+    outline-color: Highlight !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell .topbar > .runtime-live {
+    display: none;
+  }
+}

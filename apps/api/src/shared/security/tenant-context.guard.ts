@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { IS_PUBLIC } from './public.decorator';
-import type { PlatformRole } from './tenant-context';
+import type { DemoPersona, PlatformRole, SessionType } from './tenant-context';
 
 @Injectable()
 export class TenantContextGuard implements CanActivate {
@@ -35,17 +35,58 @@ export class TenantContextGuard implements CanActivate {
       if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) {
         throw new UnauthorizedException('The internal identity signature is invalid.');
       }
-      let identity: { tenantId?: unknown; actorId?: unknown; roles?: unknown; issuedAt?: unknown; nonce?: unknown };
+      let identity: {
+        tenantId?: unknown;
+        actorId?: unknown;
+        roles?: unknown;
+        issuedAt?: unknown;
+        nonce?: unknown;
+        sessionType?: unknown;
+        demoSessionId?: unknown;
+        demoPersona?: unknown;
+      };
       try { identity = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')); }
       catch { throw new UnauthorizedException('The internal identity payload is invalid.'); }
       const allowedRoles: PlatformRole[] = ['platform-admin', 'security-admin', 'm365-admin', 'auditor', 'report-admin', 'read-only'];
-      if (typeof identity.tenantId !== 'string' || typeof identity.actorId !== 'string' || !Array.isArray(identity.roles) || !identity.roles.length || !identity.roles.every((role) => allowedRoles.includes(role as PlatformRole)) || typeof identity.issuedAt !== 'number' || Math.abs(Date.now() - identity.issuedAt) > 60_000 || typeof identity.nonce !== 'string' || !/^[0-9a-f-]{36}$/i.test(identity.nonce)) {
+      const sessionType: SessionType = identity.sessionType === undefined
+        ? 'workforce'
+        : identity.sessionType as SessionType;
+      const allowedDemoPersonas: DemoPersona[] = [
+        'executive',
+        'security',
+        'operations',
+        'reporting',
+      ];
+      const publicDemoClaimsAreValid = sessionType !== 'public-demo' || (
+        typeof identity.demoSessionId === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identity.demoSessionId) &&
+        typeof identity.demoPersona === 'string' &&
+        allowedDemoPersonas.includes(identity.demoPersona as DemoPersona) &&
+        Array.isArray(identity.roles) &&
+        identity.roles.length === 1 &&
+        identity.roles[0] === 'read-only'
+      );
+      const workforceClaimsAreValid = sessionType !== 'workforce' || (
+        identity.demoSessionId === undefined && identity.demoPersona === undefined
+      );
+      if (typeof identity.tenantId !== 'string' || typeof identity.actorId !== 'string' || !Array.isArray(identity.roles) || !identity.roles.length || !identity.roles.every((role) => allowedRoles.includes(role as PlatformRole)) || !['workforce', 'public-demo'].includes(sessionType) || !publicDemoClaimsAreValid || !workforceClaimsAreValid || typeof identity.issuedAt !== 'number' || Math.abs(Date.now() - identity.issuedAt) > 60_000 || typeof identity.nonce !== 'string' || !/^[0-9a-f-]{36}$/i.test(identity.nonce)) {
         throw new UnauthorizedException('The internal identity claims are invalid or expired.');
       }
       for (const [nonce, expiresAt] of this.seenNonces) if (expiresAt < Date.now()) this.seenNonces.delete(nonce);
       if (this.seenNonces.has(identity.nonce)) throw new UnauthorizedException('The internal identity envelope has already been used.');
       this.seenNonces.set(identity.nonce, Date.now() + 60_000);
-      request.tenantContext = { tenantId: identity.tenantId, actorId: identity.actorId, roles: identity.roles as PlatformRole[] };
+      request.tenantContext = {
+        tenantId: identity.tenantId,
+        actorId: identity.actorId,
+        roles: identity.roles as PlatformRole[],
+        sessionType,
+        ...(sessionType === 'public-demo'
+          ? {
+              demoSessionId: identity.demoSessionId as string,
+              demoPersona: identity.demoPersona as DemoPersona,
+            }
+          : {}),
+      };
       return true;
     }
 
@@ -57,6 +98,7 @@ export class TenantContextGuard implements CanActivate {
         roles: String(request.headers['x-platform-roles'] ?? 'platform-admin')
           .split(',')
           .map((role) => role.trim() as PlatformRole),
+        sessionType: 'workforce',
       };
       return true;
     }

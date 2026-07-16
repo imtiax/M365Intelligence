@@ -75,6 +75,7 @@ import { adoption, auditActivities, reportCatalogue } from "@/data/suite";
 import { ProductStudio } from "@/components/ProductStudio";
 import { DemoModePanel, LiveCompliancePanel, LiveLicensePanel, LiveSecurityPanel, User360Workspace } from "@/components/EnterpriseDemo";
 import { CommercialWorkspaces } from "@/components/CommercialWorkspaces";
+import { GuidedDemo } from "@/components/GuidedDemo";
 import {
   exportReportExcel,
   exportReportPdf,
@@ -91,11 +92,13 @@ import {
   runRuntimeWorkflow,
   runtimeEventUrl,
   transitionRuntimeWorkflow,
+  setRuntimeSessionType,
   type RuntimeFindingCaseView,
   type RuntimeWorkflow,
 } from "@/lib/runtime-api";
 import { canOpenModule, canRunChanges } from "@/lib/access";
 import { roleLabels, type PlatformRole } from "@/lib/identity";
+import type { PublicDemoMode, PublicDemoPersona } from "@/lib/session";
 
 type Icon = ComponentType<{ className?: string }>;
 type NavItem = { label: string; icon: Icon; badge?: string };
@@ -155,6 +158,37 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   },
 ];
 const allNavigation = navGroups.flatMap((group) => group.items);
+const primaryTourAnchors: Record<string, string> = {
+  "Command center": "command-overview",
+  "Explorer 360": "explorer-profile",
+  Security: "security-incidents",
+  Identity: "identity-mfa",
+  Reporting: "reporting-dashboard",
+  "Custom reports": "report-builder",
+  Auditing: "audit-evidence",
+  "Usage analytics": "usage-adoption",
+  Compliance: "compliance-frameworks",
+  Licenses: "license-opportunity",
+  Management: "management-actions",
+  Automations: "automation-queue",
+  "Hybrid AD": "hybrid-health",
+  "Connection center": "connection-boundary",
+  "Dashboard designer": "dashboard-designer",
+  "Value center": "value-center",
+  "AI analyst": "ai-question",
+};
+type ShellIdentity = {
+  username: string;
+  name: string;
+  title: string;
+  tenantId: string;
+  roles: PlatformRole[];
+  sessionType: "workforce" | "public-demo";
+  demoSessionId?: string;
+  demoPersona?: PublicDemoPersona;
+  demoMode?: PublicDemoMode;
+  expiresAt?: number;
+};
 type ShellNotification = {
   id: string;
   title: string;
@@ -378,18 +412,22 @@ function CommandCenter({
   onFinding,
   onNavigate,
   notify,
+  publicDemo = false,
 }: {
   onFinding: (f: Finding) => void;
   onNavigate: (n: string) => void;
   notify: (message: string) => void;
+  publicDemo?: boolean;
 }) {
   return (
     <>
-      <DemoModePanel notify={notify} />
+      {!publicDemo && <DemoModePanel notify={notify} />}
       <PageHeader
         eyebrow="OVERVIEW / COMMAND CENTER"
-        title="Enterprise posture at a glance"
-        description="Prioritized intelligence across security, governance, compliance, cost, and operations."
+        title={publicDemo ? "Synthetic enterprise posture at a glance" : "Enterprise posture at a glance"}
+        description={publicDemo
+          ? "A complete, internally consistent sample tenant across security, governance, compliance, cost, and operations."
+          : "Prioritized intelligence across security, governance, compliance, cost, and operations."}
         actions={
           <>
             <span className="sync-state live">
@@ -2550,7 +2588,7 @@ function ActionDialog({
     owner: string,
   ) => Promise<string>;
 }) {
-  const [scope, setScope] = useState("Global Enterprise Holdings · Demo tenant");
+  const [scope, setScope] = useState("Northstar Example Group · Synthetic tenant");
   const [owner, setOwner] = useState("Alex Morgan");
   const [justification, setJustification] = useState(
     "First end-to-end acceptance execution of the governed product workflow.",
@@ -2577,7 +2615,7 @@ function ActionDialog({
             <label>
               Target scope
               <select value={scope} onChange={(e) => setScope(e.target.value)}>
-                <option>Global Enterprise Holdings · Demo tenant</option>
+                <option>Northstar Example Group · Synthetic tenant</option>
                 <option>Security Operations business unit</option>
                 <option>UAE regional scope</option>
               </select>
@@ -2909,7 +2947,8 @@ export default function Home() {
   const [lightTheme, setLightTheme] = useState(true);
   const [runtimeOnline, setRuntimeOnline] = useState(false);
   const [runtimeEvents, setRuntimeEvents] = useState(0);
-  const [identity, setIdentity] = useState<{ username: string; name: string; title: string; tenantId: string; roles: PlatformRole[] } | null>(null);
+  const [identity, setIdentity] = useState<ShellIdentity | null>(null);
+  const isPublicDemo = identity?.sessionType === "public-demo";
   const toastTimer = useRef<number | null>(null);
   const notify = (message: string) => {
     if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
@@ -2921,7 +2960,7 @@ export default function Home() {
   };
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
-    window.location.assign("/login");
+    window.location.assign(isPublicDemo ? "/landing/demo" : "/login");
   };
   const navigateTo = (label: string) => {
     setActive(label);
@@ -2933,13 +2972,21 @@ export default function Home() {
   useEffect(() => {
     fetch("/api/auth/me", { cache: "no-store" })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("Session unavailable")))
-      .then(setIdentity)
-      .catch(() => window.location.assign("/login"));
+      .then((nextIdentity: ShellIdentity) => {
+        setRuntimeSessionType(nextIdentity.sessionType);
+        setIdentity(nextIdentity);
+      })
+      .catch(() => window.location.assign(window.location.pathname.startsWith("/demo/") ? "/landing/demo" : "/login"));
   }, []);
   useEffect(() => {
     if (!finding) {
       setFindingCase(null);
       setFindingAction(null);
+      return;
+    }
+    if (isPublicDemo) {
+      setFindingCase(null);
+      setFindingCaseLoading(false);
       return;
     }
     let current = true;
@@ -2957,9 +3004,11 @@ export default function Home() {
     return () => {
       current = false;
     };
-  }, [finding?.id]);
+  }, [finding?.id, isPublicDemo]);
   const availableNavigation = useMemo(
-    () => identity ? allNavigation.filter((item) => canOpenModule(identity.roles, item.label)) : allNavigation.filter((item) => item.label === "Command center"),
+    () => identity
+      ? (identity.sessionType === "public-demo" ? allNavigation : allNavigation.filter((item) => canOpenModule(identity.roles, item.label)))
+      : allNavigation.filter((item) => item.label === "Command center"),
     [identity],
   );
   const visibleGroups = useMemo(
@@ -2967,7 +3016,7 @@ export default function Home() {
     [availableNavigation],
   );
   useEffect(() => {
-    if (identity && !canOpenModule(identity.roles, active)) setActive("Command center");
+    if (identity && identity.sessionType !== "public-demo" && !canOpenModule(identity.roles, active)) setActive("Command center");
   }, [identity, active]);
   useEffect(() => {
     const sync = () => {
@@ -2999,12 +3048,25 @@ export default function Home() {
     }
   }, []);
   useEffect(() => {
+    if (!identity) return;
+    if (identity.sessionType === "public-demo") {
+      let active = true;
+      fetch("/api/public-demo/bootstrap", { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error("Synthetic runtime unavailable")))
+        .then((body) => {
+          if (!active) return;
+          setRuntimeOnline(true);
+          setRuntimeEvents(Number(body?.summary?.evidenceEvents ?? body?.summary?.events ?? 24));
+        })
+        .catch(() => active && setRuntimeOnline(false));
+      return () => { active = false; };
+    }
     const stream = new EventSource(runtimeEventUrl());
     stream.onopen = () => setRuntimeOnline(true);
     stream.onmessage = () => setRuntimeEvents((count) => count + 1);
     stream.onerror = () => setRuntimeOnline(false);
     return () => stream.close();
-  }, []);
+  }, [identity]);
   const toggleTheme = () =>
     setLightTheme((value) => {
       const next = !value;
@@ -3118,9 +3180,19 @@ export default function Home() {
       case "Value center":
         return <ProductStudio page={active} notify={notify} />;
       default:
-        return <CommandCenter onFinding={setFinding} onNavigate={navigateTo} notify={notify} />;
+        return <CommandCenter onFinding={setFinding} onNavigate={navigateTo} notify={notify} publicDemo={isPublicDemo} />;
     }
-  }, [active, identity]);
+  }, [active, identity, isPublicDemo]);
+
+  if (!identity) {
+    return (
+      <main className="session-loading" aria-live="polite">
+        <span className="brand-mark"><ShieldCheckmark24Regular /></span>
+        <strong>Opening your secure workspace&hellip;</strong>
+      </main>
+    );
+  }
+
   return (
     <div
       className={`app-shell ${lightTheme ? "light-theme" : ""}`}
@@ -3161,8 +3233,8 @@ export default function Home() {
           <div className="local-badge">
             <CloudCheckmark24Regular />
             <span>
-              <strong>Sovereign demo</strong>
-              <small>All processing local</small>
+              <strong>{isPublicDemo ? "Public demo sandbox" : "Sovereign demo"}</strong>
+              <small>{isPublicDemo ? "Synthetic data only" : "All processing local"}</small>
             </span>
             <i />
           </div>
@@ -3181,11 +3253,11 @@ export default function Home() {
             className="tenant-switch"
             onClick={() => setTenantOpen((value) => !value)}
           >
-            <span className="tenant-avatar">{tenant.short}</span>
+            <span className="tenant-avatar">{isPublicDemo ? "NE" : tenant.short}</span>
             <span>
-              <strong>{tenant.name}</strong>
+              <strong>{isPublicDemo ? "Northstar Example Group" : tenant.name}</strong>
               <small>
-                {tenant.industry} · {tenant.region}
+                {isPublicDemo ? "Synthetic tenant · Isolated session" : `${tenant.industry} · ${tenant.region}`}
               </small>
             </span>
             <ChevronDown16Regular />
@@ -3194,10 +3266,10 @@ export default function Home() {
             <div className="topbar-popover tenant-popover">
               <strong>AUTHORIZED TENANTS</strong>
               <button className="selected" onClick={() => setTenantOpen(false)}>
-                <span className="tenant-avatar">AF</span>
+                <span className="tenant-avatar">NE</span>
                 <span>
-                  <b>Global Enterprise Holdings</b>
-                  <small>Primary · UAE North · Healthy</small>
+                  <b>Northstar Example Group</b>
+                  <small>{isPublicDemo ? "Synthetic · Session isolated · Healthy" : "Primary · UAE North · Healthy"}</small>
                 </span>
                 <CheckmarkCircle24Regular />
               </button>
@@ -3220,14 +3292,15 @@ export default function Home() {
                 onClick={() => {
                   setTenantOpen(false);
                   setAction({
-                    title: "Connect Microsoft 365 tenant",
-                    description:
-                      "Register tenant ownership, certificate identity, least-privilege consent, collection scope, and retention policy.",
+                    title: isPublicDemo ? "Preview Microsoft 365 connection" : "Connect Microsoft 365 tenant",
+                    description: isPublicDemo
+                      ? "Review the certificate-based, least-privilege connection workflow. Public demo sessions cannot authorize or contact a real tenant."
+                      : "Register tenant ownership, certificate identity, least-privilege consent, collection scope, and retention policy.",
                     kind: "configure",
                   });
                 }}
               >
-                + Connect another tenant
+                {isPublicDemo ? "+ Preview tenant connection" : "+ Connect another tenant"}
               </button>
             </div>
           )}
@@ -3283,7 +3356,7 @@ export default function Home() {
           >
             <i />
             {runtimeOnline
-              ? `Runtime live · ${runtimeEvents} events`
+              ? `${isPublicDemo ? "Synthetic runtime" : "Runtime live"} · ${runtimeEvents} events`
               : "Runtime offline"}
           </span>
           {identity && (
@@ -3360,19 +3433,37 @@ export default function Home() {
           )}
           <button
             className="profile"
-            title={`Sign out ${identity?.name ?? "current user"}`}
-            aria-label="Sign out"
+            title={`${isPublicDemo ? "Exit demo" : "Sign out"} ${identity?.name ?? "current user"}`}
+            aria-label={isPublicDemo ? "Exit public demo" : "Sign out"}
             onClick={logout}
           >
             {identity?.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() ?? "--"}
           </button>
         </header>
-        <section className="content presentation-content">
+        {isPublicDemo && identity.demoPersona && identity.demoMode && (
+          <GuidedDemo
+            identity={{
+              sessionType: identity.sessionType,
+              demoPersona: identity.demoPersona,
+              demoMode: identity.demoMode,
+              expiresAt: identity.expiresAt,
+              name: identity.name,
+            }}
+            activeModule={active}
+            onNavigate={navigateTo}
+            onNotify={notify}
+          />
+        )}
+        <section
+          className="content presentation-content"
+          data-tour-id={isPublicDemo ? primaryTourAnchors[active] : undefined}
+        >
           {page}
           <footer>
             <span>
-              <ShieldCheckmark24Regular /> Sovereign demonstration · Synthetic
-              data · No external processing
+              <ShieldCheckmark24Regular /> {isPublicDemo
+                ? "Public sandbox · Synthetic data · No connected tenant"
+                : "Sovereign demonstration · Synthetic data · No external processing"}
             </span>
             <span>Aegis M365 Platform · 360° Client Showcase 2026</span>
           </footer>
@@ -3383,7 +3474,7 @@ export default function Home() {
           finding={finding}
           caseView={findingCase}
           loading={findingCaseLoading}
-          canModify={!!identity && canRunChanges(identity.roles)}
+          canModify={!isPublicDemo && canRunChanges(identity.roles)}
           onClose={() => setFinding(null)}
           onAssign={() => setFindingAction("assign")}
           onRemediation={() => setFindingAction("remediation")}
@@ -3429,6 +3520,7 @@ export default function Home() {
             notify(message);
           }}
           onSaveDraft={async (selectedAction, scope, justification, owner) => {
+            if (isPublicDemo) return `${selectedAction.title} dry-run prepared for ${owner}. This synthetic preview is scoped to your browser session; no tenant state changed.`;
             if (!identity || !canRunChanges(identity.roles)) throw new Error("Your assigned organization role cannot create workflow drafts.");
             const workflow = await createRuntimeWorkflowDraft(
               selectedAction.title,
@@ -3440,6 +3532,7 @@ export default function Home() {
             return `${selectedAction.title} draft ${workflow.id} saved for ${owner}.`;
           }}
           onExecute={async (selectedAction, scope, justification, owner) => {
+            if (isPublicDemo) return `${selectedAction.title} approval preview completed for ${owner}. Public demo sessions cannot execute or persist tenant changes.`;
             if (!identity || !canRunChanges(identity.roles)) throw new Error("Your assigned organization role cannot submit change workflows.");
             const workflow = await runRuntimeWorkflow(
               selectedAction.title,

@@ -12,6 +12,11 @@ export async function GET(request: NextRequest) {
       title: session.title,
       tenantId: session.tenantId,
       roles: session.roles,
+      sessionType: session.sessionType,
+      demoSessionId: session.demoSessionId,
+      demoPersona: session.demoPersona,
+      demoMode: session.demoMode,
+      expiresAt: typeof session.exp === "number" ? session.exp * 1000 : undefined,
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

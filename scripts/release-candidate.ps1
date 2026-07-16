@@ -49,6 +49,7 @@ try {
   Invoke-ReleaseStep "UI role and deep-link matrix" { & npm.cmd --prefix apps\web run test:role-ui }
   Invoke-ReleaseStep "Control and accessibility inventory" { & npm.cmd --prefix apps\web run audit:controls }
   Invoke-ReleaseStep "Public landing and CTA validation" { & npm.cmd --prefix apps\web run test:landing }
+  Invoke-ReleaseStep "Public demo personas and isolation" { & npm.cmd --prefix apps\web run test:public-demo }
 } finally {
   $finishedAt = [DateTimeOffset]::UtcNow
   $failed = @($results | Where-Object status -eq "failed").Count
@@ -61,11 +62,10 @@ try {
     status = if ($failed -eq 0) { "passed" } else { "failed" }
     passed = @($results | Where-Object status -eq "passed").Count
     failed = $failed
-    scope = "local enterprise demonstration release candidate"
+    scope = "local enterprise and isolated public-demo release candidate"
     productionDecision = "See docs/GO-LIVE-RUNBOOK.md; external production gates are evaluated separately."
     steps = $results
   }
   $report | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $reportPath -Encoding utf8
   Write-Host "`nRelease evidence: $reportPath" -ForegroundColor Green
 }
-

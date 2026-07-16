@@ -2095,7 +2095,7 @@ const CONFIGURATION_DEFINITIONS: Record<string, ConfigurationDefinition> = {
       description:
         "Defines the sovereign tenant context used for collection, storage, policy, and authorization.",
       fields: [
-        ["Organization name", "Global Enterprise Holdings", "text"],
+        ["Organization name", "Northstar Example Group (synthetic)", "text"],
         ["Primary Microsoft tenant", "globalholdings.onmicrosoft.com", "text"],
         ["Data residency", "UAE North · Customer datacenter", "select"],
         ["Default time zone", "Asia/Dubai (UTC+04:00)", "select"],

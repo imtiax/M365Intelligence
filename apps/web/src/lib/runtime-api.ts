@@ -1,11 +1,80 @@
 import type { GeneratedReport } from "@/lib/reporting";
 
 const API = "/api/runtime";
+const PUBLIC_DEMO_API = "/api/public-demo";
+let runtimeSessionType: "workforce" | "public-demo" = "workforce";
+
+export function setRuntimeSessionType(sessionType: "workforce" | "public-demo") {
+  runtimeSessionType = sessionType;
+}
+
+function publicDemoReadPath(path: string): string | null {
+  const url = new URL(path, "http://aegis.local");
+  const exact: Record<string, string> = {
+    "/api/v1/admin-centers": "admin-centers",
+    "/api/v1/report-operations": "report-operations",
+    "/api/v1/workflows": "workflows",
+    "/api/v1/demo/overview": "overview",
+    "/api/v1/demo/users": "users",
+    "/api/v1/demo/security": "security",
+    "/api/v1/demo/licenses": "licenses",
+    "/api/v1/demo/compliance": "compliance",
+    "/api/v1/commercial/organization": "commercial-organization",
+    "/api/v1/commercial/subscription": "commercial-subscription",
+    "/api/v1/commercial/license": "commercial-license",
+    "/api/v1/commercial/connectors": "commercial-connectors",
+    "/api/v1/commercial/super-admin/customers": "commercial-customers",
+  };
+  const direct = exact[url.pathname];
+  if (direct) return `${PUBLIC_DEMO_API}/module/${direct}${url.search}`;
+  const user = url.pathname.match(/^\/api\/v1\/demo\/users\/([^/]+)$/);
+  if (user) return `${PUBLIC_DEMO_API}/module/${encodeURIComponent(`user-${decodeURIComponent(user[1])}`)}`;
+  return null;
+}
+
+async function publicDemoRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  let target: string | null = null;
+  let requestInit = init;
+  const method = (init?.method ?? "GET").toUpperCase();
+  if (method === "GET") target = publicDemoReadPath(path);
+  const scenario = path.match(/^\/api\/v1\/demo\/scenarios\/([^/]+)\/activate$/);
+  if (method === "POST" && scenario) {
+    target = `${PUBLIC_DEMO_API}/scenario`;
+    requestInit = { ...init, body: JSON.stringify({ scenario: decodeURIComponent(scenario[1]) }) };
+  }
+  if (method === "POST" && path === "/api/v1/demo/tick") {
+    target = `${PUBLIC_DEMO_API}/scenario`;
+    requestInit = { ...init, body: JSON.stringify({ action: "tick" }) };
+  }
+  if (method === "POST" && path === "/api/v1/simulation/reset") {
+    target = `${PUBLIC_DEMO_API}/reset`;
+    requestInit = { ...init, body: "{}" };
+  }
+  if (method === "POST" && path === "/api/v1/demo/ai") {
+    const body = typeof init?.body === "string" ? JSON.parse(init.body) as { question?: string } : {};
+    target = `${PUBLIC_DEMO_API}/report-preview`;
+    requestInit = { ...init, body: JSON.stringify({ kind: "ai", question: body.question ?? "Summarize the tenant posture" }) };
+  }
+  if (!target) {
+    throw new Error("This control is preview-only in the isolated public demo; no production or shared state was changed.");
+  }
+  const response = await fetch(target, {
+    ...requestInit,
+    headers: { "Content-Type": "application/json", ...(requestInit?.headers ?? {}) },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(Array.isArray(body.message) ? body.message.join(", ") : body.message || `Public demo request failed (${response.status})`);
+  }
+  return response.json() as Promise<T>;
+}
 
 async function request<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
+  if (runtimeSessionType === "public-demo") return publicDemoRequest<T>(path, init);
   const response = await fetch(`${API}${path}`, {
     ...init,
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
@@ -273,6 +342,9 @@ async function waitForRuntimeReport(job: RuntimeReportJob) {
 }
 
 export async function runRuntimeReportSchedule(scheduleId: string) {
+  if (runtimeSessionType === "public-demo") {
+    return runRuntimeReport(`Scheduled report preview ${scheduleId}`, "Governed reporting");
+  }
   const job = await request<RuntimeReportJob>(
     `/api/v1/report-schedules/${encodeURIComponent(scheduleId)}/run`,
     { method: "POST" },
@@ -281,6 +353,9 @@ export async function runRuntimeReportSchedule(scheduleId: string) {
 }
 
 export async function runRuntimeSavedReportView(viewId: string) {
+  if (runtimeSessionType === "public-demo") {
+    return runRuntimeReport(`Saved view preview ${viewId}`, "Governed reporting");
+  }
   const job = await request<RuntimeReportJob>(
     `/api/v1/report-views/${encodeURIComponent(viewId)}/run`,
     { method: "POST" },
@@ -294,6 +369,19 @@ export async function runRuntimeReport(
   columns?: string[],
   filters?: ReportFilter[],
 ): Promise<GeneratedReport> {
+  if (runtimeSessionType === "public-demo") {
+    const response = await fetch(`${PUBLIC_DEMO_API}/report-preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "report", name, workload, columns, filters }),
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(body.message || `Synthetic report preview failed (${response.status})`);
+    }
+    return response.json() as Promise<GeneratedReport>;
+  }
   let job = await request<RuntimeReportJob>("/api/v1/report-jobs", {
     method: "POST",
     body: JSON.stringify({ name, workload, columns, filters }),

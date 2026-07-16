@@ -5,7 +5,7 @@ export type Finding = {
   owner: string; evidence: string; framework: string[]; automation: boolean;
 };
 
-export const tenant = { name: 'Global Enterprise Holdings', short: 'GE', region: '25 countries', industry: 'Logistics · Manufacturing · Financial Services', users: 5000, demoDate: '16 Jul 2026' };
+export const tenant = { name: 'Northstar Example Group', short: 'NE', region: '25 countries', industry: 'Logistics · Manufacturing · Financial Services', users: 5000, demoDate: '16 Jul 2026' };
 
 export const findings: Finding[] = [
   { id:'FND-1042', title:'Privileged identities lack phishing-resistant MFA', category:'Identity', severity:'critical', riskScore:96, affected:45, impact:'Administrator accounts remain exposed to credential phishing and token theft.', recommendation:'Complete FIDO2 registration and enforce authentication strength through staged Conditional Access.', status:'Active', owner:'Identity Operations', evidence:'45 of 186 privileged identities do not meet the authentication-strength policy.', framework:['CIS 5.2','NIST PR.AA-02'], automation:true },
@@ -22,19 +22,19 @@ export const riskTrend = [
 ];
 
 export const securitySignals = [
-  {time:'09:42',type:'Impossible travel',entity:'n.almasi@globalholdings.com',source:'Entra ID Protection',severity:'High',state:'Investigating'},
+  {time:'09:42',type:'Impossible travel',entity:'n.almasi@northstar.example',source:'Entra ID Protection',severity:'High',state:'Investigating'},
   {time:'09:18',type:'Mass download',entity:'Project Falcon / Finance',source:'Defender for Cloud Apps',severity:'High',state:'Contained'},
-  {time:'08:54',type:'Role elevation',entity:'r.santos@globalholdings.com',source:'Entra PIM',severity:'Medium',state:'Approved'},
-  {time:'08:31',type:'Malicious inbox rule',entity:'l.chen@globalholdings.com',source:'Defender for Office 365',severity:'Critical',state:'Remediated'},
+  {time:'08:54',type:'Role elevation',entity:'r.santos@northstar.example',source:'Entra PIM',severity:'Medium',state:'Approved'},
+  {time:'08:31',type:'Malicious inbox rule',entity:'l.chen@northstar.example',source:'Defender for Office 365',severity:'Critical',state:'Remediated'},
   {time:'07:48',type:'Anonymous sharing link',entity:'M&A Data Room',source:'SharePoint Online',severity:'High',state:'Open'},
 ];
 
 export const identities = [
-  {name:'Nadia Almasi',upn:'n.almasi@globalholdings.com',department:'Private Banking',risk:'High',mfa:'FIDO2',activity:'3m ago',licenses:'E5 + Power BI'},
-  {name:'Robert Santos',upn:'r.santos@globalholdings.com',department:'Infrastructure',risk:'Medium',mfa:'Authenticator',activity:'12m ago',licenses:'E5'},
-  {name:'Li Chen',upn:'l.chen@globalholdings.com',department:'Treasury',risk:'High',mfa:'Authenticator',activity:'24m ago',licenses:'E5 + Visio'},
-  {name:'Amira Malik',upn:'a.malik@globalholdings.com',department:'Compliance',risk:'Low',mfa:'FIDO2',activity:'1h ago',licenses:'E5 + Power BI'},
-  {name:'James Wilson',upn:'j.wilson_ext@globalholdings.com',department:'External Audit',risk:'Medium',mfa:'SMS',activity:'2d ago',licenses:'Guest'},
+  {name:'Nadia Almasi',upn:'n.almasi@northstar.example',department:'Private Banking',risk:'High',mfa:'FIDO2',activity:'3m ago',licenses:'E5 + Power BI'},
+  {name:'Robert Santos',upn:'r.santos@northstar.example',department:'Infrastructure',risk:'Medium',mfa:'Authenticator',activity:'12m ago',licenses:'E5'},
+  {name:'Li Chen',upn:'l.chen@northstar.example',department:'Treasury',risk:'High',mfa:'Authenticator',activity:'24m ago',licenses:'E5 + Visio'},
+  {name:'Amira Malik',upn:'a.malik@northstar.example',department:'Compliance',risk:'Low',mfa:'FIDO2',activity:'1h ago',licenses:'E5 + Power BI'},
+  {name:'James Wilson',upn:'j.wilson_ext@northstar.example',department:'External Audit',risk:'Medium',mfa:'SMS',activity:'2d ago',licenses:'Guest'},
 ];
 
 export const departments = [

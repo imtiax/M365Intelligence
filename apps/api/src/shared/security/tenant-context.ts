@@ -6,10 +6,16 @@ export type PlatformRole =
   | 'report-admin'
   | 'read-only';
 
+export type SessionType = 'workforce' | 'public-demo';
+export type DemoPersona = 'executive' | 'security' | 'operations' | 'reporting';
+
 export interface TenantContext {
   tenantId: string;
   actorId: string;
   roles: PlatformRole[];
+  sessionType: SessionType;
+  demoSessionId?: string;
+  demoPersona?: DemoPersona;
 }
 
 declare global {
@@ -20,4 +26,3 @@ declare global {
     }
   }
 }
-

@@ -1298,7 +1298,7 @@ function ReportDrawer({
               <section>
                 <h3>Report scope</h3>
                 <div className="config-row">
-                  <span>Tenant<strong>Global Enterprise Holdings</strong></span>
+                  <span>Tenant<strong>Northstar Example Group (synthetic)</strong></span>
                   <span>Snapshot<strong>Current · {report.updated} old</strong></span>
                 </div>
               </section>

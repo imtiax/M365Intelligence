@@ -73,13 +73,13 @@ const generatedCatalogue: CatalogueReport[] = Array.from({length:937},(_,index)=
 export const reportCatalogue: CatalogueReport[] = [...customerReportTemplates, ...generatedCatalogue];
 
 export const auditActivities = [
-  {time:'10:42:18',workload:'Entra ID',activity:'Add member to role',actor:'s.ibrahim@globalholdings.com',target:'Exchange Administrator',result:'Success',risk:'High',location:'Dubai, AE'},
-  {time:'10:39:04',workload:'Exchange',activity:'New-InboxRule',actor:'l.chen@globalholdings.com',target:'Forward Treasury Alerts',result:'Success',risk:'Critical',location:'Singapore, SG'},
-  {time:'10:35:51',workload:'SharePoint',activity:'AnonymousLinkCreated',actor:'n.almasi@globalholdings.com',target:'Project Falcon / Forecast.xlsx',result:'Success',risk:'High',location:'Dubai, AE'},
-  {time:'10:28:12',workload:'Teams',activity:'MemberAdded',actor:'r.santos@globalholdings.com',target:'Infrastructure CAB',result:'Success',risk:'Low',location:'London, GB'},
-  {time:'10:22:46',workload:'Intune',activity:'CompliancePolicyUpdated',actor:'d.okafor@globalholdings.com',target:'Windows Regulated Baseline',result:'Success',risk:'Medium',location:'Abu Dhabi, AE'},
+  {time:'10:42:18',workload:'Entra ID',activity:'Add member to role',actor:'s.ibrahim@northstar.example',target:'Exchange Administrator',result:'Success',risk:'High',location:'Dubai, AE'},
+  {time:'10:39:04',workload:'Exchange',activity:'New-InboxRule',actor:'l.chen@northstar.example',target:'Forward Treasury Alerts',result:'Success',risk:'Critical',location:'Singapore, SG'},
+  {time:'10:35:51',workload:'SharePoint',activity:'AnonymousLinkCreated',actor:'n.almasi@northstar.example',target:'Project Falcon / Forecast.xlsx',result:'Success',risk:'High',location:'Dubai, AE'},
+  {time:'10:28:12',workload:'Teams',activity:'MemberAdded',actor:'r.santos@northstar.example',target:'Infrastructure CAB',result:'Success',risk:'Low',location:'London, GB'},
+  {time:'10:22:46',workload:'Intune',activity:'CompliancePolicyUpdated',actor:'d.okafor@northstar.example',target:'Windows Regulated Baseline',result:'Success',risk:'Medium',location:'Abu Dhabi, AE'},
   {time:'10:14:33',workload:'Purview',activity:'DLPRuleMatch',actor:'system',target:'Customer PII / OneDrive',result:'Blocked',risk:'High',location:'Workload'},
-  {time:'10:07:19',workload:'Entra ID',activity:'UserLoginFailed',actor:'j.wilson_ext@globalholdings.com',target:'Azure Portal',result:'Failure',risk:'Medium',location:'Frankfurt, DE'},
+  {time:'10:07:19',workload:'Entra ID',activity:'UserLoginFailed',actor:'j.wilson_ext@northstar.example',target:'Azure Portal',result:'Failure',risk:'Medium',location:'Frankfurt, DE'},
   {time:'09:58:44',workload:'Exchange',activity:'Set-Mailbox',actor:'workflow-engine',target:'USR-108821',result:'Approved',risk:'Low',location:'Workload'},
 ];
 

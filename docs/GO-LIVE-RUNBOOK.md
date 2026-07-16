@@ -1,15 +1,19 @@
 # Aegis M365 Go-Live Runbook
 
 Status: release-candidate operating procedure  
-Last updated: 2026-07-16
+Last updated: 2026-07-17
 
 ## Release decisions
 
-Aegis has two independent release decisions.
+Aegis has three independent release decisions.
 
 ### Client demonstration
 
 The local enterprise demonstration may be declared ready when the automated release-candidate suite passes. It uses synthetic data, local identities, an evaluation entitlement, and simulated Microsoft 365 integrations that are explicitly labelled.
+
+### Public synthetic demo
+
+The persona-led public demo may be deployed only to a dedicated, internet-hardened environment after its launcher, all four personas, session isolation, reset, expiry, read-only API boundary, abuse controls, and synthetic-data provenance are evidenced. It must contain no Microsoft Graph credential, customer secret, customer data, or route to a customer data plane. The detailed contract is in [PUBLIC-DEMO.md](PUBLIC-DEMO.md).
 
 ### Public production service
 
@@ -44,6 +48,7 @@ The script validates:
 - Six API roles and six UI navigation personas.
 - Every visible control has an accessible name and is not silently disabled.
 - Public landing desktop/mobile rendering, local CTAs, hash targets, and product screenshots.
+- Public-demo launcher, four persona sessions, bounded identity claims, broad module bootstrap, report preview, mutation denial, per-session reset/isolation, logout, and expiry-friendly routing.
 
 Machine-readable evidence is written to `artifacts/release-candidate.json`.
 
@@ -77,10 +82,28 @@ Machine-readable evidence is written to `artifacts/release-candidate.json`.
 
 Any missing row above is a `NO-GO` for public production even when the demonstration suite passes.
 
+## Required public-demo evidence
+
+The public synthetic demo has a narrower data scope than the commercial product, but it is still an internet-facing service. Before exposure, retain evidence for:
+
+| Gate | Required evidence |
+|---|---|
+| Deployment isolation | Separate compute, network, state, secrets, queues, logs, backups, and observability labels from customer/workforce environments |
+| Synthetic provenance | Seed manifest uses only `.example` identities and contains no customer-derived sample or export |
+| No connector secrets | `M365_GRAPH_ENABLED=false`; no tenant ID, client ID, certificate, managed identity, OAuth token, mail/Teams credential, or customer secret in the deployment |
+| Session isolation | Unique short-lived session IDs; scenario/reset tests prove no cross-session state change |
+| Mutation boundary | Ordinary runtime mutations return `403 public_demo_boundary`; delivery and connector operations remain previews |
+| Edge abuse protection | TLS, WAF/bot controls, distributed start/API rate limits, body limits, no-cache, noindex, and alerting |
+| Expiry and reset | Thirty-minute expiry, logout invalidation, deterministic per-session reset, and recovery to the public launcher |
+| Security review | Dependency/container/secret scans plus independent review of BFF signing, session claims, and tenant boundaries |
+
+Any missing public-demo gate is a `NO-GO` for the public URL. It does not block a private local client demonstration.
+
 ## Demo opening checklist
 
 - Start the acceptance environment and confirm ports 3008 and 3001.
 - Open `/landing` in a private browser and validate all public CTAs.
+- Open `/landing/demo`, start one guided persona, confirm the synthetic-data boundary, reset it, and verify logout returns to a public entry route.
 - Sign in as the platform administrator and confirm the runtime badge is online.
 - Reset synthetic data if a deterministic presentation baseline is required.
 - Select the customer scenario appropriate to the audience.

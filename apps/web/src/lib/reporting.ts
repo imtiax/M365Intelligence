@@ -34,7 +34,7 @@ const templates: Record<string, Template> = {
     rows: [
       [
         "Nadia Almasi",
-        "n.almasi@globalholdings.com",
+        "n.almasi@northstar.example",
         "Private Banking",
         "Enabled",
         "FIDO2",
@@ -43,7 +43,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Robert Santos",
-        "r.santos@globalholdings.com",
+        "r.santos@northstar.example",
         "Infrastructure",
         "Enabled",
         "Authenticator",
@@ -52,7 +52,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Li Chen",
-        "l.chen@globalholdings.com",
+        "l.chen@northstar.example",
         "Treasury",
         "Enabled",
         "Authenticator",
@@ -61,7 +61,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Amira Malik",
-        "a.malik@globalholdings.com",
+        "a.malik@northstar.example",
         "Compliance",
         "Enabled",
         "FIDO2",
@@ -70,7 +70,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "James Wilson",
-        "j.wilson_ext@globalholdings.com",
+        "j.wilson_ext@northstar.example",
         "External Audit",
         "Enabled",
         "SMS",
@@ -79,7 +79,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Sara Ibrahim",
-        "s.ibrahim@globalholdings.com",
+        "s.ibrahim@northstar.example",
         "Security",
         "Enabled",
         "FIDO2",
@@ -88,7 +88,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "David Okafor",
-        "d.okafor@globalholdings.com",
+        "d.okafor@northstar.example",
         "Endpoint",
         "Enabled",
         "Authenticator",
@@ -97,7 +97,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Elena Rossi",
-        "e.rossi@globalholdings.com",
+        "e.rossi@northstar.example",
         "Finance",
         "Disabled",
         "None",
@@ -137,7 +137,7 @@ const templates: Record<string, Template> = {
     ],
     rows: [
       [
-        "treasury.ops@globalholdings.com",
+        "treasury.ops@northstar.example",
         "Shared",
         "Treasury",
         "87.4 GB",
@@ -147,7 +147,7 @@ const templates: Record<string, Template> = {
         "Review",
       ],
       [
-        "n.almasi@globalholdings.com",
+        "n.almasi@northstar.example",
         "User",
         "Private Banking",
         "42.8 GB",
@@ -157,7 +157,7 @@ const templates: Record<string, Template> = {
         "Healthy",
       ],
       [
-        "board@globalholdings.com",
+        "board@northstar.example",
         "Shared",
         "Executive",
         "61.2 GB",
@@ -167,7 +167,7 @@ const templates: Record<string, Template> = {
         "Review",
       ],
       [
-        "r.santos@globalholdings.com",
+        "r.santos@northstar.example",
         "User",
         "Infrastructure",
         "18.9 GB",
@@ -177,7 +177,7 @@ const templates: Record<string, Template> = {
         "Healthy",
       ],
       [
-        "client.notices@globalholdings.com",
+        "client.notices@northstar.example",
         "Shared",
         "Operations",
         "49.1 GB",
@@ -187,7 +187,7 @@ const templates: Record<string, Template> = {
         "High risk",
       ],
       [
-        "a.malik@globalholdings.com",
+        "a.malik@northstar.example",
         "User",
         "Compliance",
         "24.6 GB",
@@ -197,7 +197,7 @@ const templates: Record<string, Template> = {
         "Healthy",
       ],
       [
-        "legacy.fx@globalholdings.com",
+        "legacy.fx@northstar.example",
         "Shared",
         "Treasury",
         "96.7 GB",
@@ -207,7 +207,7 @@ const templates: Record<string, Template> = {
         "Quota risk",
       ],
       [
-        "investigations@globalholdings.com",
+        "investigations@northstar.example",
         "Shared",
         "Security",
         "38.3 GB",
@@ -810,7 +810,7 @@ const templates: Record<string, Template> = {
     rows: [
       [
         "AEG-AADCONNECT-01",
-        "globalholdings.com",
+        "northstar.example",
         "Entra Connect",
         "Healthy",
         "0",
@@ -819,7 +819,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "AEG-AADCONNECT-02",
-        "globalholdings.com",
+        "northstar.example",
         "Staging",
         "Ready",
         "0",
@@ -828,7 +828,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "CN=Legacy Traders",
-        "emea.globalholdings.com",
+        "emea.northstar.example",
         "OU",
         "Attention",
         "18",
@@ -837,7 +837,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "DXB-DC-01",
-        "globalholdings.com",
+        "northstar.example",
         "Domain controller",
         "Healthy",
         "0",
@@ -846,7 +846,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "LON-DC-03",
-        "emea.globalholdings.com",
+        "emea.northstar.example",
         "Domain controller",
         "Warning",
         "4",
@@ -855,7 +855,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Sync rule 118",
-        "globalholdings.com",
+        "northstar.example",
         "Inbound rule",
         "Error",
         "23",
@@ -864,7 +864,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Privileged Accounts",
-        "globalholdings.com",
+        "northstar.example",
         "Group",
         "Review",
         "18",
@@ -973,7 +973,7 @@ function xml(value: string) {
 export function exportReportExcel(report: GeneratedReport) {
   const rows = [
     [report.name],
-    [`Tenant: Global Enterprise Holdings`],
+    [`Tenant: Northstar Example Group (synthetic)`],
     [`Generated: ${report.generatedAt}`],
     [],
     ["Metric", "Value", "Detail"],
@@ -1031,7 +1031,7 @@ export async function exportReportPdf(report: GeneratedReport) {
       color: rgb(1, 1, 1),
     });
     page.drawText(
-      `Global Enterprise Holdings | ${ascii(report.workload)} | ${ascii(report.generatedAt)}`,
+      `Northstar Example Group (synthetic) | ${ascii(report.workload)} | ${ascii(report.generatedAt)}`,
       {
         x: margin,
         y: pageHeight - 55,

@@ -1,5 +1,7 @@
 import Image from "next/image";
 
+export const dynamic = "force-dynamic";
+
 const capabilities = [
   ["01", "Explorer 360", "Connect identity, device, mailbox, collaboration, license, and risk context for every user."],
   ["02", "Security operations", "Prioritize incidents and risky identities, then route remediation through controlled approval."],
@@ -30,6 +32,7 @@ function Mark() {
 }
 
 export default function LandingPage() {
+  const publicDemoEnabled = process.env.AEGIS_PUBLIC_DEMO_ENABLED === "true";
   return (
     <main className="landing-page">
       <header className="landing-nav">
@@ -37,7 +40,7 @@ export default function LandingPage() {
         <nav aria-label="Main navigation">
           <a href="#platform">Platform</a><a href="#industries">Industries</a><a href="#difference">Why Aegis</a><a href="#security">Security</a>
         </nav>
-        <div className="landing-nav-actions"><a className="nav-signin" href="/login">Sign in</a><a className="landing-button small" href="#demo">Request a demo <span>↗</span></a></div>
+        <div className="landing-nav-actions"><a className="nav-signin" href="/login">Sign in</a><a className="landing-button small" href={publicDemoEnabled ? "/landing/demo" : "#demo"}>{publicDemoEnabled ? "Open live demo" : "Request a demo"} <span>{publicDemoEnabled ? "→" : "↗"}</span></a></div>
       </header>
 
       <section className="landing-hero" id="top">
@@ -46,12 +49,12 @@ export default function LandingPage() {
           <p className="landing-eyebrow"><i /> MICROSOFT 365 · SECURITY · GOVERNANCE · FINOPS</p>
           <h1>Turn Microsoft 365 signals into <em>governed action.</em></h1>
           <p className="hero-intro">A single intelligence and operations platform for teams that must secure the tenant, prove compliance, control cost, and act with confidence.</p>
-          <div className="hero-actions"><a className="landing-button" href="/login">Explore the platform <span>→</span></a><a className="landing-button ghost" href="#product-tour">See the product <span>↓</span></a></div>
+          <div className="hero-actions"><a className="landing-button" href={publicDemoEnabled ? "/landing/demo" : "/login"}>{publicDemoEnabled ? "Explore the live demo" : "Explore the platform"} <span>→</span></a><a className="landing-button ghost" href="#product-tour">See the product <span>↓</span></a></div>
           <p className="hero-proof"><span>✓ Fully local deployment</span><span>✓ Customer-controlled data</span><span>✓ Audit-ready</span></p>
         </div>
         <div className="hero-product">
           <div className="product-window">
-            <div className="window-bar"><span><i /><i /><i /></span><small>GLOBAL ENTERPRISE HOLDINGS · GOVERNED DEMO</small><b>LIVE</b></div>
+            <div className="window-bar"><span><i /><i /><i /></span><small>AEGIS DEMO ENTERPRISE · SYNTHETIC SANDBOX</small><b>DEMO</b></div>
             <Image src="/landing/admin-center-dashboard.png?v=warm-slate" width={1580} height={1000} priority alt="Aegis Microsoft 365 report center showing a unified Hybrid Active Directory dashboard" />
           </div>
           <div className="floating-proof"><b>10</b><span>connected<br />admin centers</span></div>
@@ -103,9 +106,9 @@ export default function LandingPage() {
 
       <section className="operating-flow" aria-label="Aegis operating workflow"><span>COLLECT</span><i>→</i><span>NORMALIZE</span><i>→</i><span>ANALYZE</span><i>→</i><span>APPROVE</span><i>→</i><span>ACT</span><i>→</i><span>PROVE</span></section>
 
-      <section className="landing-cta" id="demo"><p className="landing-eyebrow">READY FOR A CONTROLLED PILOT?</p><h2>Register. Deploy locally.<br />Keep control of your data.</h2><p>Request access for your organization and receive the deployment package and setup guidance for your customer-controlled environment.</p><div><a className="landing-button light" href="https://github.com/sherazahmad24/M365Intelligence/issues/new?title=Aegis%20M365%20licensed%20deployment%20request" target="_blank" rel="noreferrer">Request deployment access <span>↗</span></a><a className="landing-button outline-light" href="/login">Open secure sign in <span>→</span></a></div><small>Distribution should be provided under an organization license. Demo screenshots and metrics use synthetic data. Live Microsoft 365 connectivity requires authorized tenant configuration.</small></section>
+      <section className="landing-cta" id="demo"><p className="landing-eyebrow">READY FOR A CONTROLLED PILOT?</p><h2>Try the complete product.<br />Then deploy it locally.</h2><p>{publicDemoEnabled ? "Explore a populated, short-lived synthetic tenant now. When you are ready, request the deployment package and setup guidance for your customer-controlled environment." : "Request the deployment package and setup guidance for a controlled evaluation inside your customer-managed environment."}</p><div>{publicDemoEnabled && <a className="landing-button light" href="/landing/demo">Launch public demo <span>→</span></a>}<a className={publicDemoEnabled ? "landing-button outline-light" : "landing-button light"} href="https://github.com/sherazahmad24/M365Intelligence/issues/new?title=Aegis%20M365%20licensed%20deployment%20request" target="_blank" rel="noreferrer">Request deployment access <span>↗</span></a></div><small>The public demo uses synthetic data and cannot connect to Microsoft 365. Licensed deployments run inside the customer-controlled boundary; live connectivity requires authorized tenant configuration.</small></section>
 
-      <footer className="landing-footer"><a className="landing-brand" href="#top"><Mark /><span><strong>Aegis</strong><small>M365 INTELLIGENCE</small></span></a><p>Microsoft 365 intelligence, security, governance, and cost control.</p><div><a href="#security">Security</a><a href="/login">Sign in</a><span>© 2026 Aegis</span></div></footer>
+      <footer className="landing-footer"><a className="landing-brand" href="#top"><Mark /><span><strong>Aegis</strong><small>M365 INTELLIGENCE</small></span></a><p>Microsoft 365 intelligence, security, governance, and cost control.</p><div><a href="#security">Security</a>{publicDemoEnabled && <a href="/landing/demo">Live demo</a>}<a href="/login">Sign in</a><span>© 2026 Aegis</span></div></footer>
     </main>
   );
 }
