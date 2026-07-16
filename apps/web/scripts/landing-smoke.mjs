@@ -68,12 +68,14 @@ async function capture(name, width, height, fullPage = false) {
     heading: document.querySelector('h1')?.textContent?.replace(/\\s+/g,' ').trim(),
     capabilities: document.querySelectorAll('.capability-grid article').length,
     industries: document.querySelectorAll('.industry-grid article').length,
+    localFirst: document.querySelector('#local-first-title')?.textContent,
+    deploymentCta: [...document.querySelectorAll('a')].some(a => a.textContent.includes('Request deployment access')),
     imagesLoaded: [...document.images].every(i => i.complete && i.naturalWidth > 0),
     imageStates: [...document.images].map(i => ({src:i.currentSrc || i.src, complete:i.complete, width:i.naturalWidth})),
     signIn: document.querySelector('a[href="/login"]')?.href,
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth
   }))()`);
-  if (!audit.heading?.includes("governed action") || audit.capabilities !== 8 || audit.industries !== 3 || !audit.imagesLoaded || !audit.signIn || audit.overflow) {
+  if (!audit.heading?.includes("governed action") || audit.capabilities !== 8 || audit.industries !== 3 || !audit.localFirst?.includes("stays in your environment") || !audit.deploymentCta || !audit.imagesLoaded || !audit.signIn || audit.overflow) {
     throw new Error(`${name} landing audit failed: ${JSON.stringify(audit)}`);
   }
   let clip;

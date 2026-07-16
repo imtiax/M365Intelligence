@@ -18,6 +18,8 @@ The bundled dataset and workflow results are synthetic. Live Microsoft Graph col
 
 The public, responsive industry landing page is available at `http://localhost:3008/landing`. It uses screenshots captured from the working platform, presents industry use cases, explains platform differentiation without unsupported competitor claims, and links into the secure sign-in experience. The landing page is intentionally public; application routes and data remain session protected.
 
+The deployment is local-first: application services, databases, reports, indexes, audit history, and optional local AI run within customer-controlled infrastructure. There is no Aegis-operated cloud data store. A live tenant deployment communicates directly with the Microsoft identity platform and Microsoft Graph only when explicitly configured and authorized; optional outbound integrations must also be enabled by the customer.
+
 ## Quick local setup
 
 ### Prerequisites

@@ -47,7 +47,7 @@ export default function LandingPage() {
           <h1>Turn Microsoft 365 signals into <em>governed action.</em></h1>
           <p className="hero-intro">A single intelligence and operations platform for teams that must secure the tenant, prove compliance, control cost, and act with confidence.</p>
           <div className="hero-actions"><a className="landing-button" href="/login">Explore the platform <span>→</span></a><a className="landing-button ghost" href="#product-tour">See the product <span>↓</span></a></div>
-          <p className="hero-proof"><span>✓ Customer-hosted</span><span>✓ Role-aware</span><span>✓ Audit-ready</span></p>
+          <p className="hero-proof"><span>✓ Fully local deployment</span><span>✓ Customer-controlled data</span><span>✓ Audit-ready</span></p>
         </div>
         <div className="hero-product">
           <div className="product-window">
@@ -60,6 +60,11 @@ export default function LandingPage() {
 
       <section className="landing-metrics" aria-label="Demo environment scale">
         <div><strong>5,000</strong><span>normalized identities</span></div><div><strong>28,900</strong><span>governed M365 objects</span></div><div><strong>947</strong><span>operational reports</span></div><div><strong>10</strong><span>admin-center dashboards</span></div>
+      </section>
+
+      <section className="local-first-banner" aria-labelledby="local-first-title">
+        <div><p className="landing-eyebrow">LOCAL-FIRST BY DESIGN</p><h2 id="local-first-title">Your tenant data stays in your environment.</h2></div>
+        <div><p>Aegis is installed on customer-controlled infrastructure. The application, databases, reports, search indexes, audit history, and optional local AI remain inside that boundary—there is no Aegis-operated cloud receiving or storing tenant data.</p><p className="residency-note"><b>Clear boundary:</b> when live Microsoft 365 connectivity is enabled, the platform communicates directly with Microsoft identity and Graph endpoints authorized by your tenant. Optional external integrations require explicit configuration.</p></div>
       </section>
 
       <section className="landing-section platform-section" id="platform">
@@ -92,13 +97,13 @@ export default function LandingPage() {
       </section>
 
       <section className="landing-section security-section" id="security">
-        <div><p className="landing-eyebrow">SECURE BY ARCHITECTURE</p><h2>Control stays with the customer.</h2><p>A local-first architecture keeps sensitive operational data inside your environment and puts identity, authorization, and auditability at every boundary.</p></div>
+        <div><p className="landing-eyebrow">SECURE BY ARCHITECTURE</p><h2>Installed locally. Controlled by you.</h2><p>The complete platform runs in your environment. Aegis does not require tenant telemetry or operational data to be stored in an Aegis cloud service; identity, authorization, and auditability remain at every boundary.</p></div>
         <div className="security-grid"><article><b>01</b><h3>Least privilege</h3><p>Scoped Graph permissions and role-aware access minimize exposure.</p></article><article><b>02</b><h3>Separation of duties</h3><p>Sensitive changes require independent, accountable approval.</p></article><article><b>03</b><h3>Tamper-evident audit</h3><p>Decisions, actions, results, and rollback remain traceable.</p></article><article><b>04</b><h3>Deployment sovereignty</h3><p>Run the platform and data services inside your controlled boundary.</p></article></div>
       </section>
 
       <section className="operating-flow" aria-label="Aegis operating workflow"><span>COLLECT</span><i>→</i><span>NORMALIZE</span><i>→</i><span>ANALYZE</span><i>→</i><span>APPROVE</span><i>→</i><span>ACT</span><i>→</i><span>PROVE</span></section>
 
-      <section className="landing-cta" id="demo"><p className="landing-eyebrow">READY FOR A CONTROLLED PILOT?</p><h2>See what Microsoft 365<br />looks like when it is accountable.</h2><p>Explore the complete simulated enterprise, then map Aegis to your tenant, control requirements, and operating model.</p><div><a className="landing-button light" href="https://github.com/sherazahmad24/M365Intelligence/issues/new?title=Aegis%20M365%20client%20demo%20request" target="_blank" rel="noreferrer">Request a client demo <span>↗</span></a><a className="landing-button outline-light" href="/login">Open secure sign in <span>→</span></a></div><small>Demo screenshots and metrics use synthetic Global Enterprise Holdings data. Live Microsoft 365 connectivity requires authorized tenant configuration.</small></section>
+      <section className="landing-cta" id="demo"><p className="landing-eyebrow">READY FOR A CONTROLLED PILOT?</p><h2>Register. Deploy locally.<br />Keep control of your data.</h2><p>Request access for your organization and receive the deployment package and setup guidance for your customer-controlled environment.</p><div><a className="landing-button light" href="https://github.com/sherazahmad24/M365Intelligence/issues/new?title=Aegis%20M365%20licensed%20deployment%20request" target="_blank" rel="noreferrer">Request deployment access <span>↗</span></a><a className="landing-button outline-light" href="/login">Open secure sign in <span>→</span></a></div><small>Distribution should be provided under an organization license. Demo screenshots and metrics use synthetic data. Live Microsoft 365 connectivity requires authorized tenant configuration.</small></section>
 
       <footer className="landing-footer"><a className="landing-brand" href="#top"><Mark /><span><strong>Aegis</strong><small>M365 INTELLIGENCE</small></span></a><p>Microsoft 365 intelligence, security, governance, and cost control.</p><div><a href="#security">Security</a><a href="/login">Sign in</a><span>© 2026 Aegis</span></div></footer>
     </main>
