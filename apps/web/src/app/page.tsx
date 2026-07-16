@@ -1568,7 +1568,7 @@ function AIPage({ notify }: { notify: (m: string) => void }) {
               onKeyDown={(e) => e.key === "Enter" && submit()}
               placeholder="Ask about risk, compliance, cost, or operations…"
             />
-            <button onClick={() => void submit()} disabled={loading}>
+            <button onClick={() => void submit()} disabled={loading} aria-busy={loading}>
               <Sparkle24Filled /> {loading ? "Analyzing…" : "Analyze"}
             </button>
             <small>
@@ -1681,6 +1681,8 @@ function AdminPage({ notify }: { notify: (m: string) => void }) {
                   <small>{c.sync} ago</small>
                 </div>
                 <button
+                  aria-label={`Open ${c.name} connector actions`}
+                  title={`Open ${c.name} connector actions`}
                   onClick={() =>
                     notify(`${c.name} connection test passed in demo mode.`)
                   }
@@ -1736,6 +1738,8 @@ function AdminPage({ notify }: { notify: (m: string) => void }) {
                   <em>{user.roles.map((role) => roleLabels[role]).join(", ")}</em>
                 </div>
                 <button
+                  aria-label={`Review access for ${user.name}`}
+                  title={`Review access for ${user.name}`}
                   onClick={() => notify(`${user.name} access review opened with ${user.roles.length} assigned role.`)}
                 >
                   <MoreHorizontal20Regular />
@@ -1771,6 +1775,8 @@ function AdminPage({ notify }: { notify: (m: string) => void }) {
                   <em>{control[2]}</em>
                 </div>
                 <button
+                  aria-label={`Open ${control[0]} control details`}
+                  title={`Open ${control[0]} control details`}
                   onClick={() =>
                     notify(`${control[0]} control details verified.`)
                   }
@@ -1804,6 +1810,8 @@ function AdminPage({ notify }: { notify: (m: string) => void }) {
                   <em>{service[2]}</em>
                 </div>
                 <button
+                  aria-label={`Run ${service[0]} diagnostic`}
+                  title={`Run ${service[0]} diagnostic`}
                   onClick={() => notify(`${service[0]} diagnostic completed.`)}
                 >
                   <MoreHorizontal20Regular />

@@ -14,3 +14,4 @@ secrets/
 *.pem
 *.pfx
 apps/web/artifacts/
+/artifacts/

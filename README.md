@@ -22,6 +22,8 @@ The deployment is local-first: application services, databases, reports, indexes
 
 The commercial architecture separates the hosted signup, trial, subscription, license, and support control plane from the customer-controlled Microsoft 365 data plane. See the [commercial product requirements](docs/COMMERCIAL-PRODUCT-PRD.md), [commercial system design](docs/COMMERCIAL-SYSTEM-DESIGN.md), and the RLS-first Supabase migration under `infra/supabase/migrations`.
 
+For a complete local release-candidate gate and the explicit distinction between demo readiness and public-production readiness, follow the [go-live runbook](docs/GO-LIVE-RUNBOOK.md) and run `scripts/release-candidate.ps1`.
+
 ## Quick local setup
 
 ### Prerequisites

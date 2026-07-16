@@ -1,0 +1,11 @@
+.entra-status {
+  margin-top: 10px !important;
+  border: 1px solid #6b5427 !important;
+  background: #332a1c !important;
+  padding: 12px !important;
+}
+
+.entra-status svg { color: #e8b458 !important; }
+.entra-status small { line-height: 1.45 !important; }
+.entra-button { cursor: pointer !important; }
+.entra-button:hover { opacity: 1 !important; border-color: #4e6872 !important; }

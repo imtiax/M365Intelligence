@@ -261,6 +261,7 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
         <div>
           <label>REPORT NAME</label>
           <input
+            aria-label="Report name"
             value={name}
             onChange={(e) => {
               setName(e.target.value);
@@ -374,7 +375,7 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
                   <b>{f.label}</b>
                   <em>{f.type}</em>
                   {f.sensitive && <LockClosed24Regular />}
-                  <button onClick={() => remove(f.id)}>×</button>
+                  <button aria-label={`Remove ${f.label} column`} title={`Remove ${f.label}`} onClick={() => remove(f.id)}>×</button>
                 </div>
               ))}
             </div>
@@ -407,6 +408,7 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
                 <div className="calculated-row" key={index}>
                   <span>fx</span>
                   <input
+                    aria-label={`Calculated field ${index + 1} name`}
                     value={c.name}
                     onChange={(e) =>
                       setCalculated((all) =>
@@ -418,6 +420,8 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
                   />
                   <code>{c.formula}</code>
                   <button
+                    aria-label={`Delete calculated field ${index + 1}`}
+                    title={`Delete ${c.name}`}
                     onClick={() =>
                       setCalculated((all) => all.filter((_, i) => i !== index))
                     }
@@ -470,6 +474,7 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
               {filters.map((f, index) => (
                 <div className="condition" key={index}>
                   <select
+                    aria-label={`Filter ${index + 1} field`}
                     value={f.field}
                     onChange={(e) =>
                       setFilters((all) =>
@@ -485,6 +490,7 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
                     <option>Last activity</option>
                   </select>
                   <select
+                    aria-label={`Filter ${index + 1} operator`}
                     value={f.operator}
                     onChange={(e) =>
                       setFilters((all) =>
@@ -500,6 +506,7 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
                     <option>before</option>
                   </select>
                   <input
+                    aria-label={`Filter ${index + 1} value`}
                     value={f.value}
                     onChange={(e) =>
                       setFilters((all) =>
@@ -510,6 +517,8 @@ function ReportBuilder({ notify }: { notify: (m: string) => void }) {
                     }
                   />
                   <button
+                    aria-label={`Remove filter ${index + 1}`}
+                    title={`Remove filter ${index + 1}`}
                     onClick={() =>
                       setFilters((all) => all.filter((_, i) => i !== index))
                     }
@@ -1176,9 +1185,9 @@ function DashboardDesigner({ notify }: { notify: (m: string) => void }) {
           <div className="dashboard-config">
             <div>
               <label>DASHBOARD NAME</label>
-              <input defaultValue="CISO Security and Compliance Command Center" />
+              <input aria-label="Dashboard name" defaultValue="CISO Security and Compliance Command Center" />
             </div>
-            <select>
+            <select aria-label="Dashboard layout">
               <option>Desktop · 12-column grid</option>
               <option>Wallboard · 16:9</option>
               <option>Mobile executive view</option>
@@ -1195,6 +1204,8 @@ function DashboardDesigner({ notify }: { notify: (m: string) => void }) {
                     ↔
                   </button>
                   <button
+                    aria-label={`Remove ${w.title} widget`}
+                    title={`Remove ${w.title}`}
                     onClick={() =>
                       setWidgets((all) => all.filter((x) => x.id !== w.id))
                     }

@@ -73,10 +73,17 @@ async function capture(name, width, height, fullPage = false) {
     imagesLoaded: [...document.images].every(i => i.complete && i.naturalWidth > 0),
     imageStates: [...document.images].map(i => ({src:i.currentSrc || i.src, complete:i.complete, width:i.naturalWidth})),
     signIn: document.querySelector('a[href="/login"]')?.href,
+    brokenHashLinks: [...document.querySelectorAll('a[href^="#"]')].filter(a => !document.querySelector(a.getAttribute('href'))).map(a => a.getAttribute('href')),
+    internalLinks: [...new Set([...document.querySelectorAll('a[href^="/"]')].map(a => a.getAttribute('href')))],
+    deploymentRequest: document.querySelector('a[href*="licensed%20deployment%20request"]')?.href,
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth
   }))()`);
-  if (!audit.heading?.includes("governed action") || audit.capabilities !== 8 || audit.industries !== 3 || !audit.localFirst?.includes("stays in your environment") || !audit.deploymentCta || !audit.imagesLoaded || !audit.signIn || audit.overflow) {
+  if (!audit.heading?.includes("governed action") || audit.capabilities !== 8 || audit.industries !== 3 || !audit.localFirst?.includes("stays in your environment") || !audit.deploymentCta || !audit.deploymentRequest || audit.brokenHashLinks.length || !audit.imagesLoaded || !audit.signIn || audit.overflow) {
     throw new Error(`${name} landing audit failed: ${JSON.stringify(audit)}`);
+  }
+  for (const href of audit.internalLinks) {
+    const response = await fetch(`http://localhost:3008${href}`, { redirect: "manual" });
+    if (response.status >= 400) throw new Error(`${name} CTA ${href} returned ${response.status}.`);
   }
   let clip;
   if (fullPage) {

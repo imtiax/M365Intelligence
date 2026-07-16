@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -109,6 +109,10 @@ try {
     "location.pathname==='/login'&&document.querySelector('form')",
     "login page",
   );
+  await delay(1000);
+  const entraGate = await evaluate(`(()=>{const button=document.querySelector('.entra-button');if(!button||button.disabled)return false;button.click();return true})()`);
+  if (!entraGate) throw new Error("Microsoft Entra production-gate control is unavailable.");
+  await waitFor("document.querySelector('#entra-configuration-status')?.textContent.includes('Entra production gate')", "Entra production-gate guidance");
   const login = await evaluate(
     `fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'admin@apex.local',password:${JSON.stringify(password)}})}).then(async r=>({status:r.status,body:await r.text()}))`,
   );
@@ -162,6 +166,16 @@ try {
     ["Administration", "Platform administration"],
     ["Super Admin", "Super Admin"],
   ];
+  const governedActionLabels = [
+    "Dashboard library", "Run investigation", "Access review", "New policy analysis",
+    "Delivery history", "+ New alert policy", "Job history", "New custom job",
+    "Execution history", "New playbook", "Export queue", "Advanced filters",
+    "Policy library", "+ New request", "Message templates", "New agent",
+    "Access reviews", "+ Create delegated role", "Collector settings", "Explore graph",
+    "Import template", "Build report", "Pricing model", "Create savings plan",
+    "Start assessment", "Generate campaign", "Show proof in product →",
+  ];
+  const testedGovernedActions = new Set();
   const verified = [];
   for (const [label, title] of modules) {
     const clicked = await evaluate(
@@ -181,6 +195,14 @@ try {
         .replace(/^-|-$/g, "");
     if ((await evaluate("location.hash")) !== expectedHash)
       throw new Error(`Deep link mismatch for ${label}`);
+    const pageActions = await evaluate(`(()=>{const allowed=${JSON.stringify(governedActionLabels)};return [...document.querySelectorAll('main button')].map(x=>(x.textContent||'').trim().replace(/\\s+/g,' ')).filter(text=>allowed.includes(text))})()`);
+    for (const actionLabel of pageActions) {
+      await evaluate(`(()=>{const button=[...document.querySelectorAll('main button')].find(x=>(x.textContent||'').trim().replace(/\\s+/g,' ')===${JSON.stringify(actionLabel)});button.click();return true})()`);
+      await waitFor("!!document.querySelector('.action-dialog')", `${actionLabel} governed dialog`);
+      await evaluate(`([...document.querySelectorAll('.action-dialog footer button')].find(x=>x.textContent.includes('Cancel'))).click()`);
+      await waitFor("!document.querySelector('.action-dialog')", `${actionLabel} dialog close`);
+      testedGovernedActions.add(actionLabel);
+    }
     verified.push(label);
   }
   await evaluate(`(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('AI analyst')).click();return true})()`);
@@ -243,6 +265,10 @@ try {
     `([...document.querySelectorAll('.generated-actions button')].find(x=>x.textContent.includes('Download PDF'))).click()`,
   );
   const pdfDownload = await waitForDownload(".pdf");
+  const excelHeader = (await readFile(join(downloadPath, excelDownload.file))).subarray(0, 64).toString("utf8");
+  if (!excelHeader.includes("<?xml") || !excelHeader.includes("mso-application")) throw new Error("Excel export is not a valid SpreadsheetML workbook.");
+  const pdfHeader = (await readFile(join(downloadPath, pdfDownload.file))).subarray(0, 8).toString("ascii");
+  if (!pdfHeader.startsWith("%PDF-")) throw new Error("PDF export does not contain a valid PDF signature.");
   await evaluate("document.querySelector('.close-generated').click()");
   await waitFor(
     "!document.querySelector('.generated-report')",
@@ -256,11 +282,22 @@ try {
     "!!document.querySelector('.report-workspace')",
     "report catalogue",
   );
+  await evaluate(`([...document.querySelectorAll('.catalogue-toolbar button')].find(x=>x.textContent.includes('Advanced filters'))).click()`);
+  await waitFor("!!document.querySelector('.action-dialog')", "advanced filters dialog");
+  await evaluate(`([...document.querySelectorAll('.action-dialog footer button')].find(x=>x.textContent.includes('Cancel'))).click()`);
+  await waitFor("!document.querySelector('.action-dialog')", "advanced filters dialog close");
+  testedGovernedActions.add("Advanced filters");
+  const missingGovernedActions = governedActionLabels.filter((label) => !testedGovernedActions.has(label));
+  if (missingGovernedActions.length) throw new Error(`Governed CTA coverage is incomplete: ${missingGovernedActions.join(', ')}`);
   await evaluate("document.querySelector('.catalogue-list button').click()");
   await waitFor(
     "!!document.querySelector('.suite-drawer')",
     "report configuration drawer",
   );
+  for (const tab of ["Columns", "Filters", "Schedule", "Preview"]) {
+    await evaluate(`([...document.querySelectorAll('.drawer-tabs button')].find(x=>x.textContent.trim()===${JSON.stringify(tab)})).click()`);
+    await waitFor(`document.querySelector('.drawer-tabs button.selected')?.textContent.trim()===${JSON.stringify(tab)}`, `report drawer ${tab} tab`);
+  }
   await evaluate(
     `([...document.querySelectorAll('.drawer-actions button')].find(x=>x.textContent.includes('Run report'))).click()`,
   );
@@ -421,6 +458,10 @@ try {
     "document.querySelector('h1')?.textContent.includes('Security operations center')",
     "security workspace",
   );
+  for (const filter of ["critical", "high", "medium", "all"]) {
+    await evaluate(`([...document.querySelectorAll('.filter-tabs button')].find(x=>x.textContent.trim()===${JSON.stringify(filter)})).click()`);
+    await waitFor(`document.querySelector('.filter-tabs button.selected')?.textContent.trim()===${JSON.stringify(filter)}`, `security ${filter} filter`);
+  }
   await evaluate(
     `([...document.querySelectorAll('button')].find(x=>x.textContent.includes('Run investigation'))).click()`,
   );
@@ -461,6 +502,12 @@ try {
       `document.querySelector('.admin-tabs button.selected')?.textContent.trim()===${JSON.stringify(tab)}`,
       `administration ${tab} tab`,
     );
+    const actionButton = await evaluate("!!document.querySelector('.connector-grid article button')");
+    if (actionButton) {
+      const previousToast = await evaluate("document.querySelector('.toast')?.textContent||''");
+      await evaluate("document.querySelector('.connector-grid article button').click()");
+      await waitFor(`(document.querySelector('.toast')?.textContent||'')!==${JSON.stringify(previousToast)}&&!!document.querySelector('.toast')?.textContent`, `administration ${tab} action`);
+    }
   }
   // Exercise configuration section navigation.
   await evaluate(
@@ -470,13 +517,17 @@ try {
     "document.querySelector('h1')?.textContent.includes('Platform configuration')",
     "platform configuration",
   );
-  await evaluate(
-    `(()=>{const b=[...document.querySelectorAll('.configuration-layout>aside>button')].find(x=>x.textContent.includes('Private AI'));b.click();return true})()`,
-  );
-  await waitFor(
-    "document.querySelector('.configuration-layout main h2')?.textContent.includes('Private AI')",
-    "private AI configuration",
-  );
+  const configurationSections = await evaluate("[...document.querySelectorAll('.configuration-layout>aside>button')].map(x=>x.textContent.trim().replace(/\\s+/g,' '))");
+  for (const section of configurationSections) {
+    await evaluate(`(()=>{const b=[...document.querySelectorAll('.configuration-layout>aside>button')].find(x=>x.textContent.trim().replace(/\\s+/g,' ')===${JSON.stringify(section)});b.click();return true})()`);
+    await waitFor(`document.querySelector('.configuration-layout>aside>button.selected')?.textContent.trim().replace(/\\s+/g,' ')===${JSON.stringify(section)}`, `configuration ${section} section`);
+  }
+  await evaluate(`(()=>{const b=[...document.querySelectorAll('.configuration-layout>aside>button')].find(x=>x.textContent.includes('Private AI'));b.click();return true})()`);
+  await waitFor("document.querySelector('.configuration-layout main h2')?.textContent.includes('Private AI')", "private AI configuration");
+  await evaluate(`(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Connection center')).click();return true})()`);
+  await waitFor("document.querySelector('h1')?.textContent.includes('Connection center')", "connection center workflow");
+  await evaluate("document.querySelector('.connector-grid article button').click()");
+  await waitFor("document.querySelector('.toast')?.textContent.includes('validation')", "connector validation button");
   await evaluate(
     `(()=>{const button=[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Explorer 360'));button.click();return true})()`,
   );
@@ -549,6 +600,7 @@ try {
         dashboardDesigner: { initialWidgets, finalWidgets, persistedWidgets },
         shell: { theme: true, tenantSelector: true, notifications: true },
         governedWorkflow: true,
+        governedCtas: testedGovernedActions.size,
         administrationTabs: 5,
         configuration: { privateAI: true },
         globalSearchResults: searchResults,

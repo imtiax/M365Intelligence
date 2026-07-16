@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [visible,setVisible]=useState(false);
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(false);
+  const [entraInfo,setEntraInfo]=useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -44,11 +45,11 @@ export default function LoginPage() {
           <button className="login-submit" disabled={loading} type="submit">{loading?<span className="spinner"/>:<LockClosed24Regular/>}{loading?'Verifying identity…':'Sign in securely'}</button>
         </form>
         <div className="login-divider"><span>Enterprise federation</span></div>
-        <button className="entra-button" disabled title="Configure Entra OIDC for production deployment"><span className="ms-mark"><i/><i/><i/><i/></span>Sign in with Microsoft Entra ID<small>Requires administrator configuration</small></button>
+        <button className="entra-button" type="button" aria-expanded={entraInfo} aria-controls="entra-configuration-status" onClick={()=>setEntraInfo(!entraInfo)}><span className="ms-mark"><i/><i/><i/><i/></span>Sign in with Microsoft Entra ID<small>View production connection status</small></button>
+        {entraInfo&&<div id="entra-configuration-status" className="login-assurance entra-status" role="status"><ShieldCheckmark24Regular/><span><strong>Entra production gate</strong><small>The local evaluation uses protected demo identities. Configure and validate tenant-specific OIDC issuer, audience, tenant, MFA, and role claims before enabling workforce federation.</small></span></div>}
         <div className="login-assurance"><ShieldCheckmark24Regular/><span><strong>Your session is protected</strong><small>HttpOnly cookie · 8-hour expiry · Rate-limited authentication</small></span></div>
         <p className="login-help">Need access? Contact your Platform Administrator.</p>
       </div>
     </section>
   </main>;
 }
-

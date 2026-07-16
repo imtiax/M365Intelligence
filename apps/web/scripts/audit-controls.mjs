@@ -16,9 +16,16 @@ try{
  const inventory=[];
  for(const label of labels){
    await evaluate(`(()=>{const b=[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().replace(/\\s+/g,' ')===${JSON.stringify(label)});b.click();return true})()`);await delay(150);
-   const controls=await evaluate(`(()=>{const visible=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'};return {heading:document.querySelector('h1')?.textContent.trim(),buttons:[...document.querySelectorAll('main button')].filter(visible).map((b,i)=>({index:i,text:(b.textContent||b.getAttribute('aria-label')||b.title||'').trim().replace(/\\s+/g,' '),className:b.className,disabled:b.disabled})),inputs:[...document.querySelectorAll('main input,main select,main textarea')].filter(visible).map(e=>({tag:e.tagName,type:e.type||'',placeholder:e.placeholder||'',value:e.value||'',disabled:e.disabled}))}})()`);
+   const controls=await evaluate(`(()=>{const visible=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'};const name=e=>(e.getAttribute('aria-label')||e.getAttribute('title')||e.labels?.[0]?.textContent||e.closest('label')?.textContent||e.placeholder||e.name||'').trim().replace(/\\s+/g,' ');return {heading:document.querySelector('h1')?.textContent.trim(),buttons:[...document.querySelectorAll('main button')].filter(visible).map((b,i)=>({index:i,text:name(b)||(b.textContent||'').trim().replace(/\\s+/g,' '),className:b.className,disabled:b.disabled,busy:b.getAttribute('aria-busy')==='true'})),inputs:[...document.querySelectorAll('main input,main select,main textarea')].filter(visible).map(e=>({tag:e.tagName,type:e.type||'',name:name(e),placeholder:e.placeholder||'',value:e.value||'',disabled:e.disabled}))}})()`);
    inventory.push({navigation:label,...controls});
  }
  await mkdir('artifacts',{recursive:true});await writeFile('artifacts/control-inventory.json',JSON.stringify(inventory,null,2));
- console.log(JSON.stringify({pages:inventory.length,buttons:inventory.reduce((s,p)=>s+p.buttons.length,0),inputs:inventory.reduce((s,p)=>s+p.inputs.length,0),perPage:inventory.map(p=>({page:p.navigation,buttons:p.buttons.length,inputs:p.inputs.length}))},null,2));
+ const issues=inventory.flatMap(page=>[
+   ...page.buttons.filter(button=>!button.text).map(button=>({page:page.navigation,type:'unlabeled-button',index:button.index})),
+   ...page.buttons.filter(button=>button.disabled&&!button.busy).map(button=>({page:page.navigation,type:'disabled-button',index:button.index,text:button.text})),
+   ...page.inputs.filter(input=>!input.name).map((input,index)=>({page:page.navigation,type:'unlabeled-input',index,tag:input.tag})),
+ ]);
+ const summary={pages:inventory.length,buttons:inventory.reduce((s,p)=>s+p.buttons.length,0),inputs:inventory.reduce((s,p)=>s+p.inputs.length,0),accessibilityIssues:issues.length,issues,perPage:inventory.map(p=>({page:p.navigation,buttons:p.buttons.length,inputs:p.inputs.length}))};
+ console.log(JSON.stringify(summary,null,2));
+ if(issues.length)throw new Error(`Control audit found ${issues.length} accessibility or disabled-control issues.`);
 }finally{socket.close();child.kill()}
