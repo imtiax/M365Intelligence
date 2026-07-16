@@ -3098,7 +3098,13 @@ export default function Home() {
       case "Reminders":
       case "Delegation":
       case "Hybrid AD":
-        return <SuiteWorkspace page={active} notify={notify} />;
+        return (
+          <SuiteWorkspace
+            page={active}
+            notify={notify}
+            roles={identity?.roles ?? []}
+          />
+        );
       case "Custom reports":
       case "Dashboard designer":
       case "Configuration":
@@ -3224,7 +3230,7 @@ export default function Home() {
               <input
                 value={globalQuery}
                 onChange={(e) => setGlobalQuery(e.target.value)}
-                placeholder="Search modules and 947 reports…"
+                placeholder="Search modules and 947 report templates…"
               />
               <kbd>⌘ K</kbd>
             </label>

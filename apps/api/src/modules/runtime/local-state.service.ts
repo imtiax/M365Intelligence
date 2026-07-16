@@ -92,12 +92,53 @@ export class LocalStateService {
           readFileSync(this.path, "utf8"),
         ) as RuntimeState;
         if (
-          [2, 3].includes(parsed.version) &&
+          [2, 3, 4].includes(parsed.version) &&
           parsed.enterprise &&
           Array.isArray(parsed.resources)
         ) {
-          parsed.version = 3;
+          let migrated =
+            parsed.version !== 4 ||
+            !Array.isArray(parsed.reportViews) ||
+            !Array.isArray(parsed.reportSchedules) ||
+            !Array.isArray(parsed.reportAlerts);
+          parsed.version = 4;
+          parsed.reportJobs ??= [];
+          parsed.reportViews ??= [];
+          parsed.reportSchedules ??= [];
+          parsed.reportAlerts ??= [];
+          parsed.workflows ??= [];
           parsed.findingCases ??= [];
+          parsed.audit ??= [];
+          parsed.events ??= [];
+          for (const job of parsed.reportJobs) {
+            if (!job.trigger || (job.trigger as string) === "manual") {
+              job.trigger = "interactive";
+              migrated = true;
+            }
+            if (!job.filters) {
+              job.filters = [];
+              migrated = true;
+            }
+          }
+          for (const view of parsed.reportViews) {
+            if ((view.visibility as string) === "organization") {
+              view.visibility = "team";
+              migrated = true;
+            }
+            if (!view.status) {
+              view.status = "active";
+              migrated = true;
+            }
+            view.filters ??= [];
+          }
+          for (const schedule of parsed.reportSchedules) {
+            schedule.status ??= "active";
+            schedule.delivery ??= "local_archive";
+          }
+          for (const alert of parsed.reportAlerts) {
+            alert.status ??= "active";
+          }
+          if (migrated) this.persist(parsed);
           return parsed;
         }
       } catch {
@@ -112,11 +153,14 @@ export class LocalStateService {
   private createSeed(): RuntimeState {
     const seededAt = new Date().toISOString();
     const state: RuntimeState = {
-      version: 3,
+      version: 4,
       seededAt,
       enterprise: createEnterpriseDemo(DEMO_TENANT),
       resources: seedResources(DEMO_TENANT),
       reportJobs: [],
+      reportViews: [],
+      reportSchedules: [],
+      reportAlerts: [],
       workflows: [],
       findingCases: [],
       audit: [],

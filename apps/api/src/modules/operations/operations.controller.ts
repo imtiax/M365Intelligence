@@ -15,9 +15,14 @@ import type { Request } from "express";
 import { filter, interval, map, merge, Observable } from "rxjs";
 import { LocalStateService } from "../runtime/local-state.service";
 import {
+  CreateReportAlertDto,
   CreateReportJobDto,
+  CreateReportScheduleDto,
+  CreateReportViewDto,
   CreateWorkflowDto,
   ListAuditQuery,
+  ListReportJobsQuery,
+  ReportOperationsQuery,
   WorkflowDecisionDto,
 } from "./operations.dto";
 import { OperationsService } from "./operations.service";
@@ -38,9 +43,15 @@ export class OperationsController {
   }
 
   @Get("report-jobs")
-  reports(@Req() request: Request) {
+  reports(@Req() request: Request, @Query() query: ListReportJobsQuery) {
+    const context = request.tenantContext!;
     return {
-      items: this.operations.listReports(request.tenantContext!.tenantId),
+      items: this.operations.listReports(
+        context.tenantId,
+        context.actorId,
+        context.roles.includes("platform-admin"),
+        query,
+      ),
     };
   }
 
@@ -58,7 +69,116 @@ export class OperationsController {
 
   @Get("report-jobs/:id")
   report(@Req() request: Request, @Param("id") id: string) {
-    return this.operations.getReport(request.tenantContext!.tenantId, id);
+    const context = request.tenantContext!;
+    return this.operations.getReport(
+      context.tenantId,
+      id,
+      context.actorId,
+      context.roles.includes("platform-admin"),
+    );
+  }
+
+  @Get("report-views")
+  reportViews(@Req() request: Request) {
+    const context = request.tenantContext!;
+    return {
+      items: this.operations.listReportViews(
+        context.tenantId,
+        context.actorId,
+        context.roles.includes("platform-admin"),
+      ),
+    };
+  }
+
+  @Post("report-views")
+  createReportView(
+    @Req() request: Request,
+    @Body() body: CreateReportViewDto,
+  ) {
+    const context = request.tenantContext!;
+    this.requireRole(context.roles, ["platform-admin", "report-admin"]);
+    return this.operations.createReportView(
+      context.tenantId,
+      context.actorId,
+      request.correlationId!,
+      body,
+    );
+  }
+
+  @Post("report-views/:id/schedules")
+  createReportSchedule(
+    @Req() request: Request,
+    @Param("id") id: string,
+    @Body() body: CreateReportScheduleDto,
+  ) {
+    const context = request.tenantContext!;
+    this.requireRole(context.roles, ["platform-admin", "report-admin"]);
+    return this.operations.createReportSchedule(
+      context.tenantId,
+      context.actorId,
+      request.correlationId!,
+      id,
+      body,
+      context.roles.includes("platform-admin"),
+    );
+  }
+
+  @Post("report-views/:id/alerts")
+  createReportAlert(
+    @Req() request: Request,
+    @Param("id") id: string,
+    @Body() body: CreateReportAlertDto,
+  ) {
+    const context = request.tenantContext!;
+    this.requireRole(context.roles, ["platform-admin", "report-admin"]);
+    return this.operations.createReportAlert(
+      context.tenantId,
+      context.actorId,
+      request.correlationId!,
+      id,
+      body,
+      context.roles.includes("platform-admin"),
+    );
+  }
+
+  @Post("report-views/:id/run")
+  runReportView(@Req() request: Request, @Param("id") id: string) {
+    const context = request.tenantContext!;
+    this.requireRole(context.roles, ["platform-admin", "report-admin"]);
+    return this.operations.runReportView(
+      context.tenantId,
+      context.actorId,
+      request.correlationId!,
+      id,
+      context.roles.includes("platform-admin"),
+    );
+  }
+
+  @Post("report-schedules/:id/run")
+  runReportSchedule(@Req() request: Request, @Param("id") id: string) {
+    const context = request.tenantContext!;
+    this.requireRole(context.roles, ["platform-admin", "report-admin"]);
+    return this.operations.runReportSchedule(
+      context.tenantId,
+      context.actorId,
+      request.correlationId!,
+      id,
+      context.roles.includes("platform-admin"),
+    );
+  }
+
+  @Get("report-operations")
+  reportOperations(
+    @Req() request: Request,
+    @Query() query: ReportOperationsQuery,
+  ) {
+    const context = request.tenantContext!;
+    return this.operations.reportOperations(
+      context.tenantId,
+      context.actorId,
+      context.roles.includes("platform-admin"),
+      query.limit,
+    );
   }
 
   @Get("workflows")

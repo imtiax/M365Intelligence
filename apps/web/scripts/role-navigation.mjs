@@ -54,13 +54,25 @@ try {
     if (modules.length !== expectedCount) throw new Error(`${username} expected ${expectedCount} modules, received ${modules.length}: ${modules.join(', ')}`);
     if (username !== "admin@apex.local" && modules.includes("Administration")) throw new Error(`${username} can see Administration.`);
     if (username !== "admin@apex.local" && (modules.includes("Super Admin") || modules.includes("Customer portal"))) throw new Error(`${username} can see a commercial administrator workspace.`);
+    await evaluate(`([...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Reporting'))).click()`);
+    await waitFor("document.querySelector('h1')?.textContent.includes('Microsoft 365 report center')", `${username} report center`);
+    await evaluate(`([...document.querySelectorAll('.report-mode-tabs button')].find(x=>x.textContent.includes('Report catalogue'))).click()`);
+    await waitFor("!!document.querySelector('.catalogue-list button')", `${username} report catalogue`);
+    await evaluate("document.querySelector('.catalogue-list button').click()");
+    await waitFor("!!document.querySelector('.suite-drawer')", `${username} report drawer`);
+    const reportActions = await evaluate("[...document.querySelectorAll('.suite-drawer .drawer-actions button')].map(x=>x.textContent.trim())");
+    const reportTabs = await evaluate("[...document.querySelectorAll('.suite-drawer .drawer-tabs button')].map(x=>x.textContent.trim())");
+    const canManageReports = ["admin@apex.local", "reports@apex.local"].includes(username);
+    if (canManageReports && (!reportActions.some((item) => item.includes("Run report")) || !reportActions.some((item) => item.includes("Save view")))) throw new Error(`${username} is missing authorized report actions.`);
+    if (!canManageReports && (reportActions.some((item) => item.includes("Run report")) || reportActions.some((item) => item.includes("Save view")) || reportTabs.includes("Schedule") || reportTabs.includes("Alert"))) throw new Error(`${username} can see unauthorized report mutations.`);
+    await evaluate("document.querySelector('.suite-drawer .drawer-head button').click()");
     if (username === "viewer@apex.local") {
       await evaluate("location.hash='#administration'");
       await delay(400);
       const heading = await evaluate("document.querySelector('h1')?.textContent||''");
       if (heading.includes("Platform administration")) throw new Error("Read-only deep-link authorization failed.");
     }
-    results.push({ username, visibleModules: modules.length, modules });
+    results.push({ username, visibleModules: modules.length, reportControl: canManageReports ? "manage" : "read-only", modules });
   }
   console.log(JSON.stringify({ personas: results.length, navigationMatrix: results }, null, 2));
 } finally {

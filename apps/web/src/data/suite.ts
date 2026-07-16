@@ -11,7 +11,7 @@ export const suiteModules: SuiteModule[] = [
   {name:'Defender XDR',family:'Security',description:'Incidents, alerts, vulnerabilities, exposure, investigations, and response.',reports:76,health:95,signals:'100 incidents',accent:'#e56872'},
   {name:'Microsoft Purview',family:'Compliance',description:'Labels, DLP, retention, eDiscovery, insider risk, and audit evidence.',reports:72,health:93,signals:'24 controls',accent:'#b58add'},
   {name:'Licensing & Cost',family:'FinOps',description:'Subscriptions, assignments, service plans, activity, cost, and optimization.',reports:58,health:97,signals:'1.5K unused E5',accent:'#e4ad50'},
-  {name:'Hybrid Active Directory',family:'Hybrid',description:'Domains, forests, users, computers, GPOs, synchronization, and replication.',reports:118,health:90,signals:'22.8K objects',accent:'#70a5d8'},
+  {name:'Hybrid Active Directory',family:'Hybrid',description:'Domains, forests, users, computers, GPOs, synchronization, and replication.',reports:117,health:90,signals:'22.8K objects',accent:'#70a5d8'},
 ];
 
 const reportSeed: Omit<CatalogueReport,'id'|'favorite'|'scheduled'>[] = [
@@ -62,10 +62,13 @@ const customerReportTemplates: CatalogueReport[] = [
   ['CIS Benchmark Report','Microsoft Purview','Compliance','CIS Microsoft 365 benchmark posture and failed-object evidence.','24 controls'],
 ].map(([name,workload,category,description,rows],index)=>({id:`DEMO-${String(index+1).padStart(3,'0')}`,name,workload,category,description,rows,updated:'Live',favorite:index<4,scheduled:index%3===0}));
 
-const generatedCatalogue: CatalogueReport[] = Array.from({length:96},(_,index)=>{
+const reportPerspectives = ['overview','trend','exceptions','risk review','owner review','regional analysis','control evidence','activity cohort','external exposure','lifecycle'] as const;
+const generatedCatalogue: CatalogueReport[] = Array.from({length:937},(_,index)=>{
   const source=reportSeed[index%reportSeed.length];
   const cycle=Math.floor(index/reportSeed.length);
-  return {...source,id:`RPT-${String(index+1).padStart(4,'0')}`,name:cycle?`${source.name} — ${['trend','exceptions'][cycle-1]}`:source.name,favorite:index%11===0,scheduled:index%7===0};
+  const perspective=reportPerspectives[cycle%reportPerspectives.length];
+  const edition=Math.floor(cycle/reportPerspectives.length)+1;
+  return {...source,id:`RPT-${String(index+1).padStart(4,'0')}`,name:cycle?`${source.name} — ${perspective}${edition>1?` ${edition}`:''}`:source.name,favorite:index%37===0,scheduled:index%53===0};
 });
 export const reportCatalogue: CatalogueReport[] = [...customerReportTemplates, ...generatedCatalogue];
 

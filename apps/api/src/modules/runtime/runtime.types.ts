@@ -13,6 +13,79 @@ export type ResourceRecord = {
   details: Record<string, string | number | boolean>;
 };
 
+export type ReportFilter = {
+  field:
+    | "status"
+    | "risk"
+    | "department"
+    | "region"
+    | "type"
+    | "external"
+    | "activityScore";
+  operator: "equals" | "not_equals" | "contains" | "gte" | "lte";
+  value: string;
+  logic: "and" | "or";
+};
+
+export type ReportView = {
+  id: string;
+  tenantId: string;
+  reportId: string;
+  name: string;
+  reportName: string;
+  workload: string;
+  description?: string;
+  columns: string[];
+  filters: ReportFilter[];
+  visibility: "private" | "team";
+  favorite: boolean;
+  status: "active" | "archived";
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReportSchedule = {
+  id: string;
+  tenantId: string;
+  viewId: string;
+  name: string;
+  cadence: "daily" | "weekly" | "monthly";
+  timezone: string;
+  runAt: string;
+  dayOfWeek?: number;
+  dayOfMonth?: number;
+  delivery: "local_archive";
+  status: "active" | "paused";
+  lastRunAt?: string;
+  nextRunAt?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReportAlert = {
+  id: string;
+  tenantId: string;
+  viewId: string;
+  name: string;
+  metric:
+    | "row_count"
+    | "critical_count"
+    | "warning_count"
+    | "average_risk";
+  operator: "gt" | "gte" | "eq" | "lte" | "lt";
+  threshold: number;
+  severity: "info" | "warning" | "critical";
+  status: "active" | "paused";
+  lastEvaluatedAt?: string;
+  lastObservedValue?: number;
+  lastTriggeredAt?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ReportJob = {
   id: string;
   tenantId: string;
@@ -24,6 +97,10 @@ export type ReportJob = {
   completedAt?: string;
   progress: number;
   requestedColumns?: string[];
+  filters?: ReportFilter[];
+  viewId?: string;
+  scheduleId?: string;
+  trigger?: "interactive" | "schedule_manual";
   error?: string;
   result?: {
     totalRows: number;
@@ -156,6 +233,9 @@ export type RuntimeState = {
   enterprise: EnterpriseDemoState;
   resources: ResourceRecord[];
   reportJobs: ReportJob[];
+  reportViews: ReportView[];
+  reportSchedules: ReportSchedule[];
+  reportAlerts: ReportAlert[];
   workflows: Workflow[];
   findingCases: FindingCase[];
   audit: AuditRecord[];

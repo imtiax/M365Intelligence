@@ -42,7 +42,12 @@ describe("OperationsService acceptance logic", () => {
       },
     );
     await pause(900);
-    const completed = service.getReport(DEMO_TENANT, job.id);
+    const completed = service.getReport(
+      DEMO_TENANT,
+      job.id,
+      "report.author@apex.local",
+      false,
+    );
     expect(completed.status).toBe("completed");
     expect(completed.result?.totalRows).toBe(1400);
     expect(completed.result?.columns).toEqual([

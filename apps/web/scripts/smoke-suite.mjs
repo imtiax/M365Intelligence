@@ -225,7 +225,7 @@ try {
   const governedActionLabels = [
     "Dashboard library", "Run investigation", "Access review", "New policy analysis",
     "+ New alert policy", "Job history", "New custom job",
-    "Execution history", "New playbook", "Export queue", "Advanced filters",
+    "Execution history", "New playbook",
     "Policy library", "+ New request", "Message templates", "New agent",
     "Access reviews", "+ Create delegated role", "Collector settings", "Explore graph",
     "Import template", "Build report", "Pricing model", "Create savings plan",
@@ -343,10 +343,13 @@ try {
       `document.querySelectorAll('.admin-center-list>button')[${buttonIndex}].click()`,
     );
     await waitFor(
-      `document.querySelectorAll('.admin-dashboard-metrics article').length===4`,
+      `document.querySelectorAll('.admin-dashboard-metrics>button').length===4`,
       `admin dashboard ${buttonIndex + 1}`,
     );
   }
+  await evaluate("document.querySelector('.admin-dashboard-metrics>button').click()");
+  await waitFor("!!document.querySelector('[data-testid=\"dashboard-metric-drilldown\"]')", "dashboard count drill-down");
+  await evaluate("document.querySelector('[data-testid=\"dashboard-metric-drilldown\"] .drawer-head button').click()");
   const adminDashboardShot = await send("Page.captureScreenshot", {
     format: "png",
     captureBeyondViewport: false,
@@ -388,10 +391,7 @@ try {
     "report catalogue",
   );
   await evaluate(`([...document.querySelectorAll('.catalogue-toolbar button')].find(x=>x.textContent.includes('Advanced filters'))).click()`);
-  await waitFor("!!document.querySelector('.action-dialog')", "advanced filters dialog");
-  await evaluate(`([...document.querySelectorAll('.action-dialog footer button')].find(x=>x.textContent.includes('Cancel'))).click()`);
-  await waitFor("!document.querySelector('.action-dialog')", "advanced filters dialog close");
-  testedGovernedActions.add("Advanced filters");
+  await waitFor("!!document.querySelector('[data-testid=\"catalogue-advanced-filters\"]')", "working catalogue filters");
   const missingGovernedActions = governedActionLabels.filter((label) => !testedGovernedActions.has(label));
   if (missingGovernedActions.length) throw new Error(`Governed CTA coverage is incomplete: ${missingGovernedActions.join(', ')}`);
   const actionWorkflowInventory = await evaluate("fetch('/api/runtime/api/v1/workflows').then(r=>r.json())");
@@ -402,17 +402,45 @@ try {
     "!!document.querySelector('.suite-drawer')",
     "report configuration drawer",
   );
-  for (const tab of ["Columns", "Filters", "Schedule", "Preview"]) {
-    await evaluate(`([...document.querySelectorAll('.drawer-tabs button')].find(x=>x.textContent.trim()===${JSON.stringify(tab)})).click()`);
-    await waitFor(`document.querySelector('.drawer-tabs button.selected')?.textContent.trim()===${JSON.stringify(tab)}`, `report drawer ${tab} tab`);
-  }
+  await evaluate(`([...document.querySelectorAll('.drawer-tabs button')].find(x=>x.textContent.trim()==='Columns')).click()`);
+  await waitFor("document.querySelectorAll('.column-picker input').length===11", "report column designer");
+  await evaluate(`([...document.querySelectorAll('.drawer-tabs button')].find(x=>x.textContent.trim()==='Filters')).click()`);
+  await evaluate(`([...document.querySelectorAll('.advanced-filter-builder button')].find(x=>x.textContent.includes('Add condition'))).click()`);
+  await waitFor("document.querySelectorAll('.advanced-filter-builder>div').length===1", "advanced report condition");
+  await evaluate(`(()=>{const select=document.querySelectorAll('.advanced-filter-builder>div select')[1];select.value='risk';select.dispatchEvent(new Event('change',{bubbles:true}));return true})()`);
+  await delay(150);
+  await evaluate(`(()=>{const select=document.querySelectorAll('.advanced-filter-builder>div select')[2];select.value='gte';select.dispatchEvent(new Event('change',{bubbles:true}));return true})()`);
+  await delay(150);
+  await evaluate(`(()=>{const input=document.querySelector('.advanced-filter-builder>div input');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'90');input.dispatchEvent(new Event('input',{bubbles:true}));return true})()`);
+  await waitFor("document.querySelectorAll('.advanced-filter-builder>div select')[1]?.value==='risk'&&document.querySelectorAll('.advanced-filter-builder>div select')[2]?.value==='gte'&&document.querySelector('.advanced-filter-builder>div input')?.value==='90'", "report filter definition");
+  await evaluate(`([...document.querySelectorAll('.drawer-actions button')].find(x=>x.textContent.includes('Save view'))).click()`);
+  await waitFor("document.querySelector('.saved-view-strip span')?.textContent.includes('Persisted')", "persistent saved report view");
+  await evaluate(`([...document.querySelectorAll('.drawer-tabs button')].find(x=>x.textContent.trim()==='Schedule')).click()`);
+  await evaluate(`([...document.querySelectorAll('.drawer-actions button')].find(x=>x.textContent.includes('Activate schedule'))).click()`);
+  await waitFor("document.querySelector('.config-success')?.textContent.includes('Active')", "persistent report schedule");
+  await evaluate(`([...document.querySelectorAll('.drawer-tabs button')].find(x=>x.textContent.trim()==='Alert')).click()`);
+  await evaluate(`([...document.querySelectorAll('.drawer-actions button')].find(x=>x.textContent.includes('Activate alert'))).click()`);
+  await waitFor("document.querySelector('.config-success')?.textContent.includes('critical count')", "persistent report alert");
   await evaluate(
     `([...document.querySelectorAll('.drawer-actions button')].find(x=>x.textContent.includes('Run report'))).click()`,
   );
   await waitFor(
-    "document.querySelectorAll('.generated-table-wrap tbody tr').length===250",
-    "catalogue generated report",
+    "document.querySelectorAll('.generated-table-wrap tbody tr').length>0&&document.querySelectorAll('.generated-table-wrap tbody tr').length<250",
+    "server-filtered catalogue report",
   );
+  await evaluate("document.querySelector('.close-generated').click()");
+  await evaluate(`([...document.querySelectorAll('.report-mode-tabs button')].find(x=>x.textContent.includes('Views & operations'))).click()`);
+  await waitFor("document.querySelectorAll('.saved-view-grid article').length>=1&&document.querySelectorAll('.operation-list article').length>=2", "report operations control plane");
+  await waitFor("[...document.querySelectorAll('.operation-list article')].some(x=>x.textContent.includes('risk threshold')&&x.textContent.includes('Last value'))", "interactive saved-view alert evaluation");
+  await evaluate(`(()=>{const card=[...document.querySelectorAll('.saved-view-grid article')].find(x=>x.textContent.includes('operations view'));if(!card)return false;card.querySelector('button').click();return true})()`);
+  await waitFor("!!document.querySelector('.suite-drawer')", "reopened saved report view");
+  await evaluate(`([...document.querySelectorAll('.drawer-tabs button')].find(x=>x.textContent.trim()==='Filters')).click()`);
+  await waitFor("document.querySelectorAll('.advanced-filter-builder>div select')[1]?.value==='risk'&&document.querySelectorAll('.advanced-filter-builder>div select')[2]?.value==='gte'&&document.querySelector('.advanced-filter-builder>div input')?.value==='90'", "restored saved-view definition");
+  await evaluate(`([...document.querySelectorAll('.drawer-actions button')].find(x=>x.textContent.includes('Run report'))).click()`);
+  await waitFor("document.querySelectorAll('.generated-table-wrap tbody tr').length>0&&document.querySelectorAll('.generated-table-wrap tbody tr').length<250", "reopened saved-view execution");
+  await evaluate("document.querySelector('.close-generated').click()");
+  await evaluate(`([...document.querySelectorAll('.operation-list article button')].find(x=>x.textContent.includes('Run now'))).click()`);
+  await waitFor("document.querySelectorAll('.generated-table-wrap tbody tr').length>0", "manual scheduled-view execution");
   await evaluate("document.querySelector('.close-generated').click()");
   // Exercise the custom report builder beyond page rendering.
   await evaluate(
@@ -726,8 +754,15 @@ try {
         },
         reporting: {
           adminCenters,
+          dashboardMetricDrilldown: true,
           generatedRows: true,
           catalogueGeneration: true,
+          serverSideFilters: true,
+          savedView: true,
+          restoredSavedView: true,
+          schedule: true,
+          thresholdAlert: true,
+          operationsHistory: true,
           customGeneration: true,
           excelDownload,
           pdfDownload,

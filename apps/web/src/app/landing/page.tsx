@@ -59,7 +59,7 @@ export default function LandingPage() {
       </section>
 
       <section className="landing-metrics" aria-label="Demo environment scale">
-        <div><strong>5,000</strong><span>normalized identities</span></div><div><strong>28,900</strong><span>governed M365 objects</span></div><div><strong>947</strong><span>operational reports</span></div><div><strong>10</strong><span>admin-center dashboards</span></div>
+        <div><strong>5,000</strong><span>normalized identities</span></div><div><strong>28,900</strong><span>governed M365 objects</span></div><div><strong>947</strong><span>reporting templates</span></div><div><strong>10</strong><span>admin-center dashboards</span></div>
       </section>
 
       <section className="local-first-banner" aria-labelledby="local-first-title">
@@ -79,7 +79,7 @@ export default function LandingPage() {
 
       <section className="landing-section report-tour">
         <div className="tour-image"><Image src="/landing/custom-report-builder.png" width={1580} height={1000} alt="Aegis custom report builder with data sources, calculated fields, security, and scheduling" /><span>Report Studio · Governed analytics</span></div>
-        <div className="tour-copy"><p className="landing-eyebrow">FROM QUESTION TO EVIDENCE</p><h2>Reporting built for operators—not just analysts.</h2><p>Compose cross-workload reports from the governed semantic model, apply role security, schedule delivery, and export decision-ready output.</p><ul><li>947-report operational catalogue</li><li>PDF and Excel export workflows</li><li>Schedules, ownership, and access controls</li></ul></div>
+        <div className="tour-copy"><p className="landing-eyebrow">FROM QUESTION TO EVIDENCE</p><h2>Reporting built for operators—not just analysts.</h2><p>Compose cross-workload reports from the governed semantic model, apply role security, schedule delivery, and export decision-ready output.</p><ul><li>947-template presentation catalogue</li><li>PDF and Excel export workflows</li><li>Schedules, ownership, and access controls</li></ul></div>
       </section>
 
       <section className="landing-section industry-section" id="industries">

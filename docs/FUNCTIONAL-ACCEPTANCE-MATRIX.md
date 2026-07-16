@@ -36,7 +36,7 @@ The $4,957 monthly value remains an illustrative local estimate. A connected dep
 | Identity | Risk/MFA/privilege analysis and governed remediation draft | Draft is server-persistent; identity signals are synthetic until Graph collection |
 | Management | Workload action selection, scope/justification capture, saved workflow draft, and governed queue | Workflow is server-persistent; no live Microsoft 365 mutation is performed |
 | Automations | Draft, submit, independent approve/reject, execute, failure isolation, results, rollback, and audit | Server-persistent local executor; live executor requires a customer-approved write identity |
-| Reporting | Ten admin-center dashboards, 947-report search, populated API report jobs, result preview, Excel, and PDF | Report jobs are server-persistent; rows come from the local dataset |
+| Reporting | Ten admin-center dashboards, 947-template registry search, populated API report jobs, result preview, Excel, and PDF | Templates become workload queries only after configuration; report jobs are server-persistent and rows come from the local dataset |
 | Custom reports | Source/field/filter design, preview, schedule, security policy, save, and export | Definition is browser-persistent; report preview/export works on local data |
 | Auditing | Search/filter, event context, populated evidence PDF, Add to case, and Create alert feedback | Export is real; case/alert controls are session outcomes; events are synthetic/local audit data |
 | Usage analytics | Adoption metrics, drill-down, and populated adoption/value PDF | PDF is working; trends require Graph Reports history for live use |

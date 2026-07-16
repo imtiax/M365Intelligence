@@ -54,13 +54,27 @@ import {
 } from "@/data/suite";
 import { GeneratedReportViewer } from "@/components/GeneratedReportViewer";
 import { dashboardFor, type GeneratedReport } from "@/lib/reporting";
+import type { PlatformRole } from "@/lib/identity";
 import {
+  createRuntimeReportAlert,
+  createRuntimeReportSchedule,
+  createRuntimeReportView,
   getAdminCenters,
+  getRuntimeReportOperations,
   runRuntimeReport,
+  runRuntimeReportSchedule,
+  runRuntimeSavedReportView,
+  type ReportFilter,
   type RuntimeAdminCenter,
+  type RuntimeReportOperations,
+  type RuntimeReportView,
 } from "@/lib/runtime-api";
 
-type Props = { page: string; notify: (message: string) => void };
+type Props = {
+  page: string;
+  notify: (message: string) => void;
+  roles: PlatformRole[];
+};
 
 function Header({
   path,
@@ -89,16 +103,19 @@ function Btn({
   primary = false,
   onClick,
   localAction = false,
+  disabled = false,
 }: {
   children: ReactNode;
   primary?: boolean;
   onClick?: () => void;
   localAction?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       className={primary ? "primary-button" : "secondary-button"}
       onClick={onClick}
+      disabled={disabled}
       data-local-action={localAction ? "true" : undefined}
     >
       {children}
@@ -198,8 +215,8 @@ function Explorer({ notify }: { notify: (m: string) => void }) {
             <small>LOCAL DIGITAL TWIN COVERAGE</small>
             <strong>99.2%</strong>
             <p>
-              158,482 normalized objects · 1.8M relationships · 947 intelligence
-              reports
+              158,482 normalized objects · 1.8M relationships · 947 governed
+              catalogue templates
             </p>
           </div>
         </div>
@@ -210,7 +227,7 @@ function Explorer({ notify }: { notify: (m: string) => void }) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Find a workload, resource type, report, or control…"
           />
-          <kbd>947 reports</kbd>
+          <kbd>947 report templates</kbd>
         </div>
       </div>
       <div className="suite-module-grid">
@@ -244,7 +261,7 @@ function Explorer({ notify }: { notify: (m: string) => void }) {
               <p>{m.description}</p>
               <div>
                 <span>
-                  <strong>{m.reports}</strong> reports
+                  <strong>{m.reports}</strong> templates
                 </span>
                 <span>{m.signals}</span>
               </div>
@@ -311,11 +328,44 @@ function Explorer({ notify }: { notify: (m: string) => void }) {
   );
 }
 
-function Reporting({ notify }: { notify: (m: string) => void }) {
-  const [view, setView] = useState<"dashboards" | "catalogue">("dashboards");
+const enterpriseReportColumns = [
+  "Display name",
+  "Object ID",
+  "Type",
+  "Status",
+  "Risk score",
+  "Department",
+  "Region",
+  "Owner",
+  "Activity score",
+  "External",
+  "Last updated",
+] as const;
+
+type ReportRunConfiguration = {
+  columns: string[];
+  filters: ReportFilter[];
+  viewId?: string;
+};
+
+function Reporting({
+  notify,
+  canManage,
+}: {
+  notify: (m: string) => void;
+  canManage: boolean;
+}) {
+  const [view, setView] = useState<"dashboards" | "catalogue" | "operations">(
+    "dashboards",
+  );
   const [query, setQuery] = useState("");
   const [workload, setWorkload] = useState("All workloads");
+  const [category, setCategory] = useState("All categories");
+  const [freshness, setFreshness] = useState("Any freshness");
+  const [advancedFilters, setAdvancedFilters] = useState(false);
   const [selected, setSelected] = useState<CatalogueReport | null>(null);
+  const [selectedSavedView, setSelectedSavedView] =
+    useState<RuntimeReportView | null>(null);
   const [favorites, setFavorites] = useState(false);
   const [scheduled, setScheduled] = useState(false);
   const [dashboardWorkload, setDashboardWorkload] = useState(
@@ -329,6 +379,17 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
     "connecting" | "online" | "offline"
   >("connecting");
   const [generating, setGenerating] = useState<string | null>(null);
+  const [operations, setOperations] = useState<RuntimeReportOperations | null>(
+    null,
+  );
+  const [operationsState, setOperationsState] = useState<
+    "loading" | "ready" | "offline"
+  >("loading");
+  const [drilldown, setDrilldown] = useState<{
+    label: string;
+    value: string;
+    detail: string;
+  } | null>(null);
   const dashboard = dashboardFor(dashboardWorkload);
   const dashboardReports = reportCatalogue
     .filter((report) => report.workload === dashboardWorkload)
@@ -337,21 +398,44 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
     "All workloads",
     ...Array.from(new Set(reportCatalogue.map((r) => r.workload))),
   ];
+  const categories = [
+    "All categories",
+    ...Array.from(new Set(reportCatalogue.map((r) => r.category))).sort(),
+  ];
+  const isFresh = (updated: string) => {
+    if (freshness === "Any freshness") return true;
+    if (updated === "Live") return true;
+    const minutes = updated.endsWith("h")
+      ? Number.parseInt(updated, 10) * 60
+      : Number.parseInt(updated, 10);
+    return Number.isFinite(minutes) &&
+      (freshness === "Under 15 minutes" ? minutes <= 15 : minutes <= 60);
+  };
   const filtered = useMemo(
     () =>
       reportCatalogue
         .filter(
           (r) =>
             (workload === "All workloads" || r.workload === workload) &&
+            (category === "All categories" || r.category === category) &&
+            isFresh(r.updated) &&
             (!favorites || r.favorite) &&
             (!scheduled || r.scheduled) &&
             `${r.name} ${r.description} ${r.category}`
               .toLowerCase()
               .includes(query.toLowerCase()),
         )
-        .slice(0, 30),
-    [query, workload, favorites, scheduled],
+        .slice(0, 75),
+    [query, workload, category, freshness, favorites, scheduled],
   );
+  const refreshOperations = async () => {
+    try {
+      setOperations(await getRuntimeReportOperations());
+      setOperationsState("ready");
+    } catch {
+      setOperationsState("offline");
+    }
+  };
   useEffect(() => {
     getAdminCenters()
       .then((response) => {
@@ -359,12 +443,30 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
         setRuntimeState("online");
       })
       .catch(() => setRuntimeState("offline"));
+    void refreshOperations();
   }, []);
-  const generate = async (report: CatalogueReport) => {
+  const generate = async (
+    report: CatalogueReport,
+    configuration?: ReportRunConfiguration,
+  ) => {
+    if (!canManage) {
+      notify("Your organization role can inspect reports but cannot execute report jobs.");
+      return;
+    }
     setGenerating(report.id);
     notify(`${report.name} queued in the persistent report runtime.`);
     try {
-      setGenerated(await runRuntimeReport(report.name, report.workload));
+      setGenerated(
+        configuration?.viewId
+          ? await runRuntimeSavedReportView(configuration.viewId)
+          : await runRuntimeReport(
+              report.name,
+              report.workload,
+              configuration?.columns,
+              configuration?.filters,
+            ),
+      );
+      void refreshOperations();
       notify(
         `${report.name} completed with persisted rows and audit evidence.`,
       );
@@ -374,49 +476,72 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
       setGenerating(null);
     }
   };
+  const runSchedule = async (scheduleId: string) => {
+    if (!canManage) {
+      notify("Only a Platform Administrator or Report Administrator can run schedules.");
+      return;
+    }
+    setGenerating(scheduleId);
+    notify("Scheduled view queued for a governed local execution.");
+    try {
+      setGenerated(await runRuntimeReportSchedule(scheduleId));
+      await refreshOperations();
+      notify("Scheduled view completed and its run history was persisted.");
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Scheduled report execution failed.",
+      );
+    } finally {
+      setGenerating(null);
+    }
+  };
   return (
     <>
       <Header
         path="INTELLIGENCE / REPORTING"
         title="Microsoft 365 report center"
-        description="Search, customize, schedule, export, and delegate a unified catalogue of 947 operational reports."
+        description="Search and customize 947 presentation templates across governed Microsoft 365 workload schemas."
       >
-        <Btn>
-          <ArrowDownload24Regular /> Export queue
+        <Btn localAction onClick={() => { setView("operations"); void refreshOperations(); }}>
+          <ArrowDownload24Regular /> Run &amp; export history
         </Btn>
-        <Btn
-          primary
-          onClick={() =>
-            notify(
-              "Custom report designer opened with the governed semantic model.",
-            )
-          }
-        >
-          <DocumentBulletList24Regular /> Create report
-        </Btn>
+        {canManage && (
+          <Btn
+            primary
+            onClick={() =>
+              notify(
+                "Custom report designer opened with the governed semantic model.",
+              )
+            }
+          >
+            <DocumentBulletList24Regular /> Create report
+          </Btn>
+        )}
       </Header>
       <div className="report-summary">
         <Kpi
           label="REPORT CATALOGUE"
-          value="947"
-          detail="Across 10 connected workloads"
+          value={reportCatalogue.length.toLocaleString("en-US")}
+          detail="Original presentation templates"
         />
         <Kpi
-          label="CUSTOM REPORTS"
-          value="184"
-          detail="42 shared with teams"
+          label="SAVED VIEWS"
+          value={String(operations?.summary.views ?? 0)}
+          detail={`${operations?.views.filter((item) => item.visibility === "team").length ?? 0} shared with teams`}
           tone="blue"
         />
         <Kpi
-          label="SCHEDULES"
-          value="67"
-          detail="12 delivering today"
+          label="ACTIVE SCHEDULES"
+          value={String(operations?.summary.activeSchedules ?? 0)}
+          detail="Local archive delivery"
           tone="gold"
         />
         <Kpi
-          label="FAVORITES"
-          value="29"
-          detail="Personal quick access"
+          label="MONITORED VIEWS"
+          value={String(operations?.summary.activeAlerts ?? 0)}
+          detail="Threshold policies active"
           tone="purple"
         />
       </div>
@@ -432,6 +557,16 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
           onClick={() => setView("catalogue")}
         >
           <DocumentBulletList24Regular /> Report catalogue
+        </button>
+        <button
+          className={view === "operations" ? "selected" : ""}
+          onClick={() => {
+            setView("operations");
+            void refreshOperations();
+          }}
+          data-local-action="true"
+        >
+          <CalendarClock24Regular /> Views &amp; operations
         </button>
       </div>
       {view === "dashboards" && (
@@ -484,11 +619,18 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
             </header>
             <div className="admin-dashboard-metrics">
               {dashboard.metrics.map((metric) => (
-                <article key={metric.label}>
+                <button
+                  key={metric.label}
+                  type="button"
+                  data-local-action="true"
+                  onClick={() => setDrilldown(metric)}
+                  aria-label={`Drill into ${metric.label}`}
+                >
                   <small>{metric.label}</small>
                   <strong>{metric.value}</strong>
                   <span>{metric.detail}</span>
-                </article>
+                  <em>Open records →</em>
+                </button>
               ))}
             </div>
             <div className="admin-dashboard-grid">
@@ -562,10 +704,12 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
                 </div>
                 <button
                   onClick={() => void generate(dashboardReports[0])}
-                  disabled={generating !== null}
+                  disabled={generating !== null || !canManage}
                 >
                   <Play24Regular />
-                  {generating
+                  {!canManage
+                    ? "Read-only access"
+                    : generating
                     ? "Generating..."
                     : "Generate full dashboard report"}
                 </button>
@@ -603,7 +747,7 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
                   <button
                     key={report.id}
                     onClick={() => void generate(report)}
-                    disabled={generating !== null}
+                    disabled={generating !== null || !canManage}
                   >
                     <DocumentBulletList24Regular />
                     <span>
@@ -634,10 +778,8 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
                 <span>{w}</span>
                 <b>
                   {w === "All workloads"
-                    ? 947
-                    : reportCatalogue.filter((r) => r.workload === w).length *
-                        9 +
-                      4}
+                    ? reportCatalogue.length
+                    : reportCatalogue.filter((r) => r.workload === w).length}
                 </b>
               </button>
             ))}
@@ -648,7 +790,7 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
             >
               <Sparkle24Filled />
               <span>Favorites</span>
-              <b>29</b>
+              <b>{reportCatalogue.filter((item) => item.favorite).length}</b>
             </button>
             <button
               className={scheduled ? "selected" : ""}
@@ -656,7 +798,7 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
             >
               <CalendarClock24Regular />
               <span>Scheduled reports</span>
-              <b>67</b>
+              <b>{reportCatalogue.filter((item) => item.scheduled).length}</b>
             </button>
           </aside>
           <section className="report-results">
@@ -669,11 +811,70 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
                   placeholder="Search report name, category, or field…"
                 />
               </label>
-              <button>
+              <button
+                type="button"
+                data-local-action="true"
+                className={advancedFilters ? "selected" : ""}
+                onClick={() => setAdvancedFilters((current) => !current)}
+              >
                 <Filter24Regular /> Advanced filters
               </button>
-              <span>{filtered.length} shown</span>
+              <span>{filtered.length} of {reportCatalogue.length} shown</span>
             </div>
+            {advancedFilters && (
+              <div className="catalogue-filters" data-testid="catalogue-advanced-filters">
+                <label>
+                  Category
+                  <select
+                    value={category}
+                    onChange={(event) => setCategory(event.target.value)}
+                  >
+                    {categories.map((item) => (
+                      <option key={item}>{item}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Data freshness
+                  <select
+                    value={freshness}
+                    onChange={(event) => setFreshness(event.target.value)}
+                  >
+                    <option>Any freshness</option>
+                    <option>Under 15 minutes</option>
+                    <option>Under 60 minutes</option>
+                  </select>
+                </label>
+                <label className="catalogue-toggle">
+                  <input
+                    type="checkbox"
+                    checked={favorites}
+                    onChange={(event) => setFavorites(event.target.checked)}
+                  />
+                  Favorites only
+                </label>
+                <label className="catalogue-toggle">
+                  <input
+                    type="checkbox"
+                    checked={scheduled}
+                    onChange={(event) => setScheduled(event.target.checked)}
+                  />
+                  Scheduled templates
+                </label>
+                <button
+                  type="button"
+                  data-local-action="true"
+                  onClick={() => {
+                    setCategory("All categories");
+                    setFreshness("Any freshness");
+                    setFavorites(false);
+                    setScheduled(false);
+                  }}
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
             <div className="catalogue-list">
               <div className="catalogue-head">
                 <span>Report</span>
@@ -683,7 +884,7 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
                 <span />
               </div>
               {filtered.map((r) => (
-                <button key={r.id} onClick={() => setSelected(r)}>
+                <button key={r.id} onClick={() => { setSelectedSavedView(null); setSelected(r); }}>
                   <span className="catalogue-name">
                     <i>
                       <DocumentBulletList24Regular />
@@ -709,15 +910,55 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
           </section>
         </div>
       )}
+      {view === "operations" && (
+        <ReportOperationsWorkspace
+          operations={operations}
+          state={operationsState}
+          canManage={canManage}
+          generating={generating}
+          onRefresh={() => void refreshOperations()}
+          onRun={(scheduleId) => void runSchedule(scheduleId)}
+          onOpen={(savedView) => {
+            const report = reportCatalogue.find(
+              (item) => item.id === savedView.reportId,
+            );
+            if (report) {
+              setSelectedSavedView(savedView);
+              setSelected(report);
+              return;
+            }
+            notify("The source template is no longer present in this catalogue.");
+          }}
+        />
+      )}
+      {drilldown && (
+        <DashboardMetricDrilldown
+          workload={dashboardWorkload}
+          metric={drilldown}
+          columns={dashboard.columns}
+          rows={dashboard.rows}
+          canManage={canManage}
+          onClose={() => setDrilldown(null)}
+          onRun={() => {
+            const report = dashboardReports[0];
+            if (report) void generate(report);
+            setDrilldown(null);
+          }}
+        />
+      )}
       {selected && (
         <ReportDrawer
           report={selected}
-          onClose={() => setSelected(null)}
+          initialView={selectedSavedView}
+          onClose={() => { setSelected(null); setSelectedSavedView(null); }}
           notify={notify}
-          onRun={() => {
-            void generate(selected);
+          onRun={(configuration) => {
+            void generate(selected, configuration);
             setSelected(null);
+            setSelectedSavedView(null);
           }}
+          onSaved={() => void refreshOperations()}
+          canManage={canManage}
         />
       )}
       {generated && (
@@ -731,18 +972,298 @@ function Reporting({ notify }: { notify: (m: string) => void }) {
   );
 }
 
+function DashboardMetricDrilldown({
+  workload,
+  metric,
+  columns,
+  rows,
+  canManage,
+  onClose,
+  onRun,
+}: {
+  workload: string;
+  metric: { label: string; value: string; detail: string };
+  columns: string[];
+  rows: string[][];
+  canManage: boolean;
+  onClose: () => void;
+  onRun: () => void;
+}) {
+  return (
+    <div className="modal-backdrop" onMouseDown={onClose}>
+      <aside className="detail-drawer suite-drawer metric-drilldown" data-testid="dashboard-metric-drilldown" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="drawer-head"><span><DataTrending24Regular /><small>COUNT DRILL-DOWN · {workload}</small></span><button type="button" data-local-action="true" onClick={onClose}>×</button></div>
+        <h2>{metric.label}</h2>
+        <p className="drawer-sub">{metric.value} · {metric.detail}</p>
+        <section><h3>Records contributing to this indicator</h3><p>The table is a synthetic workload preview. Generate the full report to query the persistent local resource store.</p><div className="metric-drill-table"><table><thead><tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{rows.slice(0, 8).map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={`${cellIndex}-${cell}`}>{cell}</td>)}</tr>)}</tbody></table></div></section>
+        <section><h3>Evidence context</h3><div className="report-definition-summary"><span><b>{workload}</b> source</span><span><b>Current</b> snapshot</span><span><b>Local</b> boundary</span><span><b>Audited</b> execution</span></div></section>
+        {!canManage && <div className="report-readonly"><ShieldCheckmark24Regular /> Read-only access: ask a Report Administrator to execute or save this view.</div>}
+        <div className="drawer-actions"><Btn localAction onClick={onClose}>Close</Btn>{canManage && <Btn primary localAction onClick={onRun}><Play24Regular /> Generate full evidence</Btn>}</div>
+      </aside>
+    </div>
+  );
+}
+
+function ReportOperationsWorkspace({
+  operations,
+  state,
+  canManage,
+  generating,
+  onRefresh,
+  onRun,
+  onOpen,
+}: {
+  operations: RuntimeReportOperations | null;
+  state: "loading" | "ready" | "offline";
+  canManage: boolean;
+  generating: string | null;
+  onRefresh: () => void;
+  onRun: (scheduleId: string) => void;
+  onOpen: (view: RuntimeReportView) => void;
+}) {
+  const viewById = new Map(
+    (operations?.views ?? []).map((item) => [item.id, item]),
+  );
+  return (
+    <div className="report-operations" data-testid="report-operations">
+      <header>
+        <div>
+          <small>LOCAL REPORT CONTROL PLANE</small>
+          <h2>Saved views, schedules, alerts, and execution evidence</h2>
+          <p>
+            Every object is tenant-scoped and persisted locally. Scheduled runs
+            currently retain results in the local runtime archive; external email or
+            Teams delivery requires a configured connector.
+          </p>
+        </div>
+        <button type="button" data-local-action="true" onClick={onRefresh}>
+          <ArrowSync24Regular /> Refresh
+        </button>
+      </header>
+      {state !== "ready" ? (
+        <div className={`report-operations-state ${state}`}>
+          {state === "loading"
+            ? "Loading persistent reporting state…"
+            : "The local reporting API is unavailable. Start the API to manage saved views."}
+        </div>
+      ) : (
+        <>
+          <div className="report-operations-summary">
+            {[
+              ["Saved views", operations?.summary.views ?? 0, "Reusable report definitions"],
+              ["Active schedules", operations?.summary.activeSchedules ?? 0, "Next-run metadata tracked"],
+              ["Active alerts", operations?.summary.activeAlerts ?? 0, "Threshold policies evaluated"],
+              ["Completed runs", operations?.summary.completedRuns ?? 0, "Execution evidence retained"],
+            ].map(([label, value, detail]) => (
+              <article key={String(label)}>
+                <small>{label}</small>
+                <strong>{value}</strong>
+                <span>{detail}</span>
+              </article>
+            ))}
+          </div>
+          <section className="report-operation-section">
+            <header>
+              <div><strong>Saved report views</strong><small>Filters and columns are immutable execution inputs</small></div>
+              <b>{operations?.views.length ?? 0}</b>
+            </header>
+            <div className="saved-view-grid">
+              {(operations?.views ?? []).map((item) => (
+                <article key={item.id}>
+                  <span><DocumentBulletList24Regular /></span>
+                  <div>
+                    <small>{item.workload} · {item.visibility}</small>
+                    <strong>{item.name}</strong>
+                    <p>{item.filters.length} filters · {item.columns.length} columns · owner {item.createdBy}</p>
+                  </div>
+                  <button type="button" data-local-action="true" onClick={() => onOpen(item)}>Open</button>
+                </article>
+              ))}
+              {!operations?.views.length && <p className="empty-operation">Save a configured report view to begin.</p>}
+            </div>
+          </section>
+          <div className="report-operation-grid">
+            <section className="report-operation-section">
+              <header><div><strong>Schedules</strong><small>Manual acceptance runs and next-run plan</small></div><b>{operations?.schedules.length ?? 0}</b></header>
+              <div className="operation-list">
+                {(operations?.schedules ?? []).map((item) => (
+                  <article key={item.id}>
+                    <div><strong>{item.name}</strong><small>{item.cadence} at {item.runAt} · {item.timezone}</small></div>
+                    <span className={`operation-status ${item.status}`}>{item.status}</span>
+                    <small>Next {item.nextRunAt ? new Date(item.nextRunAt).toLocaleString() : "pending calculation"}</small>
+                    <button type="button" data-local-action="true" disabled={generating !== null || !canManage} onClick={() => onRun(item.id)}>{!canManage ? "Read-only" : generating === item.id ? "Running…" : "Run now"}</button>
+                  </article>
+                ))}
+                {!operations?.schedules.length && <p className="empty-operation">No scheduled views yet.</p>}
+              </div>
+            </section>
+            <section className="report-operation-section">
+              <header><div><strong>Threshold alerts</strong><small>Evaluated whenever the linked view runs</small></div><b>{operations?.alerts.length ?? 0}</b></header>
+              <div className="operation-list">
+                {(operations?.alerts ?? []).map((item) => (
+                  <article key={item.id}>
+                    <div><strong>{item.name}</strong><small>{item.metric.replaceAll("_", " ")} {item.operator} {item.threshold}</small></div>
+                    <span className={`alert-severity ${item.severity}`}>{item.severity}</span>
+                    <small>{item.lastObservedValue === undefined ? "Awaiting first evaluation" : `Last value ${item.lastObservedValue}`}</small>
+                    <b>{item.status}</b>
+                  </article>
+                ))}
+                {!operations?.alerts.length && <p className="empty-operation">No report alerts yet.</p>}
+              </div>
+            </section>
+          </div>
+          <section className="report-operation-section">
+            <header><div><strong>Execution history</strong><small>Interactive and scheduled report jobs</small></div><b>{operations?.runs.length ?? 0}</b></header>
+            <div className="report-run-table">
+              <div><b>Report</b><b>Trigger</b><b>Status</b><b>Rows</b><b>Started</b></div>
+              {(operations?.runs ?? []).slice(0, 12).map((item) => (
+                <div key={item.id}>
+                  <span>{viewById.get(item.viewId ?? "")?.name ?? item.name}</span>
+                  <span>{item.trigger?.replaceAll("_", " ") ?? "interactive"}</span>
+                  <span className={`operation-status ${item.status}`}>{item.status}</span>
+                  <span>{item.result?.totalRows?.toLocaleString("en-US") ?? "—"}</span>
+                  <span>{new Date(item.createdAt).toLocaleString()}</span>
+                </div>
+              ))}
+              {!operations?.runs.length && <p className="empty-operation">Run history appears after the first report execution.</p>}
+            </div>
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
+
 function ReportDrawer({
   report,
+  initialView,
   onClose,
   notify,
   onRun,
+  onSaved,
+  canManage,
 }: {
   report: CatalogueReport;
+  initialView: RuntimeReportView | null;
   onClose: () => void;
   notify: (m: string) => void;
-  onRun: () => void;
+  onRun: (configuration: ReportRunConfiguration) => void;
+  onSaved: () => void;
+  canManage: boolean;
 }) {
-  const [tab, setTab] = useState("Preview");
+  const [tab, setTab] = useState<"Preview" | "Columns" | "Filters" | "Schedule" | "Alert">("Preview");
+  const [viewName, setViewName] = useState(
+    initialView?.name ?? `${report.name} · operations view`,
+  );
+  const [visibility, setVisibility] = useState<"private" | "team">(
+    initialView?.visibility ?? "team",
+  );
+  const [favorite, setFavorite] = useState(
+    initialView?.favorite ?? report.favorite,
+  );
+  const [columns, setColumns] = useState<string[]>(
+    initialView?.columns ?? enterpriseReportColumns.slice(0, 8),
+  );
+  const [filters, setFilters] = useState<ReportFilter[]>(
+    initialView?.filters.map((filter) => ({ ...filter })) ?? [],
+  );
+  const [savedView, setSavedView] = useState<RuntimeReportView | null>(
+    initialView,
+  );
+  const [savedVersions, setSavedVersions] = useState(initialView ? 1 : 0);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [scheduleName, setScheduleName] = useState(`${report.name} · weekly review`);
+  const [cadence, setCadence] = useState<"daily" | "weekly" | "monthly">("weekly");
+  const [runAt, setRunAt] = useState("08:00");
+  const [timezone, setTimezone] = useState("Asia/Dubai");
+  const [scheduleCreated, setScheduleCreated] = useState("");
+  const [alertName, setAlertName] = useState(`${report.name} · risk threshold`);
+  const [alertMetric, setAlertMetric] = useState<"row_count" | "critical_count" | "warning_count" | "average_risk">("critical_count");
+  const [alertOperator, setAlertOperator] = useState<"gt" | "gte" | "eq" | "lte" | "lt">("gte");
+  const [alertThreshold, setAlertThreshold] = useState(10);
+  const [alertSeverity, setAlertSeverity] = useState<"info" | "warning" | "critical">("warning");
+  const [alertCreated, setAlertCreated] = useState("");
+
+  const saveView = async () => {
+    if (!viewName.trim()) throw new Error("A saved view name is required.");
+    if (!columns.length) throw new Error("Select at least one report column.");
+    setSaving(true);
+    setError("");
+    try {
+      const created = await createRuntimeReportView({
+        reportId: report.id,
+        name: savedVersions
+          ? `${viewName.trim()} · revision ${savedVersions + 1}`
+          : viewName.trim(),
+        reportName: report.name,
+        workload: report.workload,
+        description: report.description,
+        columns,
+        filters,
+        visibility,
+        favorite,
+      });
+      setSavedView(created);
+      setSavedVersions((current) => current + 1);
+      onSaved();
+      notify(`${created.name} saved with ${filters.length} filters and ${columns.length} columns.`);
+      return created;
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "The report view could not be saved.";
+      setError(message);
+      throw caught;
+    } finally {
+      setSaving(false);
+    }
+  };
+  const ensureView = async () => savedView ?? saveView();
+  const saveSchedule = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const view = await ensureView();
+      const created = await createRuntimeReportSchedule(view.id, {
+        name: scheduleName,
+        cadence,
+        timezone,
+        runAt,
+        ...(cadence === "weekly" ? { dayOfWeek: 1 } : {}),
+        ...(cadence === "monthly" ? { dayOfMonth: 1 } : {}),
+        delivery: "local_archive",
+        status: "active",
+      });
+      setScheduleCreated(`Active · next ${created.nextRunAt ? new Date(created.nextRunAt).toLocaleString() : "run calculated"}`);
+      onSaved();
+      notify(`${created.name} activated with governed local-archive delivery.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The schedule could not be created.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const saveAlert = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const view = await ensureView();
+      const created = await createRuntimeReportAlert(view.id, {
+        name: alertName,
+        metric: alertMetric,
+        operator: alertOperator,
+        threshold: alertThreshold,
+        severity: alertSeverity,
+        status: "active",
+      });
+      setAlertCreated(`Active · ${created.metric.replaceAll("_", " ")} ${created.operator} ${created.threshold}`);
+      onSaved();
+      notify(`${created.name} activated and linked to this report view.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The alert could not be created.");
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <aside
@@ -754,108 +1275,158 @@ function ReportDrawer({
             <b className="catalogue-id">{report.id}</b>
             <small>{report.workload}</small>
           </span>
-          <button onClick={onClose}>×</button>
+          <button type="button" data-local-action="true" onClick={onClose}>×</button>
         </div>
         <h2>{report.name}</h2>
         <p className="drawer-sub">{report.description}</p>
         <div className="drawer-tabs">
-          {["Preview", "Columns", "Filters", "Schedule"].map((item) => (
+          {(["Preview", "Columns", "Filters", ...(canManage ? ["Schedule", "Alert"] as const : [])] as const).map((item) => (
             <button
               key={item}
+              type="button"
+              data-local-action="true"
               className={tab === item ? "selected" : ""}
-              onClick={() => {
-                setTab(item);
-                notify(
-                  `${report.name}: ${item.toLowerCase()} configuration selected.`,
-                );
-              }}
+              onClick={() => setTab(item)}
             >
               {item}
             </button>
           ))}
         </div>
         <div className="report-config">
-          <section>
-            <h3>Report scope</h3>
-            <div className="config-row">
-              <span>
-                Tenant<strong>Global Enterprise Holdings</strong>
-              </span>
-              <span>
-                Snapshot<strong>Current · {report.updated} old</strong>
-              </span>
-            </div>
-          </section>
-          <section>
-            <h3>Selected columns</h3>
-            <div className="tag-list">
-              <span>Display name</span>
-              <span>Object ID</span>
-              <span>Department</span>
-              <span>Status</span>
-              <span>Last activity</span>
-              <span>Risk</span>
-              <span>+ 8 more</span>
-            </div>
-          </section>
-          <section>
-            <h3>Active filters</h3>
-            <div className="filter-builder">
-              <span>
-                Account state <b>equals</b> Enabled
-              </span>
-              <span>
-                Activity date <b>before</b> 90 days
-              </span>
-              <button
-                onClick={() =>
-                  notify(`A new filter condition was added to ${report.name}.`)
-                }
-              >
-                + Add condition
-              </button>
-            </div>
-          </section>
-          <section>
-            <h3>Preview</h3>
-            <div className="preview-table">
-              <div>
-                <b>Display name</b>
-                <b>Department</b>
-                <b>Status</b>
-              </div>
-              {["Nadia Almasi", "Robert Santos", "Li Chen"].map((n, i) => (
-                <div key={n}>
-                  <span>{n}</span>
-                  <span>
-                    {["Private Banking", "Infrastructure", "Treasury"][i]}
-                  </span>
-                  <span>Review</span>
+          {tab === "Preview" && (
+            <>
+              <section>
+                <h3>Report scope</h3>
+                <div className="config-row">
+                  <span>Tenant<strong>Global Enterprise Holdings</strong></span>
+                  <span>Snapshot<strong>Current · {report.updated} old</strong></span>
                 </div>
-              ))}
-            </div>
-          </section>
+              </section>
+              <section>
+                <h3>Execution definition</h3>
+                <div className="report-definition-summary">
+                  <span><b>{columns.length}</b> selected columns</span>
+                  <span><b>{filters.length}</b> active filters</span>
+                  <span><b>{visibility}</b> visibility</span>
+                  <span><b>{favorite ? "yes" : "no"}</b> favorite</span>
+                </div>
+              </section>
+              <section>
+                <h3>Schema preview</h3>
+                <div className="preview-table dynamic-preview">
+                  <div><b>Display name</b><b>Department</b><b>Status</b></div>
+                  {[
+                    ["Identity 00042", "Finance", "warning"],
+                    ["Identity 00118", "Security", "critical"],
+                    ["Identity 00273", "Operations", "healthy"],
+                  ].map((row) => <div key={row[0]}>{row.map((value) => <span key={value}>{value}</span>)}</div>)}
+                </div>
+                <p className="config-disclosure">Synthetic schema preview. Run report queries the tenant-scoped local resource store using this exact definition.</p>
+              </section>
+            </>
+          )}
+          {tab === "Columns" && (
+            <section>
+              <h3>Column designer</h3>
+              <p className="config-help">Select the fields included in interactive, exported, and scheduled results.</p>
+              <div className="column-picker">
+                {enterpriseReportColumns.map((column) => (
+                  <label key={column}>
+                    <input
+                      type="checkbox"
+                      checked={columns.includes(column)}
+                      onChange={(event) => {
+                        setSavedView(null);
+                        setColumns((current) => event.target.checked ? [...current, column] : current.filter((item) => item !== column));
+                      }}
+                    />
+                    <span>{column}</span>
+                    <small>{columns.includes(column) ? `Position ${columns.indexOf(column) + 1}` : "Excluded"}</small>
+                  </label>
+                ))}
+              </div>
+            </section>
+          )}
+          {tab === "Filters" && (
+            <section>
+              <h3>Advanced filter builder</h3>
+              <p className="config-help">AND/OR conditions are validated and applied server-side before rows and metrics are calculated.</p>
+              <div className="advanced-filter-builder">
+                {filters.map((filter, index) => (
+                  <div key={`${filter.field}-${index}`}>
+                    <select value={filter.logic} disabled={index === 0} onChange={(event) => { setSavedView(null); setFilters((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, logic: event.target.value as "and" | "or" } : item)); }}><option value="and">AND</option><option value="or">OR</option></select>
+                    <select value={filter.field} onChange={(event) => { setSavedView(null); setFilters((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, field: event.target.value as ReportFilter["field"] } : item)); }}>
+                      {["status", "risk", "department", "region", "type", "external", "activityScore"].map((field) => <option key={field} value={field}>{field.replace(/([A-Z])/g, " $1")}</option>)}
+                    </select>
+                    <select value={filter.operator} onChange={(event) => { setSavedView(null); setFilters((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, operator: event.target.value as ReportFilter["operator"] } : item)); }}><option value="equals">equals</option><option value="not_equals">does not equal</option><option value="contains">contains</option><option value="gte">greater/equal</option><option value="lte">less/equal</option></select>
+                    <input aria-label={`Filter ${index + 1} value`} value={filter.value} placeholder="Value" onChange={(event) => { setSavedView(null); setFilters((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.target.value } : item)); }} />
+                    <button type="button" data-local-action="true" aria-label={`Remove filter ${index + 1}`} onClick={() => { setSavedView(null); setFilters((current) => current.filter((_, itemIndex) => itemIndex !== index)); }}>×</button>
+                  </div>
+                ))}
+                <button type="button" data-local-action="true" onClick={() => { setSavedView(null); setFilters((current) => [...current, { field: "status", operator: "equals", value: "warning", logic: "and" }]); }}>+ Add condition</button>
+              </div>
+              {!filters.length && <div className="empty-config">No filters: execution includes every resource in the selected workload.</div>}
+            </section>
+          )}
+          {tab === "Schedule" && (
+            <section>
+              <h3>Schedule this exact view</h3>
+              <p className="config-help">The persisted filter and column snapshot is reused on each run. Delivery remains inside this instance.</p>
+              <div className="report-form-grid">
+                <label>Schedule name<input value={scheduleName} onChange={(event) => setScheduleName(event.target.value)} /></label>
+                <label>Cadence<select value={cadence} onChange={(event) => setCadence(event.target.value as typeof cadence)}><option value="daily">Daily</option><option value="weekly">Weekly · Monday</option><option value="monthly">Monthly · first day</option></select></label>
+                <label>Run at<input type="time" value={runAt} onChange={(event) => setRunAt(event.target.value)} /></label>
+                <label>Timezone<select value={timezone} onChange={(event) => setTimezone(event.target.value)}><option>Asia/Dubai</option><option>UTC</option><option>Europe/London</option><option>Asia/Singapore</option></select></label>
+                <label className="full-field">Delivery target<input value="Local runtime report archive" disabled /></label>
+              </div>
+              {scheduleCreated && <div className="config-success"><CheckmarkCircle24Regular /> {scheduleCreated}</div>}
+            </section>
+          )}
+          {tab === "Alert" && (
+            <section>
+              <h3>Monitor report results</h3>
+              <p className="config-help">Evaluate a governed threshold each time this exact saved view completes.</p>
+              <div className="report-form-grid">
+                <label>Alert name<input value={alertName} onChange={(event) => setAlertName(event.target.value)} /></label>
+                <label>Metric<select value={alertMetric} onChange={(event) => setAlertMetric(event.target.value as typeof alertMetric)}><option value="row_count">Row count</option><option value="critical_count">Critical count</option><option value="warning_count">Warning count</option><option value="average_risk">Average risk</option></select></label>
+                <label>Operator<select value={alertOperator} onChange={(event) => setAlertOperator(event.target.value as typeof alertOperator)}><option value="gt">Greater than</option><option value="gte">Greater or equal</option><option value="eq">Equals</option><option value="lte">Less or equal</option><option value="lt">Less than</option></select></label>
+                <label>Threshold<input type="number" min="0" value={alertThreshold} onChange={(event) => setAlertThreshold(Number(event.target.value))} /></label>
+                <label>Severity<select value={alertSeverity} onChange={(event) => setAlertSeverity(event.target.value as typeof alertSeverity)}><option value="info">Info</option><option value="warning">Warning</option><option value="critical">Critical</option></select></label>
+              </div>
+              {alertCreated && <div className="config-success"><CheckmarkCircle24Regular /> {alertCreated}</div>}
+            </section>
+          )}
         </div>
+        {canManage && <div className="saved-view-strip">
+          <label>Saved view name<input value={viewName} onChange={(event) => { setViewName(event.target.value); setSavedView(null); }} /></label>
+          <label>Visibility<select value={visibility} onChange={(event) => { setVisibility(event.target.value as "private" | "team"); setSavedView(null); }}><option value="team">Team</option><option value="private">Private</option></select></label>
+          {savedView && <span><CheckmarkCircle24Regular /> Persisted · {savedView.id.slice(0, 8)}</span>}
+        </div>}
+        {error && <div className="report-config-error" role="alert">{error}</div>}
+        {!canManage && <div className="report-readonly"><ShieldCheckmark24Regular /> Read-only access: view configuration is available, but execution and persistence require Report Administrator or Platform Administrator.</div>}
         <div className="drawer-actions">
-          <Btn onClick={() => notify(`${report.name} added to favorites.`)}>
-            ☆ Favorite
-          </Btn>
-          <Btn
-            onClick={() => notify(`Schedule draft created for ${report.name}.`)}
-          >
-            <CalendarClock24Regular /> Schedule
-          </Btn>
-          <Btn
+          {canManage && <Btn localAction onClick={() => { setFavorite((current) => !current); setSavedView(null); }}>
+            {favorite ? "★ Favorited" : "☆ Favorite"}
+          </Btn>}
+          {canManage && <Btn localAction disabled={saving} onClick={() => void saveView().catch(() => undefined)}>
+            {saving ? "Saving…" : savedVersions ? "Save revision" : "Save view"}
+          </Btn>}
+          {canManage && tab === "Schedule" && <Btn localAction disabled={saving} onClick={() => void saveSchedule()}><CalendarClock24Regular /> Activate schedule</Btn>}
+          {canManage && tab === "Alert" && <Btn localAction disabled={saving} onClick={() => void saveAlert()}><Alert24Regular /> Activate alert</Btn>}
+          {canManage && <Btn
             primary
+            localAction
             onClick={() => {
-              notify(
-                `${report.name} generated locally with ${report.rows} rows.`,
-              );
-              onRun();
+              if (!columns.length) {
+                setError("Select at least one report column before running.");
+                return;
+              }
+              notify(`${report.name} submitted with ${filters.length} server-side filters.`);
+              onRun({ columns, filters, viewId: savedView?.id });
             }}
           >
             <Play24Regular /> Run report
-          </Btn>
+          </Btn>}
         </div>
       </aside>
     </div>
@@ -931,7 +1502,7 @@ function Auditing({ notify }: { notify: (m: string) => void }) {
         <Kpi
           label="AUDIT RETENTION"
           value="7 years"
-          detail="Immutable local archive"
+          detail="Hash-chain integrity checks"
           tone="blue"
         />
         <Kpi
@@ -1611,7 +2182,7 @@ function Alerts({ notify }: { notify: (m: string) => void }) {
           primary
           onClick={() =>
             notify(
-              "Alert policy builder opened with 947 report signals available.",
+              "Alert policy builder opened with governed reporting signals available.",
             )
           }
         >
@@ -2169,12 +2740,19 @@ function Hybrid({ notify }: { notify: (m: string) => void }) {
   );
 }
 
-export function SuiteWorkspace({ page, notify }: Props) {
+export function SuiteWorkspace({ page, notify, roles }: Props) {
   switch (page) {
     case "Explorer 360":
       return <Explorer notify={notify} />;
     case "Reporting":
-      return <Reporting notify={notify} />;
+      return (
+        <Reporting
+          notify={notify}
+          canManage={roles.some((role) =>
+            ["platform-admin", "report-admin"].includes(role),
+          )}
+        />
+      );
     case "Auditing":
       return <Auditing notify={notify} />;
     case "Management":

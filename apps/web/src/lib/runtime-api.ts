@@ -72,6 +72,157 @@ export async function getAdminCenters() {
   );
 }
 
+export type ReportFilterField =
+  | "status"
+  | "risk"
+  | "department"
+  | "region"
+  | "type"
+  | "external"
+  | "activityScore";
+
+export type ReportFilter = {
+  field: ReportFilterField;
+  operator: "equals" | "not_equals" | "contains" | "gte" | "lte";
+  value: string;
+  logic: "and" | "or";
+};
+
+export type RuntimeReportView = {
+  id: string;
+  tenantId: string;
+  reportId: string;
+  name: string;
+  reportName: string;
+  workload: string;
+  description?: string;
+  columns: string[];
+  filters: ReportFilter[];
+  visibility: "private" | "team";
+  favorite: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RuntimeReportSchedule = {
+  id: string;
+  tenantId: string;
+  viewId: string;
+  name: string;
+  cadence: "daily" | "weekly" | "monthly";
+  timezone: string;
+  runAt: string;
+  dayOfWeek?: number;
+  dayOfMonth?: number;
+  delivery: "local_archive";
+  status: "active" | "paused";
+  lastRunAt?: string;
+  nextRunAt?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RuntimeReportAlert = {
+  id: string;
+  tenantId: string;
+  viewId: string;
+  name: string;
+  metric: "row_count" | "critical_count" | "warning_count" | "average_risk";
+  operator: "gt" | "gte" | "eq" | "lte" | "lt";
+  threshold: number;
+  severity: "info" | "warning" | "critical";
+  status: "active" | "paused";
+  lastEvaluatedAt?: string;
+  lastObservedValue?: number;
+  lastTriggeredAt?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RuntimeReportRun = {
+  id: string;
+  name: string;
+  workload: string;
+  status: "queued" | "running" | "completed" | "failed";
+  trigger?: "interactive" | "schedule_manual";
+  viewId?: string;
+  scheduleId?: string;
+  requestedBy: string;
+  createdAt: string;
+  completedAt?: string;
+  result?: { totalRows: number };
+};
+
+export type RuntimeReportOperations = {
+  generatedAt: string;
+  summary: {
+    views: number;
+    activeSchedules: number;
+    activeAlerts: number;
+    completedRuns: number;
+  };
+  views: RuntimeReportView[];
+  schedules: RuntimeReportSchedule[];
+  alerts: RuntimeReportAlert[];
+  runs: RuntimeReportRun[];
+};
+
+export const getRuntimeReportOperations = () =>
+  request<RuntimeReportOperations>("/api/v1/report-operations");
+
+export const createRuntimeReportView = (view: {
+  reportId: string;
+  name: string;
+  reportName: string;
+  workload: string;
+  description?: string;
+  columns: string[];
+  filters: ReportFilter[];
+  visibility: "private" | "team";
+  favorite: boolean;
+}) =>
+  request<RuntimeReportView>("/api/v1/report-views", {
+    method: "POST",
+    body: JSON.stringify(view),
+  });
+
+export const createRuntimeReportSchedule = (
+  viewId: string,
+  schedule: {
+    name: string;
+    cadence: "daily" | "weekly" | "monthly";
+    timezone: string;
+    runAt: string;
+    dayOfWeek?: number;
+    dayOfMonth?: number;
+    delivery: "local_archive";
+    status?: "active" | "paused";
+  },
+) =>
+  request<RuntimeReportSchedule>(
+    `/api/v1/report-views/${encodeURIComponent(viewId)}/schedules`,
+    { method: "POST", body: JSON.stringify(schedule) },
+  );
+
+export const createRuntimeReportAlert = (
+  viewId: string,
+  alert: {
+    name: string;
+    metric: "row_count" | "critical_count" | "warning_count" | "average_risk";
+    operator: "gt" | "gte" | "eq" | "lte" | "lt";
+    threshold: number;
+    severity: "info" | "warning" | "critical";
+    status?: "active" | "paused";
+  },
+) =>
+  request<RuntimeReportAlert>(
+    `/api/v1/report-views/${encodeURIComponent(viewId)}/alerts`,
+    { method: "POST", body: JSON.stringify(alert) },
+  );
+
 type RuntimeReportJob = {
   id: string;
   name: string;
@@ -80,6 +231,7 @@ type RuntimeReportJob = {
   createdAt: string;
   completedAt?: string;
   progress: number;
+  filters?: ReportFilter[];
   result?: {
     totalRows: number;
     columns: string[];
@@ -92,15 +244,7 @@ type RuntimeReportJob = {
 const delay = (milliseconds: number) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-export async function runRuntimeReport(
-  name: string,
-  workload: string,
-  columns?: string[],
-): Promise<GeneratedReport> {
-  let job = await request<RuntimeReportJob>("/api/v1/report-jobs", {
-    method: "POST",
-    body: JSON.stringify({ name, workload, columns }),
-  });
+async function waitForRuntimeReport(job: RuntimeReportJob) {
   for (
     let attempt = 0;
     attempt < 40 && job.status !== "completed" && job.status !== "failed";
@@ -125,7 +269,36 @@ export async function runRuntimeReport(
     columns: job.result.columns,
     rows: job.result.rows,
     metrics: job.result.metrics,
-  };
+  } satisfies GeneratedReport;
+}
+
+export async function runRuntimeReportSchedule(scheduleId: string) {
+  const job = await request<RuntimeReportJob>(
+    `/api/v1/report-schedules/${encodeURIComponent(scheduleId)}/run`,
+    { method: "POST" },
+  );
+  return waitForRuntimeReport(job);
+}
+
+export async function runRuntimeSavedReportView(viewId: string) {
+  const job = await request<RuntimeReportJob>(
+    `/api/v1/report-views/${encodeURIComponent(viewId)}/run`,
+    { method: "POST" },
+  );
+  return waitForRuntimeReport(job);
+}
+
+export async function runRuntimeReport(
+  name: string,
+  workload: string,
+  columns?: string[],
+  filters?: ReportFilter[],
+): Promise<GeneratedReport> {
+  let job = await request<RuntimeReportJob>("/api/v1/report-jobs", {
+    method: "POST",
+    body: JSON.stringify({ name, workload, columns, filters }),
+  });
+  return waitForRuntimeReport(job);
 }
 
 export type RuntimeWorkflow = {

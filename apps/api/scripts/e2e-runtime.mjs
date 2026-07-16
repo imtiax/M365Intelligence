@@ -282,6 +282,182 @@ if (
 )
   throw new Error("Custom report projection was not preserved.");
 
+await call("/api/v1/report-views", {
+  method: "POST",
+  roles: "read-only",
+  expected: 403,
+  body: {
+    reportId: "unauthorized-view",
+    name: "Unauthorized view",
+    reportName: "Unauthorized report",
+    workload: "Microsoft Entra ID",
+    columns: ["Display name"],
+    filters: [],
+    visibility: "private",
+    favorite: false,
+  },
+});
+await call("/api/v1/report-views", {
+  method: "POST",
+  expected: 400,
+  body: {
+    reportId: "invalid-filter",
+    name: "Invalid filter view",
+    reportName: "Invalid report",
+    workload: "Microsoft Entra ID",
+    columns: [],
+    filters: [{ field: "provider_query", operator: "sql", value: "*", logic: "xor" }],
+    visibility: "public",
+    favorite: "yes",
+  },
+});
+const savedReportView = await call("/api/v1/report-views", {
+  method: "POST",
+  body: {
+    reportId: "identity-risk-finance",
+    name: `E2E finance risk ${randomUUID().slice(0, 8)}`,
+    reportName: "Identity Risk Operations",
+    workload: "Microsoft Entra ID",
+    description: "Persistent E2E saved view with governed filters.",
+    columns: ["Display name", "Department", "Risk score", "Region"],
+    filters: [
+      { field: "department", operator: "equals", value: "Finance", logic: "and" },
+      { field: "risk", operator: "gte", value: "60", logic: "and" },
+    ],
+    visibility: "team",
+    favorite: true,
+  },
+});
+const reportSchedule = await call(`/api/v1/report-views/${savedReportView.id}/schedules`, {
+  method: "POST",
+  body: {
+    name: "E2E Monday local archive",
+    cadence: "weekly",
+    timezone: "Asia/Dubai",
+    runAt: "08:30",
+    dayOfWeek: 1,
+    delivery: "local_archive",
+    status: "active",
+  },
+});
+if (!reportSchedule.nextRunAt || Date.parse(reportSchedule.nextRunAt) <= Date.now())
+  throw new Error("Report schedule next-run calculation is missing or stale.");
+const reportAlert = await call(`/api/v1/report-views/${savedReportView.id}/alerts`, {
+  method: "POST",
+  body: {
+    name: "E2E filtered rows detected",
+    metric: "row_count",
+    operator: "gt",
+    threshold: 0,
+    severity: "warning",
+    status: "active",
+  },
+});
+const scheduledReportJob = await call(`/api/v1/report-schedules/${reportSchedule.id}/run`, {
+  method: "POST",
+});
+const scheduledReport = await waitFor(
+  `/api/v1/report-jobs/${scheduledReportJob.id}`,
+  "completed",
+);
+if (
+  scheduledReport.trigger !== "schedule_manual" ||
+  scheduledReport.viewId !== savedReportView.id ||
+  scheduledReport.result.totalRows <= 0 ||
+  scheduledReport.result.totalRows >= 1400 ||
+  scheduledReport.result.rows.some((row) => row[1] !== "Finance" || Number(row[2]) < 60)
+)
+  throw new Error("The scheduled saved-view run did not apply its persisted filters.");
+const linkedInteractiveJob = await call(`/api/v1/report-views/${savedReportView.id}/run`, {
+  method: "POST",
+  actor: "interactive.reporter@apex.local",
+  roles: "report-admin",
+});
+const linkedInteractiveReport = await waitFor(
+  `/api/v1/report-jobs/${linkedInteractiveJob.id}`,
+  "completed",
+);
+if (
+  linkedInteractiveReport.trigger !== "interactive" ||
+  linkedInteractiveReport.viewId !== savedReportView.id ||
+  linkedInteractiveReport.result.totalRows !== scheduledReport.result.totalRows
+)
+  throw new Error("Interactive saved-view execution did not preserve its governed definition.");
+
+const privateReportOwner = "private.reporter@apex.local";
+const privateReportView = await call("/api/v1/report-views", {
+  method: "POST",
+  actor: privateReportOwner,
+  roles: "report-admin",
+  body: {
+    reportId: "private-defender-critical",
+    name: `Private Defender results ${randomUUID().slice(0, 8)}`,
+    reportName: "Private critical incidents",
+    workload: "Defender XDR",
+    columns: ["Display name", "Status", "Risk score"],
+    filters: [{ field: "status", operator: "equals", value: "critical", logic: "and" }],
+    visibility: "private",
+    favorite: false,
+  },
+});
+const privateLinkedJob = await call(`/api/v1/report-views/${privateReportView.id}/run`, {
+  method: "POST",
+  actor: privateReportOwner,
+  roles: "report-admin",
+});
+await call(`/api/v1/report-jobs/${privateLinkedJob.id}`, {
+  actor: "different.reporter@apex.local",
+  roles: "report-admin",
+  expected: 404,
+});
+const privateUnlinkedJob = await call("/api/v1/report-jobs", {
+  method: "POST",
+  actor: privateReportOwner,
+  roles: "report-admin",
+  body: {
+    name: "Private ad hoc report",
+    workload: "Defender XDR",
+    columns: ["Display name"],
+  },
+});
+await call(`/api/v1/report-jobs/${privateUnlinkedJob.id}`, {
+  actor: "different.reporter@apex.local",
+  roles: "report-admin",
+  expected: 404,
+});
+const otherReporterJobs = await call("/api/v1/report-jobs?limit=100", {
+  actor: "different.reporter@apex.local",
+  roles: "report-admin",
+});
+const otherReporterOperations = await call("/api/v1/report-operations", {
+  actor: "different.reporter@apex.local",
+  roles: "report-admin",
+});
+if (
+  otherReporterJobs.items.some((item) => item.id === privateLinkedJob.id || item.id === privateUnlinkedJob.id) ||
+  otherReporterOperations.views.some((item) => item.id === privateReportView.id) ||
+  otherReporterOperations.runs.some((item) => item.id === privateLinkedJob.id || item.id === privateUnlinkedJob.id)
+)
+  throw new Error("Private or requester-only report results crossed the reporting identity boundary.");
+await call(`/api/v1/report-jobs/${privateLinkedJob.id}`, {
+  actor: "platform.inspector@apex.local",
+  roles: "platform-admin",
+});
+const reportOperations = await call("/api/v1/report-operations");
+if (
+  !reportOperations.views.some((item) => item.id === savedReportView.id) ||
+  !reportOperations.schedules.some((item) => item.id === reportSchedule.id) ||
+  !reportOperations.alerts.some((item) => item.id === reportAlert.id && item.lastTriggeredAt) ||
+  !reportOperations.runs.some((item) => item.id === scheduledReport.id && item.result?.totalRows === scheduledReport.result.totalRows) ||
+  reportOperations.summary.completedRuns < 3
+)
+  throw new Error("Persistent reporting operations summary is incomplete.");
+const filteredReportRuns = await call(
+  `/api/v1/report-jobs?status=completed&trigger=schedule_manual&viewId=${encodeURIComponent(savedReportView.id)}&limit=10`,
+);
+if (filteredReportRuns.items.length !== 1 || filteredReportRuns.items[0].id !== scheduledReport.id)
+  throw new Error("Report-job history filters are not being applied.");
+
 const workflow = await call("/api/v1/workflows", {
   method: "POST",
   body: {
@@ -470,6 +646,13 @@ console.log(
         totalRows: report.result.totalRows,
         previewRows: report.result.rows.length,
         columns: report.result.columns,
+      },
+      reportingOperations: {
+        viewId: savedReportView.id,
+        scheduleId: reportSchedule.id,
+        alertId: reportAlert.id,
+        filteredRows: scheduledReport.result.totalRows,
+        completedRuns: reportOperations.summary.completedRuns,
       },
       workflow: {
         id: completedWorkflow.id,
