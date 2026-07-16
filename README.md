@@ -14,6 +14,10 @@ The repository includes a production-buildable Next.js application, a NestJS API
 
 The bundled dataset and workflow results are synthetic. Live Microsoft Graph collectors and real Microsoft 365 mutations are an integration boundary, not silently simulated production functionality. See [Connect Microsoft 365](#connect-microsoft-365).
 
+## Product landing page
+
+The public, responsive industry landing page is available at `http://localhost:3008/landing`. It uses screenshots captured from the working platform, presents industry use cases, explains platform differentiation without unsupported competitor claims, and links into the secure sign-in experience. The landing page is intentionally public; application routes and data remain session protected.
+
 ## Quick local setup
 
 ### Prerequisites

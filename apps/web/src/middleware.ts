@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SESSION_COOKIE, verifySession } from '@/lib/session';
 
 export async function middleware(request: NextRequest) {
+  const isPublicLanding =
+    request.nextUrl.pathname === '/landing' ||
+    request.nextUrl.pathname.startsWith('/landing/');
+
+  if (isPublicLanding) {
+    const response = NextResponse.next();
+    response.headers.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
+    return response;
+  }
+
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   let authenticated = false;
   if (token) {
@@ -27,4 +37,3 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico).*)'],
 };
-
