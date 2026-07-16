@@ -74,6 +74,7 @@ import { SuiteWorkspace } from "@/components/SuiteWorkspaces";
 import { reportCatalogue } from "@/data/suite";
 import { ProductStudio } from "@/components/ProductStudio";
 import { DemoModePanel, LiveCompliancePanel, LiveLicensePanel, LiveSecurityPanel, User360Workspace } from "@/components/EnterpriseDemo";
+import { CommercialWorkspaces } from "@/components/CommercialWorkspaces";
 import {
   exportReportExcel,
   exportReportPdf,
@@ -131,9 +132,12 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "PLATFORM",
     items: [
+      { label: "Connection center", icon: CloudCheckmark24Regular },
+      { label: "Customer portal", icon: Key24Regular },
       { label: "AI analyst", icon: Bot24Regular },
       { label: "Configuration", icon: Settings24Regular },
       { label: "Administration", icon: Settings24Regular },
+      { label: "Super Admin", icon: PeopleTeam24Regular },
     ],
   },
 ];
@@ -2453,6 +2457,10 @@ export default function Home() {
         return <AIPage notify={notify} />;
       case "Administration":
         return <AdminPage notify={notify} />;
+      case "Connection center":
+      case "Customer portal":
+      case "Super Admin":
+        return <CommercialWorkspaces page={active} notify={notify} />;
       case "Explorer 360":
         return <User360Workspace notify={notify} />;
       case "Reporting":

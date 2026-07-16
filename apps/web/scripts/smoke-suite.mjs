@@ -156,8 +156,11 @@ try {
     ["Delegation", "Least-privilege delegation"],
     ["Hybrid AD", "Hybrid Active Directory operations"],
     ["AI analyst", "Aegis AI analyst"],
+    ["Connection center", "Connection center"],
+    ["Customer portal", "Customer portal"],
     ["Configuration", "Platform configuration"],
     ["Administration", "Platform administration"],
+    ["Super Admin", "Super Admin"],
   ];
   const verified = [];
   for (const [label, title] of modules) {

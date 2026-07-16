@@ -23,6 +23,38 @@ async function request<T>(
   return response.json() as Promise<T>;
 }
 
+export type CommercialOrganization = {
+  id: string; tenantId: string; legalName: string; displayName: string;
+  industry: string[]; companySize: string; primaryRegion: string; mode: string;
+  dataBoundary: string; onboarding: { completed: number; total: number; next: string };
+};
+export type CommercialSubscription = {
+  plan: string; state: string; billingCycle: string; licensedUsers: number;
+  trialEndsAt: string; entitlements: string[]; note: string;
+};
+export type CommercialLicense = {
+  licenseNumber: string; state: string; edition: string; boundTenantId: string;
+  maxInstances: number; activeInstances: number; maxUsers: number;
+  activationMode: string; expiresAt: string; cryptographicEnforcement: string;
+};
+export type CommercialConnector = {
+  code: string; name: string; domain: string; reports: number;
+  state: "healthy" | "degraded" | "action_required"; permissionCoverage: number;
+  lastSyncAt: string; nextSyncAt: string; objectsProcessed: number; missingPermissions: string[];
+};
+export type CommercialCustomers = {
+  summary: { customers: number; activeTrials: number; paidSubscriptions: number; expiringLicenses: number };
+  items: Array<{ organization: string; tenantId: string; mode: string; subscription: string; license: string; connectors: string; dataBoundary: string }>;
+  disclosure: string;
+};
+
+export const getCommercialOrganization = () => request<CommercialOrganization>("/api/v1/commercial/organization");
+export const getCommercialSubscription = () => request<CommercialSubscription>("/api/v1/commercial/subscription");
+export const getCommercialLicense = () => request<CommercialLicense>("/api/v1/commercial/license");
+export const getCommercialConnectors = () => request<{ generatedAt: string; items: CommercialConnector[] }>("/api/v1/commercial/connectors");
+export const validateCommercialConnector = (code: string) => request<CommercialConnector & { validationId: string; validation: string }>(`/api/v1/commercial/connectors/${encodeURIComponent(code)}/validate`, { method: "POST" });
+export const getCommercialCustomers = () => request<CommercialCustomers>("/api/v1/commercial/super-admin/customers");
+
 export type RuntimeAdminCenter = {
   workload: string;
   total: number;

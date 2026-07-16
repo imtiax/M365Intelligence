@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
+import { CommercialModule } from "./modules/commercial/commercial.module";
 import { DemoModule } from "./modules/demo/demo.module";
 import { FindingsModule } from "./modules/findings/findings.module";
 import { HealthController } from "./modules/health/health.controller";
@@ -13,6 +14,7 @@ import { TenantContextGuard } from "./shared/security/tenant-context.guard";
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DashboardModule,
+    CommercialModule,
     DemoModule,
     FindingsModule,
     RuntimeModule,

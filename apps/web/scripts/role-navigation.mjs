@@ -5,9 +5,9 @@ import { join } from "node:path";
 const password = process.env.AEGIS_SMOKE_PASSWORD;
 if (!password) throw new Error("AEGIS_SMOKE_PASSWORD is required.");
 const expected = {
-  "admin@apex.local": 24,
-  "security@apex.local": 11,
-  "m365admin@apex.local": 10,
+  "admin@apex.local": 27,
+  "security@apex.local": 12,
+  "m365admin@apex.local": 11,
   "reports@apex.local": 10,
   "auditor@apex.local": 9,
   "viewer@apex.local": 6,
@@ -52,6 +52,7 @@ try {
     const modules = await evaluate("[...document.querySelectorAll('nav button')].map(x=>x.textContent.trim().replace(/\\d+$/,'').trim())");
     if (modules.length !== expectedCount) throw new Error(`${username} expected ${expectedCount} modules, received ${modules.length}: ${modules.join(', ')}`);
     if (username !== "admin@apex.local" && modules.includes("Administration")) throw new Error(`${username} can see Administration.`);
+    if (username !== "admin@apex.local" && (modules.includes("Super Admin") || modules.includes("Customer portal"))) throw new Error(`${username} can see a commercial administrator workspace.`);
     if (username === "viewer@apex.local") {
       await evaluate("location.hash='#administration'");
       await delay(400);

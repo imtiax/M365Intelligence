@@ -8,7 +8,7 @@ The repository includes a production-buildable Next.js application, a NestJS API
 
 - Secure local authentication with scrypt password hashing, signed HttpOnly sessions, throttling, protected routes, and security headers.
 - A deterministic enterprise generator with 5,000 detailed users, 28,900 Microsoft 365 objects, six customer scenarios, user 360, security incidents, identity risk, licensing, compliance, grounded AI, and continuous timeline events.
-- Twenty-three product workspaces and hundreds of interactive controls across the complete presentation experience.
+- Twenty-seven product workspaces and hundreds of interactive controls, including a tenant-scoped Connection Center, Customer Portal, and role-restricted Super Admin commercial workspace.
 - Ten workload-specific admin-center dashboards, a 947-report catalogue, API-backed report jobs with populated rows and KPI summaries, working PDF/Excel downloads, a custom report builder, report scheduling/security, dashboard designer, filtering, drawers, approval-controlled persistent workflows, real-time events, tamper-evident audit history, administration, global search, and persistent browser drafts.
 - Production Next.js build, browser smoke suite, control inventory, Docker topology, NestJS API, PostgreSQL/TimescaleDB, Redis, RabbitMQ, optional OpenSearch, optional Ollama, and observability assets.
 
@@ -19,6 +19,8 @@ The bundled dataset and workflow results are synthetic. Live Microsoft Graph col
 The public, responsive industry landing page is available at `http://localhost:3008/landing`. It uses screenshots captured from the working platform, presents industry use cases, explains platform differentiation without unsupported competitor claims, and links into the secure sign-in experience. The landing page is intentionally public; application routes and data remain session protected.
 
 The deployment is local-first: application services, databases, reports, indexes, audit history, and optional local AI run within customer-controlled infrastructure. There is no Aegis-operated cloud data store. A live tenant deployment communicates directly with the Microsoft identity platform and Microsoft Graph only when explicitly configured and authorized; optional outbound integrations must also be enabled by the customer.
+
+The commercial architecture separates the hosted signup, trial, subscription, license, and support control plane from the customer-controlled Microsoft 365 data plane. See the [commercial product requirements](docs/COMMERCIAL-PRODUCT-PRD.md), [commercial system design](docs/COMMERCIAL-SYSTEM-DESIGN.md), and the RLS-first Supabase migration under `infra/supabase/migrations`.
 
 ## Quick local setup
 
