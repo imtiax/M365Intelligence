@@ -5,7 +5,7 @@ The client showcase is a locally executable product experience backed by one int
 | Workspace | Demonstrated capabilities | Primary drill-downs |
 |---|---|---|
 | Command Center | Executive security, compliance, cost, operations, findings | Finding evidence, business impact, control mapping, remediation draft |
-| Explorer 360 | Ten workload domains, 158K objects, relationship and history coverage | Workload search, inventory composition, collection assurance |
+| Explorer 360 | 5,000 searchable users and 28,900 normalized enterprise objects with relationship and history coverage | User 360, risk filtering, inventory composition, collection assurance |
 | Dashboard Designer | Role-aware widget composition, layouts, audiences and refresh | Widget library, responsive sizes, source configuration and saved dashboards |
 | Value Center | Adjustable client ROI model and buyer evidence checklist | User/admin/cost assumptions, value breakdown and proof gaps |
 | Security | SOC metrics, signals, incidents, threat distribution, exposure | Risk-filtered finding detail and response guidance |

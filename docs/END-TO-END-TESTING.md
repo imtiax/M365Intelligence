@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This environment validates the platform workflow before Microsoft 365 credentials are introduced. It is not a static UI fixture: the web application calls the local API, report jobs and workflows transition through enforced states, 7,850 tenant resources persist to disk, changes stream in real time, and audit entries form a verifiable SHA-256 chain.
+This environment validates the platform workflow before Microsoft 365 credentials are introduced. It is not a static UI fixture: the web application calls the local API, 5,000 detailed users and 28,900 normalized enterprise objects persist alongside 7,850 reporting resources, scenarios and timeline activity change in real time, report jobs and workflows transition through enforced states, and audit entries form a verifiable SHA-256 chain.
 
 The resources are synthetic. Live Graph data and production Microsoft 365 changes remain disabled until the connection and release checklist in `MICROSOFT-365-CONNECTION.md` is complete.
 
@@ -72,6 +72,8 @@ npm.cmd run test:e2e
 The HTTP suite validates:
 
 - readiness and deterministic reset;
+- the 5,000-user Global Enterprise Holdings ecosystem and exact Microsoft 365 object populations;
+- user 360, security incidents, risk findings, license optimization, four compliance frameworks, report templates, grounded AI, scenario activation, and timeline ticks;
 - ten admin centers and 7,850 resources;
 - invalid report rejection;
 - asynchronous report queued/running/completed states;

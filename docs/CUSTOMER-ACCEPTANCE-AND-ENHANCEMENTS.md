@@ -2,7 +2,7 @@
 
 ## Acceptance scope
 
-This review treats the local platform as a customer pilot. The production Next.js build, production-authenticated API, persistent local state, six organization personas, 24 navigable pages, 383 visible buttons, and 61 visible inputs are exercised. Microsoft 365 remains deliberately disconnected; Graph collection and tenant mutation are integration work, not represented as completed by synthetic acceptance data.
+This review treats the local platform as a customer pilot. The production Next.js build, production-authenticated API, persistent local state, six organization personas, 24 navigable pages, 381 visible buttons, and 62 visible inputs are exercised. Microsoft 365 remains deliberately disconnected; Graph collection and tenant mutation are integration work, not represented as completed by synthetic acceptance data.
 
 ## Module results and enhancement disposition
 

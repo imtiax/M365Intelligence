@@ -73,12 +73,13 @@ import {
 import { SuiteWorkspace } from "@/components/SuiteWorkspaces";
 import { reportCatalogue } from "@/data/suite";
 import { ProductStudio } from "@/components/ProductStudio";
+import { DemoModePanel, LiveCompliancePanel, LiveLicensePanel, LiveSecurityPanel, User360Workspace } from "@/components/EnterpriseDemo";
 import {
   exportReportExcel,
   exportReportPdf,
   generateCustomReport,
 } from "@/lib/reporting";
-import { getRuntimeWorkflows, runRuntimeWorkflow, runtimeEventUrl, transitionRuntimeWorkflow, type RuntimeWorkflow } from "@/lib/runtime-api";
+import { askDemoAi, getRuntimeWorkflows, runRuntimeWorkflow, runtimeEventUrl, transitionRuntimeWorkflow, type RuntimeWorkflow } from "@/lib/runtime-api";
 import { canOpenModule, canRunChanges } from "@/lib/access";
 import { roleLabels, type PlatformRole } from "@/lib/identity";
 
@@ -329,13 +330,15 @@ function FindingsTable({
 function CommandCenter({
   onFinding,
   onNavigate,
+  notify,
 }: {
   onFinding: (f: Finding) => void;
   onNavigate: (n: string) => void;
+  notify: (message: string) => void;
 }) {
   return (
     <>
-      <DemoNotice />
+      <DemoModePanel notify={notify} />
       <PageHeader
         eyebrow="OVERVIEW / COMMAND CENTER"
         title="Enterprise posture at a glance"
@@ -358,8 +361,8 @@ function CommandCenter({
       <div className="metrics-grid">
         <Stat
           label="SECURITY POSTURE"
-          value="78/100"
-          detail="↗ 3.2% this month"
+          value="87/100"
+          detail="Live enterprise baseline"
           icon={ShieldCheckmark24Regular}
         />
         <Stat
@@ -371,15 +374,15 @@ function CommandCenter({
         />
         <Stat
           label="COMPLIANCE SCORE"
-          value="86%"
-          detail="428 of 497 controls passing"
+          value="91%"
+          detail="ISO, NIST, CIS and SOC 2"
           icon={ClipboardTask24Regular}
           tone="blue"
         />
         <Stat
           label="SAVINGS OPPORTUNITY"
-          value="$41.8K"
-          detail="per month · 1,463 assignments"
+          value="$150K+"
+          detail="modeled annual opportunity"
           icon={MoneyHand24Regular}
           tone="gold"
         />
@@ -438,7 +441,7 @@ function CommandCenter({
           <div className="chart-foot">
             <span>
               <i className="teal-dot" />
-              Current <strong>78</strong>
+              Current <strong>87</strong>
             </span>
             <span>
               Financial services benchmark <strong>71</strong>
@@ -451,12 +454,12 @@ function CommandCenter({
         <Panel title="Operational pulse" subtitle="Last 24 hours">
           <div className="pulse-grid">
             <div>
-              <strong>139</strong>
+              <strong>100</strong>
               <small>Security alerts</small>
               <em className="good">↓ 15%</em>
             </div>
             <div>
-              <strong>18.9K</strong>
+              <strong>7,000</strong>
               <small>Managed devices</small>
               <em>92% compliant</em>
             </div>
@@ -512,6 +515,7 @@ function SecurityPage({ onFinding }: { onFinding: (f: Finding) => void }) {
           </>
         }
       />
+      <LiveSecurityPanel />
       <div className="metrics-grid">
         <Stat
           label="ACTIVE INCIDENTS"
@@ -687,8 +691,8 @@ function IdentityPage() {
       <div className="metrics-grid">
         <Stat
           label="TOTAL IDENTITIES"
-          value="12,480"
-          detail="11,816 members · 664 guests"
+          value="5,000"
+          detail="4,800 members · 200 guests"
           icon={PeopleTeam24Regular}
         />
         <Stat
@@ -822,6 +826,7 @@ function CompliancePage() {
           </>
         }
       />
+      <LiveCompliancePanel />
       <div className="metrics-grid">
         <Stat
           label="OVERALL COMPLIANCE"
@@ -933,6 +938,7 @@ function LicensesPage() {
           </>
         }
       />
+      <LiveLicensePanel />
       <div className="metrics-grid">
         <Stat
           label="MONTHLY SPEND"
@@ -1441,10 +1447,16 @@ function AIPage({ notify }: { notify: (m: string) => void }) {
   const [query, setQuery] = useState(
     "Why did our security posture change this month?",
   );
-  const [answered, setAnswered] = useState(true);
-  const submit = () => {
-    if (query.trim()) setAnswered(true);
+  const [answer, setAnswer] = useState<{ answer: string; recommendations: string[]; sources: string[] } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const submit = async (question = query) => {
+    if (!question.trim()) return;
+    setLoading(true);
+    try { setAnswer(await askDemoAi(question)); }
+    catch (error) { notify(error instanceof Error ? error.message : "AI simulation failed."); }
+    finally { setLoading(false); }
   };
+  useEffect(() => { void submit(query); }, []);
   return (
     <>
       <PageHeader
@@ -1460,7 +1472,7 @@ function AIPage({ notify }: { notify: (m: string) => void }) {
               key={p}
               onClick={() => {
                 setQuery(p);
-                setAnswered(true);
+                void submit(p);
               }}
             >
               <Sparkle24Filled />
@@ -1490,7 +1502,7 @@ function AIPage({ notify }: { notify: (m: string) => void }) {
               governed workflows using this tenant’s authorized evidence.
             </p>
           </div>
-          {answered && (
+          {answer && (
             <>
               <div className="chat user">
                 <span>AM</span>
@@ -1501,16 +1513,16 @@ function AIPage({ notify }: { notify: (m: string) => void }) {
                   <Sparkle24Filled />
                 </span>
                 <div>
-                  <p>{aiAnswer.summary}</p>
-                  <strong>Key insights</strong>
+                  <p>{answer.answer}</p>
+                  <strong>Recommended actions</strong>
                   <ul>
-                    {aiAnswer.insights.map((i) => (
+                    {answer.recommendations.map((i) => (
                       <li key={i}>{i}</li>
                     ))}
                   </ul>
                   <div className="ai-sources">
                     <strong>Grounded sources</strong>
-                    {aiAnswer.sources.map((s) => (
+                    {answer.sources.map((s) => (
                       <button
                         key={s}
                         onClick={() =>
@@ -1547,13 +1559,13 @@ function AIPage({ notify }: { notify: (m: string) => void }) {
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
-                setAnswered(false);
+                setAnswer(null);
               }}
               onKeyDown={(e) => e.key === "Enter" && submit()}
               placeholder="Ask about risk, compliance, cost, or operations…"
             />
-            <button onClick={submit}>
-              <Sparkle24Filled /> Analyze
+            <button onClick={() => void submit()} disabled={loading}>
+              <Sparkle24Filled /> {loading ? "Analyzing…" : "Analyze"}
             </button>
             <small>
               <ShieldCheckmark24Regular /> RBAC filtered · Sensitive data masked
@@ -2180,7 +2192,7 @@ function ActionDialog({
     justification: string,
   ) => Promise<string>;
 }) {
-  const [scope, setScope] = useState("Apex Financial Group · Demo tenant");
+  const [scope, setScope] = useState("Global Enterprise Holdings · Demo tenant");
   const [owner, setOwner] = useState("Alex Morgan");
   const [justification, setJustification] = useState(
     "First end-to-end acceptance execution of the governed product workflow.",
@@ -2206,7 +2218,7 @@ function ActionDialog({
             <label>
               Target scope
               <select value={scope} onChange={(e) => setScope(e.target.value)}>
-                <option>Apex Financial Group · Demo tenant</option>
+                <option>Global Enterprise Holdings · Demo tenant</option>
                 <option>Security Operations business unit</option>
                 <option>UAE regional scope</option>
               </select>
@@ -2293,7 +2305,7 @@ function ActionDialog({
 }
 
 function downloadDemoFile(label: string) {
-  const content = `Aegis M365 Platform\n${label}\nGenerated: ${new Date().toISOString()}\nTenant: Apex Financial Group\nClassification: Confidential · Synthetic demo data\n\nThis locally generated demonstration artifact contains no customer Microsoft 365 data.\n`;
+  const content = `Aegis M365 Platform\n${label}\nGenerated: ${new Date().toISOString()}\nTenant: Global Enterprise Holdings\nClassification: Confidential · Synthetic demo data\n\nThis locally generated demonstration artifact contains no customer Microsoft 365 data.\n`;
   const blob = new Blob([content], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -2442,6 +2454,7 @@ export default function Home() {
       case "Administration":
         return <AdminPage notify={notify} />;
       case "Explorer 360":
+        return <User360Workspace notify={notify} />;
       case "Reporting":
       case "Auditing":
       case "Management":
@@ -2458,7 +2471,7 @@ export default function Home() {
       case "Value center":
         return <ProductStudio page={active} notify={notify} />;
       default:
-        return <CommandCenter onFinding={setFinding} onNavigate={navigateTo} />;
+        return <CommandCenter onFinding={setFinding} onNavigate={navigateTo} notify={notify} />;
     }
   }, [active, identity]);
   return (
@@ -2536,7 +2549,7 @@ export default function Home() {
               <button className="selected" onClick={() => setTenantOpen(false)}>
                 <span className="tenant-avatar">AF</span>
                 <span>
-                  <b>Apex Financial Group</b>
+                  <b>Global Enterprise Holdings</b>
                   <small>Primary · UAE North · Healthy</small>
                 </span>
                 <CheckmarkCircle24Regular />

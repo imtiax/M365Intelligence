@@ -125,8 +125,17 @@ try {
     "document.querySelector('.runtime-live')?.classList.contains('online')",
     "real-time runtime connection",
   );
+  await waitFor(
+    "document.querySelector('.enterprise-demo')?.textContent.includes('Global Enterprise Holdings')&&document.querySelector('.enterprise-demo')?.textContent.includes('5,000')",
+    "5,000-user enterprise simulation",
+  );
+  await evaluate(`([...document.querySelectorAll('.scenario-selector button')].find(x=>x.textContent.includes('License Optimization'))).click()`);
+  await waitFor(
+    "[...document.querySelectorAll('.scenario-selector button')].some(x=>x.classList.contains('selected')&&x.textContent.includes('License Optimization'))",
+    "license optimization scenario activation",
+  );
   const modules = [
-    ["Explorer 360", "Microsoft 365 Explorer"],
+    ["Explorer 360", "Global workforce intelligence"],
     ["Dashboard designer", "Custom dashboard designer"],
     ["Value center", "Business value center"],
     ["Security", "Security operations center"],
@@ -171,6 +180,15 @@ try {
       throw new Error(`Deep link mismatch for ${label}`);
     verified.push(label);
   }
+  await evaluate(`(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('AI analyst')).click();return true})()`);
+  await waitFor("!!document.querySelector('.ai-input input')", "AI analyst input");
+  await evaluate(`(()=>{const input=document.querySelector('.ai-input input');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'Show me security problems');input.dispatchEvent(new Event('input',{bubbles:true}));return true})()`);
+  await delay(150);
+  await evaluate("document.querySelector('.ai-input button').click()");
+  await waitFor(
+    "document.querySelector('.chat.assistant')?.textContent.includes('120 users without MFA')",
+    "grounded AI security response",
+  );
   // Exercise every admin-center dashboard and a complete report generation/export flow.
   await evaluate(
     `(()=>{[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Reporting')).click();return true})()`,
@@ -460,8 +478,12 @@ try {
     `(()=>{const button=[...document.querySelectorAll('nav button')].find(x=>x.textContent.trim().startsWith('Explorer 360'));button.click();return true})()`,
   );
   await waitFor(
-    "document.querySelector('h1')?.textContent.includes('Microsoft 365 Explorer')",
+    "document.querySelector('h1')?.textContent.includes('Global workforce intelligence')",
     "Explorer screenshot",
+  );
+  await waitFor(
+    "document.querySelector('.explorer-toolbar strong')?.textContent.includes('5,000')&&document.querySelector('.user360-profile')?.textContent.includes('Recommendations')",
+    "user 360 enterprise profile",
   );
   await evaluate(
     `(()=>{const input=document.querySelector('.global-search input');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'mailbox');input.dispatchEvent(new Event('input',{bubbles:true}));return true})()`,
@@ -472,6 +494,13 @@ try {
   );
   const searchResults = await evaluate(
     "document.querySelectorAll('.global-results button').length",
+  );
+  await evaluate(
+    `(()=>{const input=document.querySelector('.global-search input');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'MFA Compliance Report');input.dispatchEvent(new Event('input',{bubbles:true}));return true})()`,
+  );
+  await waitFor(
+    "document.querySelector('.global-results')?.textContent.includes('MFA Compliance Report')",
+    "customer-ready report template search",
   );
   await evaluate(
     `(()=>{const input=document.querySelector('.global-search input');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'');input.dispatchEvent(new Event('input',{bubbles:true}));return true})()`,

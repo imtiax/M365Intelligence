@@ -3,12 +3,12 @@ const password = process.env.AEGIS_SMOKE_PASSWORD;
 if (!password) throw new Error("AEGIS_SMOKE_PASSWORD is required.");
 
 const personas = [
-  { username: "admin@apex.local", role: "platform-admin", reports: 201, workflows: 201, audit: 200, users: 200 },
-  { username: "security@apex.local", role: "security-admin", reports: 403, workflows: 201, audit: 200, users: 403 },
-  { username: "m365admin@apex.local", role: "m365-admin", reports: 403, workflows: 201, audit: 403, users: 403 },
-  { username: "reports@apex.local", role: "report-admin", reports: 201, workflows: 403, audit: 403, users: 403 },
-  { username: "auditor@apex.local", role: "auditor", reports: 403, workflows: 403, audit: 200, users: 403 },
-  { username: "viewer@apex.local", role: "read-only", reports: 403, workflows: 403, audit: 403, users: 403 },
+  { username: "admin@apex.local", role: "platform-admin", reports: 201, workflows: 201, audit: 200, users: 200, scenario: 201 },
+  { username: "security@apex.local", role: "security-admin", reports: 403, workflows: 201, audit: 200, users: 403, scenario: 201 },
+  { username: "m365admin@apex.local", role: "m365-admin", reports: 403, workflows: 201, audit: 403, users: 403, scenario: 201 },
+  { username: "reports@apex.local", role: "report-admin", reports: 201, workflows: 403, audit: 403, users: 403, scenario: 403 },
+  { username: "auditor@apex.local", role: "auditor", reports: 403, workflows: 403, audit: 200, users: 403, scenario: 403 },
+  { username: "viewer@apex.local", role: "read-only", reports: 403, workflows: 403, audit: 403, users: 403, scenario: 403 },
 ];
 
 async function request(path, { method = "GET", cookie, body } = {}) {
@@ -41,7 +41,10 @@ for (const persona of personas) {
   const report = await request("/api/runtime/api/v1/report-jobs", { cookie, method: "POST", body: { name: `RBAC ${persona.role}`, workload: "Microsoft Entra ID" } });
   const workflow = await request("/api/runtime/api/v1/workflows", { cookie, method: "POST", body: { title: `RBAC ${persona.role}`, type: "rbac-test", targetScope: "Acceptance role scope", justification: "Verify effective organization authorization" } });
   const audit = await request("/api/runtime/api/v1/audit", { cookie });
-  const actual = { users: users.status, reports: report.status, workflows: workflow.status, audit: audit.status };
+  const overview = await request("/api/runtime/api/v1/demo/overview", { cookie });
+  if (overview.status !== 200) throw new Error(`${persona.username} cannot read the enterprise demo overview.`);
+  const scenario = await request("/api/runtime/api/v1/demo/scenarios/executive-cio/activate", { cookie, method: "POST", body: {} });
+  const actual = { users: users.status, reports: report.status, workflows: workflow.status, audit: audit.status, scenario: scenario.status };
   for (const key of Object.keys(actual)) {
     if (actual[key] !== persona[key]) throw new Error(`${persona.username} ${key}: expected ${persona[key]}, received ${actual[key]}.`);
   }

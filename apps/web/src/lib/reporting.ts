@@ -34,7 +34,7 @@ const templates: Record<string, Template> = {
     rows: [
       [
         "Nadia Almasi",
-        "n.almasi@apexfg.com",
+        "n.almasi@globalholdings.com",
         "Private Banking",
         "Enabled",
         "FIDO2",
@@ -43,7 +43,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Robert Santos",
-        "r.santos@apexfg.com",
+        "r.santos@globalholdings.com",
         "Infrastructure",
         "Enabled",
         "Authenticator",
@@ -52,7 +52,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Li Chen",
-        "l.chen@apexfg.com",
+        "l.chen@globalholdings.com",
         "Treasury",
         "Enabled",
         "Authenticator",
@@ -61,7 +61,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Amira Malik",
-        "a.malik@apexfg.com",
+        "a.malik@globalholdings.com",
         "Compliance",
         "Enabled",
         "FIDO2",
@@ -70,7 +70,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "James Wilson",
-        "j.wilson_ext@apexfg.com",
+        "j.wilson_ext@globalholdings.com",
         "External Audit",
         "Enabled",
         "SMS",
@@ -79,7 +79,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Sara Ibrahim",
-        "s.ibrahim@apexfg.com",
+        "s.ibrahim@globalholdings.com",
         "Security",
         "Enabled",
         "FIDO2",
@@ -88,7 +88,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "David Okafor",
-        "d.okafor@apexfg.com",
+        "d.okafor@globalholdings.com",
         "Endpoint",
         "Enabled",
         "Authenticator",
@@ -97,7 +97,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Elena Rossi",
-        "e.rossi@apexfg.com",
+        "e.rossi@globalholdings.com",
         "Finance",
         "Disabled",
         "None",
@@ -108,13 +108,13 @@ const templates: Record<string, Template> = {
     metrics: [
       {
         label: "Identities",
-        value: "12,480",
-        detail: "11,938 members / 542 guests",
+        value: "5,000",
+        detail: "4,800 members / 200 guests",
       },
       {
         label: "MFA coverage",
         value: "96.8%",
-        detail: "401 registration gaps",
+        detail: "120 registration gaps",
       },
       { label: "Privileged", value: "186", detail: "45 require stronger MFA" },
       {
@@ -137,7 +137,7 @@ const templates: Record<string, Template> = {
     ],
     rows: [
       [
-        "treasury.ops@apexfg.com",
+        "treasury.ops@globalholdings.com",
         "Shared",
         "Treasury",
         "87.4 GB",
@@ -147,7 +147,7 @@ const templates: Record<string, Template> = {
         "Review",
       ],
       [
-        "n.almasi@apexfg.com",
+        "n.almasi@globalholdings.com",
         "User",
         "Private Banking",
         "42.8 GB",
@@ -157,7 +157,7 @@ const templates: Record<string, Template> = {
         "Healthy",
       ],
       [
-        "board@apexfg.com",
+        "board@globalholdings.com",
         "Shared",
         "Executive",
         "61.2 GB",
@@ -167,7 +167,7 @@ const templates: Record<string, Template> = {
         "Review",
       ],
       [
-        "r.santos@apexfg.com",
+        "r.santos@globalholdings.com",
         "User",
         "Infrastructure",
         "18.9 GB",
@@ -177,7 +177,7 @@ const templates: Record<string, Template> = {
         "Healthy",
       ],
       [
-        "client.notices@apexfg.com",
+        "client.notices@globalholdings.com",
         "Shared",
         "Operations",
         "49.1 GB",
@@ -187,7 +187,7 @@ const templates: Record<string, Template> = {
         "High risk",
       ],
       [
-        "a.malik@apexfg.com",
+        "a.malik@globalholdings.com",
         "User",
         "Compliance",
         "24.6 GB",
@@ -197,7 +197,7 @@ const templates: Record<string, Template> = {
         "Healthy",
       ],
       [
-        "legacy.fx@apexfg.com",
+        "legacy.fx@globalholdings.com",
         "Shared",
         "Treasury",
         "96.7 GB",
@@ -207,7 +207,7 @@ const templates: Record<string, Template> = {
         "Quota risk",
       ],
       [
-        "investigations@apexfg.com",
+        "investigations@globalholdings.com",
         "Shared",
         "Security",
         "38.3 GB",
@@ -810,7 +810,7 @@ const templates: Record<string, Template> = {
     rows: [
       [
         "AEG-AADCONNECT-01",
-        "apexfg.com",
+        "globalholdings.com",
         "Entra Connect",
         "Healthy",
         "0",
@@ -819,7 +819,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "AEG-AADCONNECT-02",
-        "apexfg.com",
+        "globalholdings.com",
         "Staging",
         "Ready",
         "0",
@@ -828,7 +828,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "CN=Legacy Traders",
-        "emea.apexfg.com",
+        "emea.globalholdings.com",
         "OU",
         "Attention",
         "18",
@@ -837,7 +837,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "DXB-DC-01",
-        "apexfg.com",
+        "globalholdings.com",
         "Domain controller",
         "Healthy",
         "0",
@@ -846,7 +846,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "LON-DC-03",
-        "emea.apexfg.com",
+        "emea.globalholdings.com",
         "Domain controller",
         "Warning",
         "4",
@@ -855,7 +855,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Sync rule 118",
-        "apexfg.com",
+        "globalholdings.com",
         "Inbound rule",
         "Error",
         "23",
@@ -864,7 +864,7 @@ const templates: Record<string, Template> = {
       ],
       [
         "Privileged Accounts",
-        "apexfg.com",
+        "globalholdings.com",
         "Group",
         "Review",
         "18",
@@ -973,7 +973,7 @@ function xml(value: string) {
 export function exportReportExcel(report: GeneratedReport) {
   const rows = [
     [report.name],
-    [`Tenant: Apex Financial Group`],
+    [`Tenant: Global Enterprise Holdings`],
     [`Generated: ${report.generatedAt}`],
     [],
     ["Metric", "Value", "Detail"],
@@ -1031,7 +1031,7 @@ export async function exportReportPdf(report: GeneratedReport) {
       color: rgb(1, 1, 1),
     });
     page.drawText(
-      `Apex Financial Group | ${ascii(report.workload)} | ${ascii(report.generatedAt)}`,
+      `Global Enterprise Holdings | ${ascii(report.workload)} | ${ascii(report.generatedAt)}`,
       {
         x: margin,
         y: pageHeight - 55,

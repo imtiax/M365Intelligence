@@ -152,3 +152,37 @@ export async function runRuntimeWorkflow(
 export function runtimeEventUrl() {
   return `${API}/api/v1/events/stream`;
 }
+
+export type DemoOverview = {
+  generatedAt: string;
+  tenant: {
+    name: string;
+    industry: string;
+    countries: number;
+    activeScenario: string;
+    lastSimulationAt: string;
+    kpis: { users: number; activeUsers: number; inactiveUsers: number; securityScore: number; complianceScore: number; licenseUtilization: number; storageUsage: number; highRiskUsers: number };
+  };
+  objectCounts: Record<string, number>;
+  departments: Array<{ id: string; name: string; detail: string }>;
+  locations: Array<{ id: string; name: string; detail: string }>;
+  scenarios: Array<{ id: string; label: string; description: string }>;
+  latestEvents: Array<{ id: string; occurredAt: string; type: string; title: string; detail: string; severity: string }>;
+};
+
+export type DemoUser = {
+  id: string; displayName: string; username: string; department: string; location: string; manager: string; jobTitle: string;
+  license: string; accountStatus: string; riskLevel: string; lastLogin: string; mfaStatus: string; devices: number; teams: number; mailboxGb: number;
+  recommendations?: string[];
+};
+
+export const getDemoOverview = () => request<DemoOverview>("/api/v1/demo/overview");
+export const activateDemoScenario = (scenario: string) => request<DemoOverview>(`/api/v1/demo/scenarios/${scenario}/activate`, { method: "POST", body: "{}" });
+export const runDemoTick = () => request<{ id: string; title: string; detail: string }>("/api/v1/demo/tick", { method: "POST", body: "{}" });
+export const resetDemoEnvironment = () => request<{ users: number; enterpriseObjects: number }>("/api/v1/simulation/reset", { method: "POST", body: "{}" });
+export const getDemoUsers = (search = "", risk = "", limit = 100) => request<{ total: number; items: DemoUser[] }>(`/api/v1/demo/users?search=${encodeURIComponent(search)}&risk=${encodeURIComponent(risk)}&limit=${limit}`);
+export const getDemoUser = (id: string) => request<DemoUser>(`/api/v1/demo/users/${encodeURIComponent(id)}`);
+export const getDemoSecurity = () => request<{ score: number; riskDistribution: { high: number; medium: number; low: number }; activeIncidents: number; events: Array<{ id: string; title: string; severity: string; user: string; location: string; detection: string; status: string }>; findings: Array<{ id: string; title: string; count: number; severity: string; recommendation: string }>; recommendations: string[] }>("/api/v1/demo/security");
+export const getDemoLicenses = () => request<{ utilization: number; annualSavings: number; plans: Array<{ id: string; name: string; assigned: number; activeUsage: number; unused: number; monthlyUnitCost: number }>; candidates: Array<{ user: string; username: string; currentLicense: string; usage: string; recommendation: string; annualSaving: number }> }>("/api/v1/demo/licenses");
+export const getDemoCompliance = () => request<{ score: number; frameworkScores: Array<{ framework: string; score: number; controls: number; failed: number }>; controls: Array<{ id: string; framework: string; control: string; score: number; failed: number; status: string; recommendation: string }> }>("/api/v1/demo/compliance");
+export const askDemoAi = (question: string) => request<{ question: string; answer: string; findings?: Array<{ title: string; count: number }>; recommendations: string[]; sources: string[]; groundedAt: string }>("/api/v1/demo/ai", { method: "POST", body: JSON.stringify({ question }) });

@@ -1,3 +1,5 @@
+import type { EnterpriseDemoState } from "./enterprise.types";
+
 export type ResourceRecord = {
   id: string;
   tenantId: string;
@@ -90,6 +92,7 @@ export type RuntimeEvent = {
 export type RuntimeState = {
   version: number;
   seededAt: string;
+  enterprise: EnterpriseDemoState;
   resources: ResourceRecord[];
   reportJobs: ReportJob[];
   workflows: Workflow[];

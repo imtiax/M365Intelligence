@@ -15,6 +15,7 @@ import type {
   RuntimeEvent,
   RuntimeState,
 } from "./runtime.types";
+import { createEnterpriseDemo } from "./enterprise-seed";
 
 export const DEMO_TENANT = "00000000-0000-4000-8000-000000000001";
 
@@ -33,10 +34,10 @@ const workloads = [
 const departments = [
   "Security",
   "Finance",
-  "Treasury",
-  "Infrastructure",
-  "Compliance",
-  "Private Banking",
+  "IT",
+  "Human Resources",
+  "Sales",
+  "Legal",
   "Operations",
   "Human Resources",
 ];
@@ -62,8 +63,8 @@ function seedResources(tenantId: string): ResourceRecord[] {
         ).toISOString(),
         details: {
           enabled: index % 19 !== 0,
-          owner: `owner${(index % 180) + 1}@apexfg.com`,
-          region: ["UAE", "UK", "Singapore", "Germany"][index % 4],
+          owner: `owner${(index % 180) + 1}@globalholdings.com`,
+          region: ["Dubai", "London", "Singapore", "New York", "Germany", "India", "Australia"][index % 7],
           activityScore: 100 - ((index * 7) % 91),
           external: index % 13 === 0,
         },
@@ -90,7 +91,7 @@ export class LocalStateService {
         const parsed = JSON.parse(
           readFileSync(this.path, "utf8"),
         ) as RuntimeState;
-        if (parsed.version === 1 && Array.isArray(parsed.resources))
+        if (parsed.version === 2 && parsed.enterprise && Array.isArray(parsed.resources))
           return parsed;
       } catch {
         // A corrupt test state is replaced with a deterministic seed below.
@@ -104,8 +105,9 @@ export class LocalStateService {
   private createSeed(): RuntimeState {
     const seededAt = new Date().toISOString();
     const state: RuntimeState = {
-      version: 1,
+      version: 2,
       seededAt,
+      enterprise: createEnterpriseDemo(DEMO_TENANT),
       resources: seedResources(DEMO_TENANT),
       reportJobs: [],
       workflows: [],
@@ -145,10 +147,32 @@ export class LocalStateService {
     );
     this.publish(DEMO_TENANT, "runtime.reset", {
       resources: this.state.resources.length,
+      users: this.state.enterprise.users.length,
+      enterpriseObjects:
+        this.state.enterprise.users.length +
+        this.state.enterprise.groups.length +
+        this.state.enterprise.teams.length +
+        this.state.enterprise.channels.length +
+        this.state.enterprise.sharePointSites.length +
+        this.state.enterprise.oneDrives.length +
+        this.state.enterprise.mailboxes.length +
+        this.state.enterprise.devices.length +
+        this.state.enterprise.applications.length,
     });
     return {
       seededAt: this.state.seededAt,
       resources: this.state.resources.length,
+      users: this.state.enterprise.users.length,
+      enterpriseObjects:
+        this.state.enterprise.users.length +
+        this.state.enterprise.groups.length +
+        this.state.enterprise.teams.length +
+        this.state.enterprise.channels.length +
+        this.state.enterprise.sharePointSites.length +
+        this.state.enterprise.oneDrives.length +
+        this.state.enterprise.mailboxes.length +
+        this.state.enterprise.devices.length +
+        this.state.enterprise.applications.length,
     };
   }
 

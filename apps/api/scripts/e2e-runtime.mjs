@@ -65,6 +65,28 @@ const firstEnvelopeUse = await fetch(`${base}/api/v1/admin-centers`, { headers: 
 const replayedEnvelope = await fetch(`${base}/api/v1/admin-centers`, { headers: replayHeaders });
 if (firstEnvelopeUse.status !== 200 || replayedEnvelope.status !== 401) throw new Error(`Internal identity replay defense failed (${firstEnvelopeUse.status}/${replayedEnvelope.status}).`);
 const reset = await call("/api/v1/simulation/reset", { method: "POST" });
+if (reset.users !== 5000 || reset.enterpriseObjects !== 28900) throw new Error(`Enterprise seed counts are incorrect: ${JSON.stringify(reset)}`);
+const enterprise = await call("/api/v1/demo/overview");
+if (enterprise.tenant.name !== "Global Enterprise Holdings" || enterprise.objectCounts.users !== 5000 || enterprise.objectCounts.devices !== 7000 || enterprise.objectCounts.channels !== 5000) throw new Error("Enterprise overview counts are incorrect.");
+const highRiskUsers = await call("/api/v1/demo/users?risk=High&limit=50");
+if (highRiskUsers.total !== 24 || highRiskUsers.items.length !== 24) throw new Error("High-risk user population is incorrect.");
+const user360 = await call(`/api/v1/demo/users/${highRiskUsers.items[0].id}`);
+if (!user360.recommendations.length || !user360.username) throw new Error("User 360 profile is incomplete.");
+const securityDemo = await call("/api/v1/demo/security");
+if (securityDemo.riskDistribution.high !== 24 || securityDemo.findings.find((item) => item.title === "MFA disabled users")?.count !== 120) throw new Error("Security simulation is incorrect.");
+const licenseDemo = await call("/api/v1/demo/licenses");
+if (licenseDemo.plans[0].unused !== 1500 || licenseDemo.annualSavings < 150000) throw new Error("License optimization simulation is incorrect.");
+const complianceDemo = await call("/api/v1/demo/compliance");
+if (complianceDemo.frameworkScores.length !== 4 || complianceDemo.controls.length !== 24) throw new Error("Compliance simulation is incomplete.");
+const templates = await call("/api/v1/demo/report-templates");
+if (templates.items.length !== 10) throw new Error("Report template population is incomplete.");
+const ai = await call("/api/v1/demo/ai", { method: "POST", body: { question: "Show me security problems" } });
+if (!ai.answer.includes("120 users without MFA") || ai.recommendations.length < 3) throw new Error("Grounded demo AI response is incorrect.");
+await call("/api/v1/demo/scenarios/security-breach/activate", { method: "POST", roles: "read-only", expected: 403 });
+const scenario = await call("/api/v1/demo/scenarios/security-breach/activate", { method: "POST" });
+if (scenario.tenant.activeScenario !== "security-breach" || scenario.tenant.kpis.securityScore !== 61) throw new Error("Security breach scenario did not activate.");
+const demoTick = await call("/api/v1/demo/tick", { method: "POST" });
+if (!demoTick.id || !demoTick.type) throw new Error("Demo simulation tick failed.");
 const centers = await call("/api/v1/admin-centers");
 if (centers.items.length !== 10) throw new Error("Expected ten admin centers.");
 const resources = centers.items.reduce((total, item) => total + item.total, 0);
@@ -211,6 +233,14 @@ console.log(
       health: health.status,
       replayDefense: { firstUse: firstEnvelopeUse.status, replay: replayedEnvelope.status },
       seeded: reset,
+      enterpriseDemo: {
+        tenant: enterprise.tenant.name,
+        users: enterprise.objectCounts.users,
+        objects: reset.enterpriseObjects,
+        highRiskUsers: highRiskUsers.total,
+        scenario: scenario.tenant.activeScenario,
+        aiGrounded: ai.sources.length,
+      },
       adminCenters: centers.items.length,
       resources,
       report: {

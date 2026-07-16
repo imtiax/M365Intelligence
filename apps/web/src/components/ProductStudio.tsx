@@ -1430,8 +1430,8 @@ function ConfigPanel({
       description:
         "Defines the sovereign tenant context used for collection, storage, policy, and authorization.",
       fields: [
-        ["Organization name", "Apex Financial Group", "text"],
-        ["Primary Microsoft tenant", "apexfg.onmicrosoft.com", "text"],
+        ["Organization name", "Global Enterprise Holdings", "text"],
+        ["Primary Microsoft tenant", "globalholdings.onmicrosoft.com", "text"],
         ["Data residency", "UAE North · Customer datacenter", "select"],
         ["Default time zone", "Asia/Dubai (UTC+04:00)", "select"],
       ],
@@ -1563,7 +1563,7 @@ function ConfigPanel({
       description:
         "Protected message delivery, templates, escalation, retry, and delivery evidence.",
       fields: [
-        ["Email relay", "smtp.apexfg.local:587", "text"],
+        ["Email relay", "smtp.globalholdings.local:587", "text"],
         ["Teams application", "Aegis Notification Bot", "text"],
         ["Default retry policy", "5 attempts · exponential", "select"],
         ["Critical escalation SLA", "5 minutes", "select"],

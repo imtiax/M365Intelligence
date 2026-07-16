@@ -2,11 +2,12 @@
 
 A local-first Microsoft 365 intelligence and security operations platform for reporting, auditing, identity, governance, compliance, licensing, hybrid operations, private AI, and approval-controlled remediation.
 
-The repository includes a production-buildable Next.js client showcase, a NestJS API foundation, Docker deployment assets, security architecture, an extensible tenant/data model, and a synthetic financial-services dataset for client presentations.
+The repository includes a production-buildable Next.js application, a NestJS API, Docker deployment assets, security architecture, an extensible tenant/data model, and a persistent 5,000-user Global Enterprise Holdings simulation for client demonstrations.
 
 ## What is working
 
 - Secure local authentication with scrypt password hashing, signed HttpOnly sessions, throttling, protected routes, and security headers.
+- A deterministic enterprise generator with 5,000 detailed users, 28,900 Microsoft 365 objects, six customer scenarios, user 360, security incidents, identity risk, licensing, compliance, grounded AI, and continuous timeline events.
 - Twenty-three product workspaces and hundreds of interactive controls across the complete presentation experience.
 - Ten workload-specific admin-center dashboards, a 947-report catalogue, API-backed report jobs with populated rows and KPI summaries, working PDF/Excel downloads, a custom report builder, report scheduling/security, dashboard designer, filtering, drawers, approval-controlled persistent workflows, real-time events, tamper-evident audit history, administration, global search, and persistent browser drafts.
 - Production Next.js build, browser smoke suite, control inventory, Docker topology, NestJS API, PostgreSQL/TimescaleDB, Redis, RabbitMQ, optional OpenSearch, optional Ollama, and observability assets.
@@ -36,7 +37,7 @@ cd ..\..
 powershell -ExecutionPolicy Bypass -File .\scripts\start-acceptance.ps1 -ResetData
 ```
 
-Open `http://localhost:3008/login`. This starts the production web build plus the persistent API runtime on port `3001`, seeds 7,850 deterministic resources across ten admin centers, and enables report execution, governed workflows, rollback, audit history, and live events. See the [end-to-end testing guide](docs/END-TO-END-TESTING.md) for the automated and manual acceptance checklist.
+Open `http://localhost:3008/login`. This starts the production web build plus the persistent API runtime on port `3001`, seeds 5,000 detailed users, 28,900 normalized enterprise objects, and 7,850 reporting resources across ten admin centers, and enables scenarios, user 360, security operations, license optimization, compliance, grounded AI, report execution, governed workflows, rollback, audit history, and live events. See the [enterprise demo guide](docs/ENTERPRISE-DEMO.md) and [end-to-end testing guide](docs/END-TO-END-TESTING.md).
 
 The setup command creates six organization personas for platform administration, security, Microsoft 365 operations, reporting, audit, and read-only access. See the [customer acceptance and enhancement register](docs/CUSTOMER-ACCEPTANCE-AND-ENHANCEMENTS.md) for per-module results, implemented controls, and remaining live-tenant gates.
 

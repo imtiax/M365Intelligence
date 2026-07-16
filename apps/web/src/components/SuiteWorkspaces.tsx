@@ -776,7 +776,7 @@ function ReportDrawer({
             <h3>Report scope</h3>
             <div className="config-row">
               <span>
-                Tenant<strong>Apex Financial Group</strong>
+                Tenant<strong>Global Enterprise Holdings</strong>
               </span>
               <span>
                 Snapshot<strong>Current · {report.updated} old</strong>
