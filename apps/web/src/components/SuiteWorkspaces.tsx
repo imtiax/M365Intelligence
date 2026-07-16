@@ -1528,16 +1528,16 @@ function Auditing({ notify }: { notify: (m: string) => void }) {
                 { h: "20", v: 6800 },
               ]}
             >
-              <CartesianGrid vertical={false} stroke="#253c48" />
+              <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
               <XAxis dataKey="h" />
               <YAxis />
               <Tooltip
                 contentStyle={{
-                  background: "#142832",
-                  border: "1px solid #29434f",
+                  background: "var(--chart-tooltip)",
+                  border: "1px solid var(--stroke)",
                 }}
               />
-              <Bar dataKey="v" fill="#4bc5ad" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="v" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

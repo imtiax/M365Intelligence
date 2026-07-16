@@ -177,7 +177,13 @@ const slugFor = (label: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-const colors = ["#49cbb2", "#62a9ea", "#a888e6", "#e8b458", "#ef6b72"];
+const colors = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
 const severityOrder: Record<Severity, number> = {
   critical: 4,
   high: 3,
@@ -441,38 +447,38 @@ function CommandCenter({
               >
                 <defs>
                   <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor="#49cbb2" stopOpacity=".35" />
-                    <stop offset="1" stopColor="#49cbb2" stopOpacity="0" />
+                    <stop offset="0" stopColor="var(--chart-1)" stopOpacity=".28" />
+                    <stop offset="1" stopColor="var(--chart-1)" stopOpacity="0" />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
                   vertical={false}
-                  stroke="#253c48"
+                  stroke="var(--chart-grid)"
                   strokeDasharray="3 5"
                 />
                 <XAxis
                   dataKey="label"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "#8195a1", fontSize: 11 }}
+                  tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
                 />
                 <YAxis
                   domain={[50, 100]}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "#8195a1", fontSize: 11 }}
+                  tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "#142832",
-                    border: "1px solid #29434f",
+                    background: "var(--chart-tooltip)",
+                    border: "1px solid var(--stroke)",
                     borderRadius: 8,
                   }}
                 />
                 <Area
                   type="monotone"
                   dataKey="score"
-                  stroke="#49cbb2"
+                  stroke="var(--chart-1)"
                   strokeWidth={3}
                   fill="url(#scoreFill)"
                 />
@@ -596,21 +602,21 @@ function SecurityPage({ onFinding }: { onFinding: (f: Finding) => void }) {
               <AreaChart data={riskTrend}>
                 <CartesianGrid
                   vertical={false}
-                  stroke="#253c48"
+                  stroke="var(--chart-grid)"
                   strokeDasharray="3 5"
                 />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} />
                 <YAxis axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{
-                    background: "#142832",
-                    border: "1px solid #29434f",
+                    background: "var(--chart-tooltip)",
+                    border: "1px solid var(--stroke)",
                   }}
                 />
                 <Area
                   dataKey="alerts"
-                  stroke="#ef6b72"
-                  fill="#ef6b7222"
+                  stroke="var(--danger)"
+                  fill="color-mix(in srgb, var(--danger) 14%, transparent)"
                   strokeWidth={2}
                 />
               </AreaChart>
@@ -640,8 +646,8 @@ function SecurityPage({ onFinding }: { onFinding: (f: Finding) => void }) {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    background: "#142832",
-                    border: "1px solid #29434f",
+                    background: "var(--chart-tooltip)",
+                    border: "1px solid var(--stroke)",
                   }}
                 />
               </PieChart>
@@ -1021,7 +1027,7 @@ function LicensesPage() {
                 layout="vertical"
                 margin={{ left: 20, right: 20 }}
               >
-                <CartesianGrid horizontal={false} stroke="#253c48" />
+                <CartesianGrid horizontal={false} stroke="var(--chart-grid)" />
                 <XAxis type="number" axisLine={false} tickLine={false} />
                 <YAxis
                   type="category"
@@ -1029,15 +1035,15 @@ function LicensesPage() {
                   width={110}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "#9ab0b8", fontSize: 10 }}
+                  tick={{ fill: "var(--text-tertiary)", fontSize: 10 }}
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "#142832",
-                    border: "1px solid #29434f",
+                    background: "var(--chart-tooltip)",
+                    border: "1px solid var(--stroke)",
                   }}
                 />
-                <Bar dataKey="monthly" fill="#49cbb2" radius={[0, 5, 5, 0]} />
+                <Bar dataKey="monthly" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -2900,7 +2906,7 @@ export default function Home() {
   const [tenantOpen, setTenantOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<ShellNotification[]>(DEFAULT_NOTIFICATIONS);
-  const [lightTheme, setLightTheme] = useState(false);
+  const [lightTheme, setLightTheme] = useState(true);
   const [runtimeOnline, setRuntimeOnline] = useState(false);
   const [runtimeEvents, setRuntimeEvents] = useState(0);
   const [identity, setIdentity] = useState<{ username: string; name: string; title: string; tenantId: string; roles: PlatformRole[] } | null>(null);
@@ -2970,7 +2976,8 @@ export default function Home() {
       if (match) setActive(match.label);
     };
     sync();
-    setLightTheme(localStorage.getItem("aegis.theme") === "light");
+    const savedTheme = localStorage.getItem("aegis.theme");
+    setLightTheme(savedTheme === null || savedTheme === "light");
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
   }, [availableNavigation]);

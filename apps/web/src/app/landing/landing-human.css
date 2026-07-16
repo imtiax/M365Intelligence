@@ -1,0 +1,294 @@
+/* Warm, editorial marketing palette aligned with the product UI. */
+.landing-page {
+  --ink: #26343d;
+  --ink2: #31434d;
+  --mint: #176b64;
+  --mint2: #dcebe7;
+  --paper: #f5f4f0;
+  --line: #d7d7d2;
+  --landing-blue: #2f6e91;
+  --landing-copy: #52616b;
+  --focus: #176b64;
+  background: var(--paper);
+  color: #1f2933;
+  font-family: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
+}
+
+.landing-nav {
+  background: #f5f4f0;
+}
+
+.landing-brand small,
+.landing-nav nav {
+  color: #596874;
+}
+
+.landing-mark {
+  background: #176b64;
+  background-image: none;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.landing-nav nav a:hover,
+.nav-signin:hover {
+  color: #176b64;
+}
+
+.landing-button {
+  background: #26343d;
+  border-color: #26343d;
+  border-radius: 5px;
+  box-shadow: none;
+}
+
+.landing-button:hover {
+  background: #31434d;
+  box-shadow: none;
+  transform: none;
+}
+
+.landing-hero {
+  background: #26343d;
+  color: #fbfaf7;
+}
+
+.hero-glow {
+  display: none;
+}
+
+.hero-copy .landing-eyebrow,
+.hero-copy h1 em {
+  color: #a9c9c4;
+}
+
+.hero-copy .landing-eyebrow i {
+  background: #a9c9c4;
+}
+
+.hero-intro {
+  color: #c6ced1;
+}
+
+.hero-copy .landing-button {
+  background: #f5f4f0;
+  border-color: #f5f4f0;
+  color: #26343d !important;
+}
+
+.hero-copy .landing-button:hover {
+  background: #e8e7e2;
+}
+
+.hero-copy .landing-button.ghost {
+  background: transparent;
+  border-color: #89989f;
+  color: #f2f2ef !important;
+}
+
+.hero-proof {
+  color: #aebbc1;
+}
+
+.hero-proof span::first-letter {
+  color: #a9c9c4;
+}
+
+.hero-product {
+  transform: none;
+}
+
+.product-window {
+  background: #202b31;
+  border-color: #53636c;
+  box-shadow: 0 24px 48px rgb(12 18 21 / 30%);
+}
+
+.window-bar {
+  background: #202b31;
+  border-color: #46565f;
+  color: #aebbc1;
+}
+
+.window-bar i {
+  background: #718089;
+}
+
+.window-bar b {
+  color: #a9c9c4;
+  border-color: #5c837d;
+}
+
+.floating-proof {
+  background: #e7ddd2;
+  color: #26343d;
+  box-shadow: 0 16px 34px rgb(12 18 21 / 24%);
+}
+
+.landing-metrics {
+  background: #f5f4f0;
+}
+
+.landing-metrics span,
+.section-heading > p,
+.capability-grid p,
+.tour-copy > p:not(.landing-eyebrow),
+.industry-grid article > p:not(.landing-eyebrow),
+.security-section > div:first-child > p:not(.landing-eyebrow),
+.security-grid p {
+  color: var(--landing-copy);
+}
+
+.landing-eyebrow,
+.capability-grid article > span,
+.capability-grid a b,
+.industry-grid small,
+.security-grid b {
+  color: #176b64;
+}
+
+.local-first-banner {
+  background: #e6ece9;
+  border-color: #c7d1cd;
+}
+
+.local-first-banner > div:last-child > p {
+  color: #44535e;
+}
+
+.local-first-banner .residency-note {
+  border-color: #bdc9c4;
+}
+
+.residency-note b {
+  color: #176b64;
+}
+
+.capability-grid article:hover {
+  background: #eceeeb;
+  transform: none;
+}
+
+.product-tour {
+  background: #e8ecea;
+}
+
+.report-tour,
+.difference-section {
+  background: #2d3941;
+}
+
+.report-tour .tour-copy > p:not(.landing-eyebrow),
+.difference-section .section-heading > p {
+  color: #c0c9cd;
+}
+
+.tour-copy ul,
+.tour-copy li {
+  border-color: #bfc7c4;
+}
+
+.report-tour .tour-copy ul,
+.report-tour .tour-copy li {
+  border-color: #5a6870;
+}
+
+.tour-copy li::before {
+  color: #176b64;
+}
+
+.report-tour .tour-copy li::before {
+  color: #a9c9c4;
+}
+
+.tour-image {
+  box-shadow: 0 18px 38px rgb(31 41 51 / 14%);
+}
+
+.tour-image img {
+  border-color: #9ba7ad;
+}
+
+.tour-image span {
+  background: #26343d;
+}
+
+.report-tour .tour-image span {
+  background: #d9e5e2;
+  color: #26343d;
+}
+
+.industry-section {
+  background: #faf9f6;
+}
+
+.industry-number {
+  color: #d9d8d2;
+}
+
+.comparison,
+.comparison-row span {
+  border-color: #53616a;
+}
+
+.comparison-row span {
+  color: #c0c9cd;
+}
+
+.comparison-row span:first-child {
+  color: #f3f3ef;
+}
+
+.comparison-row.comparison-head span {
+  background: #26343d;
+  color: #aebbc1;
+}
+
+.comparison-row .aegis-cell {
+  background: #344a4d;
+  color: #d7ebe7;
+}
+
+.aegis-cell b {
+  color: #a9c9c4;
+}
+
+.comparison-note {
+  color: #a0adb3;
+}
+
+.operating-flow {
+  color: #40565e;
+}
+
+.operating-flow i {
+  color: #176b64;
+}
+
+.landing-cta {
+  background: #e7ddd2;
+  color: #26343d;
+}
+
+.landing-cta .landing-eyebrow,
+.landing-cta small {
+  color: #6d5746;
+}
+
+.landing-button.light {
+  background: #26343d;
+  color: #ffffff !important;
+}
+
+.landing-button.outline-light {
+  border-color: #26343d;
+  color: #26343d !important;
+}
+
+.landing-footer {
+  color: #596874 !important;
+}
+
+.landing-footer a:hover {
+  color: #176b64;
+}

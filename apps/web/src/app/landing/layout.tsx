@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./landing.css";
+import "./landing-human.css";
 
 export const metadata: Metadata = {
   title: "Aegis M365 Intelligence | Govern Microsoft 365 with confidence",

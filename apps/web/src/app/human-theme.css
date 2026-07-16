@@ -1,0 +1,999 @@
+/*
+ * Aegis Warm Slate
+ *
+ * The original presentation theme used hundreds of near-identical navy and
+ * turquoise values. This final cascade layer gives the application a small,
+ * semantic palette without changing any workflow or component structure.
+ */
+
+:root {
+  color-scheme: dark;
+  --canvas: #1d2225;
+  --surface: #242a2e;
+  --surface-raised: #2a3135;
+  --surface-muted: #202629;
+  --surface-selected: #303c41;
+  --sidebar-surface: #20272b;
+  --sidebar-hover: #2c363b;
+  --sidebar-selected: #34434a;
+  --stroke: #3b454b;
+  --stroke-subtle: #323a3f;
+  --text-primary: #f2f2ef;
+  --text-secondary: #b8c0c4;
+  --text-tertiary: #98a3a9;
+  --text-on-action: #ffffff;
+  --action: #176b64;
+  --action-hover: #125950;
+  --action-emphasis: #79c3b9;
+  --action-soft: #293d3b;
+  --focus: #79c3b9;
+  --info: #69a7c8;
+  --info-soft: #293943;
+  --success: #65ad8b;
+  --success-soft: #293b33;
+  --warning: #d0a24e;
+  --warning-soft: #413727;
+  --danger: #e07882;
+  --danger-soft: #442e33;
+  --purple-human: #aa9ac1;
+  --purple-soft: #373142;
+  --shadow-raised: 0 10px 28px rgb(0 0 0 / 22%);
+  --chart-grid: #3b454b;
+  --chart-tooltip: #2a3135;
+  --chart-1: #3e7f9f;
+  --chart-2: #7b6d9b;
+  --chart-3: #4f8870;
+  --chart-4: #b2783e;
+  --chart-5: #a85e72;
+  --panel-soft: var(--surface-muted);
+
+  /* Compatibility aliases for existing components. */
+  --bg: var(--canvas);
+  --sidebar: var(--sidebar-surface);
+  --panel: var(--surface);
+  --panel2: var(--surface-raised);
+  --border: var(--stroke);
+  --text: var(--text-primary);
+  --muted: var(--text-secondary);
+  --teal: var(--action-emphasis);
+  --red: var(--danger);
+  --gold: var(--warning);
+  --blue: var(--info);
+  --purple: var(--purple-human);
+}
+
+html,
+body {
+  background: var(--canvas);
+  color: var(--text-primary);
+  font-family: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
+  font-size: 14px;
+}
+
+.app-shell.light-theme {
+  color-scheme: light;
+  --canvas: #f5f6f4;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-muted: #eef1ef;
+  --surface-selected: #e2eeeb;
+  --sidebar-surface: #26343d;
+  --sidebar-hover: #31434e;
+  --sidebar-selected: #39505b;
+  --stroke: #d6dde1;
+  --stroke-subtle: #e4e8e9;
+  --text-primary: #1f2933;
+  --text-secondary: #596874;
+  --text-tertiary: #6f7d86;
+  --text-on-action: #ffffff;
+  --action: #176b64;
+  --action-hover: #125950;
+  --action-emphasis: #176b64;
+  --action-soft: #e0efec;
+  --focus: #176b64;
+  --info: #2f6e91;
+  --info-soft: #e5eff5;
+  --success: #276b52;
+  --success-soft: #e2f0e9;
+  --warning: #8b5b08;
+  --warning-soft: #fff3d6;
+  --danger: #b23a48;
+  --danger-soft: #fbe8ea;
+  --purple-human: #6b5a85;
+  --purple-soft: #eeeaf4;
+  --shadow-raised: 0 12px 30px rgb(31 41 51 / 12%);
+  --chart-grid: #d6dde1;
+  --chart-tooltip: #ffffff;
+  --chart-1: #2f6e91;
+  --chart-2: #6b5a85;
+  --chart-3: #276b52;
+  --chart-4: #a86824;
+  --chart-5: #a4485e;
+  --panel-soft: var(--surface-muted);
+}
+
+/* Application frame */
+.app-shell,
+.app-shell main,
+.app-shell .content,
+.app-shell .presentation-content {
+  background: var(--canvas);
+  color: var(--text-primary);
+}
+
+.app-shell .sidebar {
+  background: var(--sidebar-surface);
+  background-image: none;
+  border-color: rgb(255 255 255 / 10%);
+  box-shadow: none;
+}
+
+.app-shell .brand-mark {
+  background: #176b64;
+  background-image: none;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 8px;
+  box-shadow: none;
+  color: #ffffff;
+}
+
+.app-shell .brand strong {
+  color: #f7f7f4;
+}
+
+.app-shell .brand small,
+.app-shell .workspace-label,
+.app-shell .nav-group .workspace-label {
+  color: #aebbc1;
+  font-size: 10px;
+  letter-spacing: 0.9px;
+}
+
+.app-shell .sidebar button {
+  color: #c8d0d4;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.app-shell .sidebar button:hover {
+  background: var(--sidebar-hover);
+  color: #ffffff;
+}
+
+.app-shell .sidebar button.active {
+  background: var(--sidebar-selected);
+  background-image: none;
+  color: #ffffff;
+  box-shadow: inset 3px 0 #79c3b9;
+}
+
+.app-shell .sidebar button em {
+  background: #6c3038;
+  color: #ffd8dc;
+}
+
+.app-shell .local-badge {
+  background: rgb(255 255 255 / 5%);
+  border-color: rgb(255 255 255 / 12%);
+  color: #79c3b9;
+  border-radius: 7px;
+}
+
+.app-shell .local-badge span {
+  color: #f3f3ef;
+}
+
+.app-shell .local-badge small {
+  color: #aebbc1;
+}
+
+.app-shell .local-badge i,
+.app-shell .sync-state i,
+.app-shell .fresh-dot,
+.app-shell .health i {
+  background: var(--success);
+  box-shadow: none;
+}
+
+.app-shell .topbar {
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  background-image: none;
+  border-color: var(--stroke);
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+}
+
+.app-shell .tenant-switch:hover,
+.app-shell .icon-button:hover {
+  background: var(--surface-muted);
+}
+
+.app-shell .tenant-avatar {
+  background: var(--info-soft);
+  color: var(--info);
+  border-radius: 7px;
+}
+
+.app-shell .profile {
+  background: #745b6b;
+  background-image: none;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.app-shell .global-search,
+.app-shell .global-search kbd {
+  background: var(--surface-muted);
+  border-color: var(--stroke);
+  color: var(--text-tertiary);
+}
+
+.app-shell .global-search input {
+  background: transparent;
+  border: 0;
+  color: var(--text-primary);
+}
+
+/* Controls */
+.app-shell :is(button, a, input, select, textarea):focus-visible,
+.login-page :is(button, a, input):focus-visible,
+.landing-page :is(a, button):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus, #176b64) 38%, transparent);
+  outline-offset: 2px;
+}
+
+.app-shell :is(.primary-button, .login-submit) {
+  background: var(--action);
+  background-image: none;
+  border-color: var(--action);
+  color: var(--text-on-action);
+  box-shadow: none;
+  border-radius: 6px;
+}
+
+.app-shell .primary-button:hover:not(:disabled) {
+  background: var(--action-hover);
+  border-color: var(--action-hover);
+}
+
+.app-shell :is(.secondary-button, .panel-heading > button) {
+  background: var(--surface);
+  background-image: none;
+  border-color: var(--stroke);
+  color: var(--text-secondary);
+  box-shadow: none;
+  border-radius: 6px;
+}
+
+.app-shell .ask-ai {
+  background: var(--surface);
+  border-color: var(--stroke);
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+.app-shell .ask-ai svg,
+.app-shell .text-button,
+.app-shell a:not(.linked-workflow) {
+  color: var(--action-emphasis);
+}
+
+.app-shell :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  background-color: var(--surface);
+  border-color: var(--stroke);
+  color: var(--text-primary);
+}
+
+.app-shell :is(input, textarea)::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Primary surfaces */
+.app-shell :is(
+    .panel,
+    .metric-card,
+    .suite-card,
+    .suite-kpi,
+    .suite-module-grid article,
+    .framework-card,
+    .template-grid article,
+    .connector-grid article,
+    .policy-grid article,
+    .agent-grid article,
+    .domain-grid article,
+    .opportunity-grid article,
+    .report-workspace,
+    .report-results,
+    .suite-drawer,
+    .detail-drawer,
+    .report-preview,
+    .topbar-popover,
+    .action-dialog,
+    .builder-titlebar,
+    .builder-layout,
+    .builder-preview,
+    .schedule-designer,
+    .report-security,
+    .configuration-layout,
+    .dashboard-builder,
+    .saved-artifacts,
+    .roi-inputs,
+    .roi-results,
+    .buyer-proof,
+    .differentiator-grid article,
+    .admin-dashboard,
+    .admin-dashboard-grid > article,
+    .admin-dashboard-metrics > button,
+    .admin-dashboard-table,
+    .admin-quick-reports,
+    .report-operations,
+    .report-operation-section,
+    .saved-view-grid article,
+    .operation-list article,
+    .generated-report,
+    .commercial-panel,
+    .commercial-summary,
+    .commercial-state,
+    .license-box,
+    .portal-grid article
+  ) {
+  background: var(--surface);
+  background-image: none;
+  border-color: var(--stroke);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.app-shell :is(
+    .report-tree,
+    .source-panel,
+    .configuration-panel,
+    .dashboard-builder > aside,
+    .configuration-layout > aside,
+    .ai-sidebar,
+    .workflow-list,
+    .admin-center-list
+  ) {
+  background: var(--surface-muted);
+  background-image: none;
+  border-color: var(--stroke);
+  color: var(--text-primary);
+}
+
+.app-shell :is(.panel, .metric-card, .suite-card, .suite-kpi, .suite-module-grid article) {
+  border-radius: 8px;
+}
+
+.app-shell :is(.metric-card, .suite-kpi, .admin-dashboard-metrics > button)::after {
+  display: none;
+}
+
+.app-shell :is(.metric-icon, .workload-icon, .entity-icon, .suite-module-grid article > span) {
+  background: var(--surface-muted);
+  background-image: none;
+  border: 1px solid var(--stroke-subtle);
+  box-shadow: none;
+}
+
+/* Typography and readable data density */
+.app-shell :is(.page-heading, .suite-page-heading, .studio-heading) h1,
+.app-shell :is(.drawer-head, .panel-heading, .showcase-heading) h2,
+.app-shell :is(.compact-row, .data-row, .catalogue-list > button) strong {
+  color: var(--text-primary);
+}
+
+.app-shell :is(.page-heading, .suite-page-heading, .studio-heading) p,
+.app-shell :is(.panel-heading, .showcase-heading) p,
+.app-shell :is(.compact-row, .data-row, .catalogue-list > button) small,
+.app-shell .drawer-sub {
+  color: var(--text-secondary);
+}
+
+.app-shell :is(
+    .eyebrow,
+    .metric-head,
+    .data-head,
+    .compact-head,
+    .table-head,
+    .catalogue-head,
+    .commercial-table-head,
+    .admin-dashboard-table > div:first-child,
+    .report-run-table > div:first-child
+  ) {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  letter-spacing: 0.65px;
+}
+
+.app-shell :is(
+    .data-row,
+    .compact-row,
+    .finding-row,
+    .catalogue-list > button,
+    .commercial-table-row,
+    .admin-dashboard-table > div,
+    .report-run-table > div
+  ) {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.app-shell :is(.panel-heading, .showcase-heading) h2 {
+  font-size: 15px;
+}
+
+.app-shell :is(.panel-heading, .showcase-heading) p {
+  font-size: 11px;
+}
+
+.app-shell :is(.metric-detail, .sync-state, .health, .operation-status) {
+  font-size: 11px;
+}
+
+/* Tables, lists and selected states */
+.app-shell :is(
+    .data-head,
+    .compact-head,
+    .table-head,
+    .catalogue-head,
+    .commercial-table-head,
+    .result-table > div:first-child,
+    .access-table > div:first-child,
+    .admin-dashboard-table > div:first-child,
+    .report-run-table > div:first-child
+  ) {
+  background: var(--surface-muted);
+  border-color: var(--stroke);
+}
+
+.app-shell :is(
+    .data-row,
+    .compact-row,
+    .finding-row,
+    .catalogue-list > button,
+    .commercial-table-row,
+    .result-table > div,
+    .access-table > div,
+    .admin-dashboard-table > div,
+    .report-run-table > div,
+    .saved-artifacts article,
+    .buyer-proof article
+  ) {
+  background-color: transparent;
+  border-color: var(--stroke-subtle);
+}
+
+.app-shell :is(.data-row, .compact-row, .finding-row, .catalogue-list > button, .commercial-table-row):hover {
+  background: var(--surface-muted);
+}
+
+.app-shell :is(
+    .filters,
+    .filter-tabs,
+    .admin-tabs,
+    .builder-tabs,
+    .drawer-tabs,
+    .report-mode-tabs,
+    .catalogue-toggle
+  ) button.selected,
+.app-shell :is(.catalogue-list, .workflow-list, .admin-center-list, .source-list) > button.selected {
+  background: var(--action-soft);
+  background-image: none;
+  border-color: color-mix(in srgb, var(--action) 40%, var(--stroke));
+  color: var(--action-emphasis);
+  box-shadow: inset 3px 0 var(--action);
+}
+
+.app-shell :is(.filters, .filter-tabs, .admin-tabs, .builder-tabs, .drawer-tabs, .report-mode-tabs) button {
+  color: var(--text-secondary);
+}
+
+/* Studio, report and configuration workspaces */
+.app-shell :is(
+    .builder-tabs,
+    .report-mode-tabs,
+    .catalogue-toolbar,
+    .audit-toolbar,
+    .preview-toolbar,
+    .dashboard-config,
+    .report-operations > header,
+    .report-operation-section > header,
+    .generated-toolbar,
+    .drawer-head,
+    .finding-heading
+  ) {
+  background: var(--surface);
+  background-image: none;
+  border-color: var(--stroke);
+}
+
+.app-shell :is(.builder-tabs, .report-mode-tabs) {
+  background: var(--surface);
+  border-color: var(--stroke);
+  box-shadow: none;
+}
+
+.app-shell .report-mode-tabs button.selected {
+  background: var(--action-soft);
+  color: var(--action-emphasis);
+  box-shadow: none;
+}
+
+.app-shell :is(
+    .selected-fields > div,
+    .field-search,
+    .calculated-section,
+    .calculated-section > header,
+    .calculated-row,
+    .condition,
+    .semantic-plan,
+    .visual-options button,
+    .channel-options button,
+    .schedule-designer > section,
+    .report-security > section,
+    .config-panel > section,
+    .config-toggles label,
+    .config-status,
+    .config-health,
+    .advanced-filter-builder,
+    .column-picker,
+    .report-definition-summary,
+    .config-disclosure,
+    .admin-health-card,
+    .admin-trend-card
+  ) {
+  background: var(--surface-muted);
+  background-image: none;
+  border-color: var(--stroke);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.app-shell .field-search input {
+  background: transparent;
+  border: 0;
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
+.app-shell :is(.calculated-row input, .calculated-row code) {
+  background: var(--surface);
+  border-color: var(--stroke);
+  color: var(--text-primary);
+}
+
+.app-shell .admin-center-list > button {
+  border-color: var(--stroke-subtle);
+  color: var(--text-primary);
+}
+
+.app-shell .admin-center-list > button:hover,
+.app-shell .admin-center-list > button.selected {
+  background: var(--action-soft);
+}
+
+.app-shell .admin-dashboard-table {
+  background: var(--surface);
+  border-color: var(--stroke);
+}
+
+.app-shell :is(
+    .source-list strong,
+    .selected-fields b,
+    .source-panel > header strong,
+    .configuration-panel > header strong,
+    .config-title strong,
+    .schedule-designer h2,
+    .report-security h2,
+    .admin-center-list b,
+    .admin-dashboard-table header strong,
+    .admin-health-card header strong,
+    .admin-trend-card header strong,
+    .admin-quick-reports header strong
+  ) {
+  color: var(--text-primary);
+  font-size: 10px;
+}
+
+.app-shell :is(
+    .source-list small,
+    .source-panel > header small,
+    .configuration-panel > header small,
+    .selected-fields em,
+    .admin-center-list small,
+    .admin-dashboard-table header small,
+    .admin-health-card header small,
+    .admin-trend-card header small,
+    .admin-quick-reports header small
+  ) {
+  color: var(--text-secondary);
+  font-size: 9px;
+}
+
+.app-shell :is(
+    .builder-tabs button,
+    .visual-options button,
+    .channel-options button,
+    .calculated-row input,
+    .calculated-row code,
+    .condition input,
+    .condition select,
+    .configuration-panel section > label,
+    .configuration-panel section > label select
+  ) {
+  font-size: 10px;
+}
+
+.app-shell :is(.semantic-plan, .config-status, .config-health) {
+  border-left: 3px solid var(--action);
+}
+
+.app-shell :is(.visual-options button.selected, .channel-options button.selected) {
+  background: var(--action-soft);
+  border-color: var(--action);
+  color: var(--action-emphasis);
+}
+
+.app-shell .dashboard-canvas {
+  background-color: var(--surface-muted);
+  background-image: linear-gradient(var(--stroke-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--stroke-subtle) 1px, transparent 1px);
+}
+
+.app-shell .dashboard-canvas article {
+  background: var(--surface);
+  border-color: var(--stroke);
+  box-shadow: none;
+}
+
+.app-shell :is(.fake-table span, .wide-meter, .risk-meter, .coverage-line, .value-breakdown > span > i) {
+  background: var(--surface-selected);
+  background-image: none;
+}
+
+.app-shell :is(.wide-meter i, .risk-meter i, .coverage-line i, .value-breakdown > span > i) {
+  background: var(--info);
+  background-image: none;
+}
+
+.app-shell .fake-trend polyline {
+  stroke: var(--chart-1);
+}
+
+.app-shell .fake-gauge {
+  border-color: var(--action-emphasis);
+  border-right-color: var(--stroke);
+}
+
+.app-shell .admin-health-row > i {
+  background: var(--surface-selected);
+}
+
+.app-shell .admin-health-row > i b,
+.app-shell .admin-trend-card > div i {
+  background: var(--chart-1);
+  background-image: none;
+}
+
+.app-shell .admin-health-row em,
+.app-shell .admin-health-card header > b {
+  color: var(--success);
+}
+
+.app-shell .admin-trend-card > div {
+  border-color: var(--stroke);
+}
+
+.app-shell .ai-conversation,
+.app-shell .ai-hero > span,
+.app-shell .roi-results > div:first-child {
+  background: var(--surface);
+  background-image: none;
+}
+
+.app-shell .user360-list .compact-row.selected {
+  background: var(--action-soft);
+}
+
+.app-shell .profile-hero > span {
+  background: var(--info);
+  color: #ffffff;
+}
+
+.app-shell .user360-profile dl div,
+.app-shell .recommendation {
+  background: var(--surface-muted);
+}
+
+.app-shell .recommendation {
+  border-color: var(--warning);
+}
+
+.app-shell .ask-ai,
+.app-shell .semantic-plan {
+  color: var(--text-secondary);
+}
+
+/* Popovers, dialogs and drawers are the only elevated surfaces. */
+.app-shell :is(.topbar-popover, .global-results, .action-dialog, .detail-drawer, .suite-drawer, .report-preview) {
+  background: var(--surface-raised);
+  border-color: var(--stroke);
+  box-shadow: var(--shadow-raised);
+  color: var(--text-primary);
+}
+
+.app-shell :is(.topbar-popover, .global-results) button:hover {
+  background: var(--surface-muted);
+}
+
+.app-shell :is(.modal-backdrop, .action-modal-backdrop, .generated-report-backdrop) {
+  background: rgb(20 25 28 / 62%);
+  backdrop-filter: blur(2px);
+}
+
+.app-shell .toast {
+  background: #24443b;
+  border-color: #4f806d;
+  color: #f4faf7;
+  box-shadow: var(--shadow-raised);
+}
+
+/* Semantic states: color supports the label rather than decorating the UI. */
+.app-shell :is(.status.active, .runtime-live.online, .sync-state.live, .operation-status.completed, .finding-case-status.approved) {
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 40%, var(--stroke));
+  color: var(--success);
+  box-shadow: none;
+}
+
+.app-shell :is(.status.remediating, .operation-status.running, .runtime-live) {
+  background: var(--info-soft);
+  border-color: color-mix(in srgb, var(--info) 40%, var(--stroke));
+  color: var(--info);
+  box-shadow: none;
+}
+
+.app-shell :is(.status.investigating, .health.warning, .operation-status.pending, .sync-state.preview) {
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--stroke));
+  color: var(--warning);
+  box-shadow: none;
+}
+
+.app-shell :is(.status.critical, .operation-status.failed, .runtime-live.offline, .action-error) {
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--stroke));
+  color: var(--danger);
+  box-shadow: none;
+}
+
+.app-shell :is(.severity.critical, .entity-icon.critical) {
+  color: var(--danger);
+}
+
+.app-shell :is(.severity.high, .entity-icon.high) {
+  color: #bf7047;
+}
+
+.app-shell :is(.severity.medium, .entity-icon.medium) {
+  color: var(--warning);
+}
+
+.app-shell :is(.severity.low, .entity-icon.low) {
+  color: var(--success);
+}
+
+/* Charts use the same restrained categorical palette in both themes. */
+.app-shell .recharts-cartesian-axis-tick text,
+.app-shell .recharts-text {
+  fill: var(--text-tertiary);
+}
+
+.app-shell .recharts-tooltip-wrapper {
+  color: var(--text-primary);
+}
+
+/* Login: quiet, credible, and intentionally simple. */
+.login-page {
+  --focus: #176b64;
+  background: #f5f6f4;
+  color: #1f2933;
+  font-family: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
+}
+
+.login-story {
+  background: #26343d;
+  background-image: none;
+  color: #f7f7f4;
+}
+
+.login-story::before,
+.login-story::after {
+  display: none;
+}
+
+.login-brand > span,
+.mobile-login-brand > span {
+  background: #176b64;
+  background-image: none;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.login-brand small,
+.story-kicker {
+  color: #a9c9c4;
+}
+
+.story-copy h1 em {
+  color: #a9c9c4;
+}
+
+.story-copy > p,
+.story-points small {
+  color: #c0c9cd;
+}
+
+.story-kicker {
+  font-size: 10px;
+}
+
+.story-copy > p {
+  font-size: 14px;
+}
+
+.story-points b {
+  font-size: 12px;
+}
+
+.story-points small {
+  font-size: 10px;
+}
+
+.story-points i {
+  background: rgb(255 255 255 / 7%);
+  border-color: rgb(255 255 255 / 14%);
+  color: #a9c9c4;
+}
+
+.login-story footer {
+  color: #9eabb1;
+}
+
+.login-form-side {
+  background: #f5f6f4;
+  background-image: none;
+}
+
+.login-card {
+  background: #ffffff;
+  background-image: none;
+  border-color: #d6dde1;
+  border-radius: 10px;
+  box-shadow: 0 18px 45px rgb(31 41 51 / 10%);
+  color: #1f2933;
+}
+
+.secure-chip {
+  background: #e2f0e9;
+  border-color: #b9d5c8;
+  color: #276b52;
+}
+
+.login-card > p,
+.login-card form > label,
+.login-help {
+  color: #596874 !important;
+}
+
+.login-card > p {
+  font-size: 12px;
+}
+
+.login-card form > label {
+  font-size: 11px;
+}
+
+.login-input {
+  background: #ffffff;
+  border-color: #bcc7cd;
+}
+
+.login-input:focus-within {
+  border-color: #176b64;
+  box-shadow: 0 0 0 3px rgb(23 107 100 / 15%);
+}
+
+.login-input > svg,
+.login-input button {
+  color: #6f7d86;
+}
+
+.login-input input {
+  color: #1f2933;
+  font-size: 12px;
+}
+
+.login-submit {
+  background: #176b64;
+  background-image: none;
+  color: #ffffff;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.login-submit:hover:not(:disabled) {
+  background: #125950;
+  filter: none;
+}
+
+.login-divider,
+.login-assurance small {
+  color: #6f7d86;
+}
+
+.login-divider::before,
+.login-divider::after,
+.login-assurance {
+  border-color: #d6dde1;
+}
+
+.entra-button {
+  background: #f8f9f8;
+  border-color: #c9d1d5;
+  color: #44535e;
+  opacity: 1;
+  font-size: 11px;
+}
+
+.entra-button > small {
+  color: #6f7d86;
+  font-size: 9px;
+}
+
+.login-assurance {
+  color: #276b52;
+}
+
+.login-assurance > span {
+  color: #44535e;
+  font-size: 10px;
+}
+
+.login-assurance small,
+.login-help {
+  font-size: 9px !important;
+}
+
+.entra-status {
+  background: #fff3d6 !important;
+  border-color: #dfc17c !important;
+}
+
+.entra-status svg {
+  color: #8b5b08 !important;
+}
+
+.login-error {
+  background: #fbe8ea;
+  border-color: #e2aeb4;
+  color: #8f2633;
+}
+
+@media (max-width: 480px) {
+  .login-form-side,
+  .login-card {
+    background: #ffffff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *,
+  .login-page *,
+  .landing-page * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
