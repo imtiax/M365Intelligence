@@ -2,16 +2,16 @@ export type SuiteModule = { name:string; family:string; description:string; repo
 export type CatalogueReport = { id:string; name:string; workload:string; category:string; description:string; rows:string; updated:string; favorite:boolean; scheduled:boolean };
 
 export const suiteModules: SuiteModule[] = [
-  {name:'Microsoft Entra ID',family:'Identity',description:'Users, groups, roles, applications, authentication, sign-ins, and lifecycle.',reports:148,health:96,signals:'5.8K objects',accent:'#4f9ee8'},
-  {name:'Exchange Online',family:'Messaging',description:'Mailboxes, permissions, mail flow, retention, spam, and usage intelligence.',reports:132,health:98,signals:'5K mailboxes',accent:'#5b82e6'},
-  {name:'Microsoft Teams',family:'Collaboration',description:'Teams, channels, membership, meetings, messaging, apps, and external access.',reports:86,health:92,signals:'5.8K teams + channels',accent:'#9384e8'},
-  {name:'SharePoint Online',family:'Content',description:'Sites, permissions, sharing, storage, activity, and governance posture.',reports:104,health:89,signals:'300 sites',accent:'#35b7a3'},
-  {name:'OneDrive',family:'Content',description:'Personal storage, sharing links, external access, usage, and inactive content.',reports:61,health:94,signals:'5K drives',accent:'#55a9dc'},
-  {name:'Microsoft Intune',family:'Endpoint',description:'Devices, compliance, applications, configuration profiles, and enrollment.',reports:93,health:91,signals:'7K devices',accent:'#4cb9ca'},
-  {name:'Defender XDR',family:'Security',description:'Incidents, alerts, vulnerabilities, exposure, investigations, and response.',reports:76,health:95,signals:'100 incidents',accent:'#e56872'},
-  {name:'Microsoft Purview',family:'Compliance',description:'Labels, DLP, retention, eDiscovery, insider risk, and audit evidence.',reports:72,health:93,signals:'24 controls',accent:'#b58add'},
-  {name:'Licensing & Cost',family:'FinOps',description:'Subscriptions, assignments, service plans, activity, cost, and optimization.',reports:58,health:97,signals:'1.5K unused E5',accent:'#e4ad50'},
-  {name:'Hybrid Active Directory',family:'Hybrid',description:'Domains, forests, users, computers, GPOs, synchronization, and replication.',reports:117,health:90,signals:'22.8K objects',accent:'#70a5d8'},
+  {name:'Microsoft Entra ID',family:'Identity',description:'Users, groups, roles, applications, authentication, sign-ins, and lifecycle.',reports:148,health:96,signals:'5.8K objects',accent:'#2563eb'},
+  {name:'Exchange Online',family:'Messaging',description:'Mailboxes, permissions, mail flow, retention, spam, and usage intelligence.',reports:132,health:98,signals:'5K mailboxes',accent:'#1d4ed8'},
+  {name:'Microsoft Teams',family:'Collaboration',description:'Teams, channels, membership, meetings, messaging, apps, and external access.',reports:86,health:92,signals:'5.8K teams + channels',accent:'#6366f1'},
+  {name:'SharePoint Online',family:'Content',description:'Sites, permissions, sharing, storage, activity, and governance posture.',reports:104,health:89,signals:'300 sites',accent:'#0891b2'},
+  {name:'OneDrive',family:'Content',description:'Personal storage, sharing links, external access, usage, and inactive content.',reports:61,health:94,signals:'5K drives',accent:'#0284c7'},
+  {name:'Microsoft Intune',family:'Endpoint',description:'Devices, compliance, applications, configuration profiles, and enrollment.',reports:93,health:91,signals:'7K devices',accent:'#0369a1'},
+  {name:'Defender XDR',family:'Security',description:'Incidents, alerts, vulnerabilities, exposure, investigations, and response.',reports:76,health:95,signals:'100 incidents',accent:'#e11d48'},
+  {name:'Microsoft Purview',family:'Compliance',description:'Labels, DLP, retention, eDiscovery, insider risk, and audit evidence.',reports:72,health:93,signals:'24 controls',accent:'#7c3aed'},
+  {name:'Licensing & Cost',family:'FinOps',description:'Subscriptions, assignments, service plans, activity, cost, and optimization.',reports:58,health:97,signals:'1.5K unused E5',accent:'#d97706'},
+  {name:'Hybrid Active Directory',family:'Hybrid',description:'Domains, forests, users, computers, GPOs, synchronization, and replication.',reports:117,health:90,signals:'22.8K objects',accent:'#4f46e5'},
 ];
 
 const reportSeed: Omit<CatalogueReport,'id'|'favorite'|'scheduled'>[] = [

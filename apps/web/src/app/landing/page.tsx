@@ -55,7 +55,7 @@ export default function LandingPage() {
         <div className="hero-product">
           <div className="product-window">
             <div className="window-bar"><span><i /><i /><i /></span><small>AEGIS DEMO ENTERPRISE · SYNTHETIC SANDBOX</small><b>DEMO</b></div>
-            <Image src="/landing/admin-center-dashboard.png?v=warm-slate" width={1580} height={1000} priority alt="Aegis Microsoft 365 report center showing a unified Hybrid Active Directory dashboard" />
+            <Image src="/landing/admin-center-dashboard.png?v=signal-blue" width={1580} height={1000} priority alt="Aegis Microsoft 365 report center showing a unified Hybrid Active Directory dashboard" />
           </div>
           <div className="floating-proof"><b>10</b><span>connected<br />admin centers</span></div>
         </div>
@@ -77,11 +77,11 @@ export default function LandingPage() {
 
       <section className="landing-section product-tour" id="product-tour">
         <div className="tour-copy"><p className="landing-eyebrow">REAL PRODUCT · REAL WORKFLOWS</p><h2>See the whole tenant.<br />Understand one user.</h2><p>Explorer 360 brings together identity, activity, licenses, devices, collaboration, and risk—so analysts investigate context, not tabs.</p><ul><li>Search 5,000 normalized identities</li><li>Surface risk and MFA gaps instantly</li><li>Launch governed investigations from user context</li></ul></div>
-        <div className="tour-image"><Image src="/landing/explorer-360.png?v=warm-slate" width={1580} height={1000} alt="Explorer 360 displaying a global workforce directory and complete user risk profile" /><span>Explorer 360 · User intelligence</span></div>
+        <div className="tour-image"><Image src="/landing/explorer-360.png?v=signal-blue" width={1580} height={1000} alt="Explorer 360 displaying a global workforce directory and complete user risk profile" /><span>Explorer 360 · User intelligence</span></div>
       </section>
 
       <section className="landing-section report-tour">
-        <div className="tour-image"><Image src="/landing/custom-report-builder.png?v=warm-slate" width={1580} height={1000} alt="Aegis custom report builder with data sources, calculated fields, security, and scheduling" /><span>Report Studio · Governed analytics</span></div>
+        <div className="tour-image"><Image src="/landing/custom-report-builder.png?v=signal-blue" width={1580} height={1000} alt="Aegis custom report builder with data sources, calculated fields, security, and scheduling" /><span>Report Studio · Governed analytics</span></div>
         <div className="tour-copy"><p className="landing-eyebrow">FROM QUESTION TO EVIDENCE</p><h2>Reporting built for operators—not just analysts.</h2><p>Compose cross-workload reports from the governed semantic model, apply role security, schedule delivery, and export decision-ready output.</p><ul><li>947-template presentation catalogue</li><li>PDF and Excel export workflows</li><li>Schedules, ownership, and access controls</li></ul></div>
       </section>
 

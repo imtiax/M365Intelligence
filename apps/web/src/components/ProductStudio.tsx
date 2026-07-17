@@ -2411,7 +2411,7 @@ function ConfigPanel({
                   />
                 )}
                 {errors[label] ? (
-                  <small id={errorId} role="alert" style={{ color: "#f0a0a0" }}>
+                  <small id={errorId} role="alert" style={{ color: "var(--danger)" }}>
                     {errors[label]}
                   </small>
                 ) : (
@@ -2433,7 +2433,7 @@ function ConfigPanel({
                   <strong>{title}</strong>
                   <small>{description}</small>
                   {errors[title] && (
-                    <small id={errorId} role="alert" style={{ color: "#f0a0a0" }}>
+                    <small id={errorId} role="alert" style={{ color: "var(--danger)" }}>
                       {errors[title]}
                     </small>
                   )}

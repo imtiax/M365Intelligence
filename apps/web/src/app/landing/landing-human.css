@@ -1,97 +1,106 @@
-/* Warm, editorial marketing palette aligned with the product UI. */
+/* Effective public marketing palette: enterprise blue, indigo, and cyan. */
 .landing-page {
-  --ink: #26343d;
-  --ink2: #31434d;
-  --mint: #176b64;
-  --mint2: #dcebe7;
-  --paper: #f5f4f0;
-  --line: #d7d7d2;
-  --landing-blue: #2f6e91;
-  --landing-copy: #52616b;
-  --focus: #176b64;
+  color-scheme: light;
+  --ink: #0f172a;
+  --ink2: #172554;
+  --mint: #2563eb;
+  --mint2: #dbeafe;
+  --paper: #f5f8fd;
+  --line: #d7e1ef;
+  --landing-blue: #2563eb;
+  --landing-indigo: #4f46e5;
+  --landing-cyan: #0e7490;
+  --landing-copy: #52627a;
+  --focus: #2563eb;
   background: var(--paper);
-  color: #1f2933;
+  color: #101828;
   font-family: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
 }
 
 .landing-nav {
-  background: #f5f4f0;
+  background: rgb(248 250 255 / 94%);
+  border-bottom: 1px solid rgb(37 99 235 / 9%);
+  backdrop-filter: blur(16px);
 }
 
 .landing-brand small,
 .landing-nav nav {
-  color: #596874;
+  color: #5b6b82;
 }
 
 .landing-mark {
-  background: #176b64;
-  background-image: none;
-  border-radius: 8px;
-  box-shadow: none;
+  border-radius: 9px;
+  background: linear-gradient(145deg, #2563eb, #4f46e5 68%, #0e7490);
+  box-shadow: 0 10px 24px rgb(37 99 235 / 22%);
 }
 
 .landing-nav nav a:hover,
 .nav-signin:hover {
-  color: #176b64;
+  color: #1d4ed8;
 }
 
 .landing-button {
-  background: #26343d;
-  border-color: #26343d;
-  border-radius: 5px;
+  border-color: #1e3a8a;
+  border-radius: 7px;
+  background: #1e3a8a;
   box-shadow: none;
 }
 
 .landing-button:hover {
-  background: #31434d;
-  box-shadow: none;
-  transform: none;
+  background: #1d4ed8;
+  box-shadow: 0 10px 24px rgb(37 99 235 / 16%);
+  transform: translateY(-1px);
 }
 
 .landing-hero {
-  background: #26343d;
-  color: #fbfaf7;
+  background:
+    radial-gradient(circle at 84% 18%, rgb(79 70 229 / 24%), transparent 31%),
+    radial-gradient(circle at 13% 84%, rgb(6 182 212 / 14%), transparent 34%),
+    linear-gradient(132deg, #091426, #101c3e 56%, #172554);
+  color: #f8fbff;
 }
 
 .hero-glow {
-  display: none;
+  display: block;
+  background: radial-gradient(circle, rgb(34 211 238 / 14%), transparent 67%);
 }
 
 .hero-copy .landing-eyebrow,
 .hero-copy h1 em {
-  color: #a9c9c4;
+  color: #67e8f9;
 }
 
 .hero-copy .landing-eyebrow i {
-  background: #a9c9c4;
+  background: #22d3ee;
 }
 
 .hero-intro {
-  color: #c6ced1;
+  color: #c6d4e7;
 }
 
 .hero-copy .landing-button {
-  background: #f5f4f0;
-  border-color: #f5f4f0;
-  color: #26343d !important;
+  border-color: #60a5fa;
+  background: #60a5fa;
+  color: #0b1730 !important;
 }
 
 .hero-copy .landing-button:hover {
-  background: #e8e7e2;
+  border-color: #93c5fd;
+  background: #93c5fd;
 }
 
 .hero-copy .landing-button.ghost {
-  background: transparent;
-  border-color: #89989f;
-  color: #f2f2ef !important;
+  border-color: #667ca8;
+  background: rgb(15 23 42 / 22%);
+  color: #eff6ff !important;
 }
 
 .hero-proof {
-  color: #aebbc1;
+  color: #aabbd3;
 }
 
 .hero-proof span::first-letter {
-  color: #a9c9c4;
+  color: #22d3ee;
 }
 
 .hero-product {
@@ -99,34 +108,38 @@
 }
 
 .product-window {
-  background: #202b31;
-  border-color: #53636c;
-  box-shadow: 0 24px 48px rgb(12 18 21 / 30%);
+  border-color: #49669b;
+  background: #0b1730;
+  box-shadow: 0 30px 70px rgb(2 8 23 / 52%), 0 0 0 1px rgb(96 165 250 / 16%);
 }
 
 .window-bar {
-  background: #202b31;
-  border-color: #46565f;
-  color: #aebbc1;
+  border-color: #2b4070;
+  background: #0c1832;
+  color: #9fb2d1;
 }
 
 .window-bar i {
-  background: #718089;
+  background: #647aa2;
 }
 
 .window-bar b {
-  color: #a9c9c4;
-  border-color: #5c837d;
+  border-color: #157a95;
+  color: #67e8f9;
 }
 
 .floating-proof {
-  background: #e7ddd2;
-  color: #26343d;
-  box-shadow: 0 16px 34px rgb(12 18 21 / 24%);
+  background: #22d3ee;
+  color: #0b1730;
+  box-shadow: 0 18px 38px rgb(2 8 23 / 34%);
 }
 
 .landing-metrics {
-  background: #f5f4f0;
+  background: #f8faff;
+}
+
+.landing-metrics strong {
+  color: #172554;
 }
 
 .landing-metrics span,
@@ -144,151 +157,158 @@
 .capability-grid a b,
 .industry-grid small,
 .security-grid b {
-  color: #176b64;
+  color: #1d4ed8;
 }
 
 .local-first-banner {
-  background: #e6ece9;
-  border-color: #c7d1cd;
+  border-color: #bfdbfe;
+  background: linear-gradient(135deg, #eff6ff, #eef2ff 64%, #ecfeff);
 }
 
 .local-first-banner > div:last-child > p {
-  color: #44535e;
+  color: #46566d;
 }
 
 .local-first-banner .residency-note {
-  border-color: #bdc9c4;
+  border-color: #c6d8f2;
 }
 
 .residency-note b {
-  color: #176b64;
+  color: #1d4ed8;
 }
 
 .capability-grid article:hover {
-  background: #eceeeb;
+  background: #eef4ff;
   transform: none;
 }
 
 .product-tour {
-  background: #e8ecea;
+  background: linear-gradient(135deg, #eaf1ff, #f2f7ff 62%, #ecfeff);
 }
 
 .report-tour,
 .difference-section {
-  background: #2d3941;
+  background:
+    radial-gradient(circle at 88% 18%, rgb(79 70 229 / 19%), transparent 29%),
+    linear-gradient(135deg, #0b1730, #111f46);
 }
 
 .report-tour .tour-copy > p:not(.landing-eyebrow),
 .difference-section .section-heading > p {
-  color: #c0c9cd;
+  color: #b9c8dd;
 }
 
 .tour-copy ul,
 .tour-copy li {
-  border-color: #bfc7c4;
+  border-color: #b8c7de;
 }
 
 .report-tour .tour-copy ul,
 .report-tour .tour-copy li {
-  border-color: #5a6870;
+  border-color: #415682;
 }
 
 .tour-copy li::before {
-  color: #176b64;
+  color: #2563eb;
 }
 
 .report-tour .tour-copy li::before {
-  color: #a9c9c4;
+  color: #22d3ee;
 }
 
 .tour-image {
-  box-shadow: 0 18px 38px rgb(31 41 51 / 14%);
+  box-shadow: 0 20px 50px rgb(30 64 175 / 16%);
 }
 
 .tour-image img {
-  border-color: #9ba7ad;
+  border-color: #8ca5cb;
 }
 
 .tour-image span {
-  background: #26343d;
+  background: #172554;
 }
 
 .report-tour .tour-image span {
-  background: #d9e5e2;
-  color: #26343d;
+  background: #22d3ee;
+  color: #0b1730;
 }
 
 .industry-section {
-  background: #faf9f6;
+  background: #f9fbff;
 }
 
 .industry-number {
-  color: #d9d8d2;
+  color: #dce6f5;
 }
 
 .comparison,
 .comparison-row span {
-  border-color: #53616a;
+  border-color: #3b4f7a;
 }
 
 .comparison-row span {
-  color: #c0c9cd;
+  color: #b3c2d8;
 }
 
 .comparison-row span:first-child {
-  color: #f3f3ef;
+  color: #f4f8ff;
 }
 
 .comparison-row.comparison-head span {
-  background: #26343d;
-  color: #aebbc1;
+  background: #101d3c;
+  color: #9fb1cd;
 }
 
 .comparison-row .aegis-cell {
-  background: #344a4d;
-  color: #d7ebe7;
+  background: #172e68;
+  color: #dbeafe;
 }
 
 .aegis-cell b {
-  color: #a9c9c4;
+  color: #67e8f9;
 }
 
 .comparison-note {
-  color: #a0adb3;
+  color: #91a5c3;
 }
 
 .operating-flow {
-  color: #40565e;
+  color: #304b77;
 }
 
 .operating-flow i {
-  color: #176b64;
+  color: #2563eb;
 }
 
 .landing-cta {
-  background: #e7ddd2;
-  color: #26343d;
+  background:
+    radial-gradient(circle at 12% 35%, rgb(34 211 238 / 24%), transparent 27%),
+    linear-gradient(120deg, #2563eb, #4f46e5 72%);
+  color: #ffffff;
 }
 
 .landing-cta .landing-eyebrow,
 .landing-cta small {
-  color: #6d5746;
+  color: #dbeafe;
 }
 
 .landing-button.light {
-  background: #26343d;
-  color: #ffffff !important;
+  border-color: #ffffff;
+  background: #ffffff;
+  color: #172554 !important;
 }
 
 .landing-button.outline-light {
-  border-color: #26343d;
-  color: #26343d !important;
+  border-color: #bfdbfe;
+  background: rgb(15 23 42 / 12%);
+  color: #ffffff !important;
 }
 
 .landing-footer {
-  color: #596874 !important;
+  background: #f8faff;
+  color: #5b6b82 !important;
 }
 
 .landing-footer a:hover {
-  color: #176b64;
+  color: #1d4ed8;
 }

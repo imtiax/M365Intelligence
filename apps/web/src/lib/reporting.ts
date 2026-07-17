@@ -988,7 +988,7 @@ export function exportReportExcel(report: GeneratedReport) {
   ];
   const workbook = `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-<Styles><Style ss:ID="Header"><Font ss:Bold="1"/><Interior ss:Color="#DDEBF7" ss:Pattern="Solid"/></Style></Styles>
+<Styles><Style ss:ID="Header"><Font ss:Bold="1" ss:Color="#172033"/><Interior ss:Color="#E7EFFF" ss:Pattern="Solid"/></Style></Styles>
 <Worksheet ss:Name="Report"><Table>${rows
     .map(
       (row, rowIndex) =>
@@ -1021,7 +1021,7 @@ export async function exportReportPdf(report: GeneratedReport) {
       y: pageHeight - 72,
       width: pageWidth,
       height: 72,
-      color: rgb(0.04, 0.13, 0.17),
+      color: rgb(0.043, 0.09, 0.188),
     });
     page.drawText(ascii(report.name).slice(0, 95), {
       x: margin,
@@ -1037,7 +1037,7 @@ export async function exportReportPdf(report: GeneratedReport) {
         y: pageHeight - 55,
         size: 8,
         font: regular,
-        color: rgb(0.65, 0.82, 0.84),
+        color: rgb(0.725, 0.847, 1),
       },
     );
     y = pageHeight - 94;
@@ -1051,8 +1051,8 @@ export async function exportReportPdf(report: GeneratedReport) {
       y: y - 50,
       width: metricWidth,
       height: 50,
-      color: rgb(0.93, 0.96, 0.97),
-      borderColor: rgb(0.75, 0.82, 0.84),
+      color: rgb(0.953, 0.965, 0.984),
+      borderColor: rgb(0.835, 0.875, 0.922),
       borderWidth: 0.5,
     });
     page.drawText(ascii(metric.label).slice(0, 24), {
@@ -1060,21 +1060,21 @@ export async function exportReportPdf(report: GeneratedReport) {
       y: y - 14,
       size: 7,
       font: bold,
-      color: rgb(0.3, 0.4, 0.43),
+      color: rgb(0.325, 0.388, 0.478),
     });
     page.drawText(ascii(metric.value), {
       x: x + 8,
       y: y - 31,
       size: 14,
       font: bold,
-      color: rgb(0.04, 0.36, 0.33),
+      color: rgb(0.145, 0.388, 0.922),
     });
     page.drawText(ascii(metric.detail).slice(0, 31), {
       x: x + 8,
       y: y - 43,
       size: 6,
       font: regular,
-      color: rgb(0.35, 0.43, 0.46),
+      color: rgb(0.439, 0.506, 0.596),
     });
   });
   y -= 72;
@@ -1085,7 +1085,7 @@ export async function exportReportPdf(report: GeneratedReport) {
       y: y - 22,
       width: pageWidth - margin * 2,
       height: 22,
-      color: rgb(0.08, 0.25, 0.29),
+      color: rgb(0.114, 0.306, 0.847),
     });
     report.columns.forEach((column, index) =>
       page.drawText(ascii(column).slice(0, 18), {
@@ -1110,8 +1110,8 @@ export async function exportReportPdf(report: GeneratedReport) {
       y: y - 21,
       width: pageWidth - margin * 2,
       height: 21,
-      color: rowIndex % 2 ? rgb(0.97, 0.98, 0.98) : rgb(1, 1, 1),
-      borderColor: rgb(0.86, 0.89, 0.9),
+      color: rowIndex % 2 ? rgb(0.969, 0.976, 0.988) : rgb(1, 1, 1),
+      borderColor: rgb(0.882, 0.91, 0.941),
       borderWidth: 0.3,
     });
     row.forEach((cell, index) =>
@@ -1120,14 +1120,14 @@ export async function exportReportPdf(report: GeneratedReport) {
         y: y - 14,
         size: 6.4,
         font: regular,
-        color: rgb(0.13, 0.19, 0.21),
+        color: rgb(0.09, 0.125, 0.2),
       }),
     );
     y -= 21;
   });
   page.drawText(
     "Synthetic demonstration data | Confidential | Generated locally",
-    { x: margin, y: 20, size: 7, font: regular, color: rgb(0.4, 0.47, 0.49) },
+    { x: margin, y: 20, size: 7, font: regular, color: rgb(0.4, 0.463, 0.518) },
   );
   const bytes = await pdf.save();
   download(

@@ -35,7 +35,6 @@ const browser = spawn(
     `--remote-debugging-port=${debugPort}`,
     `--user-data-dir=${profile}`,
     "--headless=new",
-    "--disable-gpu",
     "--no-first-run",
     "--no-default-browser-check",
     "--window-size=1600,1100",
@@ -123,6 +122,8 @@ async function request(path, options = {}) {
 }
 
 async function capture(name) {
+  await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+  await delay(300);
   const screenshot = await send("Page.captureScreenshot", {
     format: "png",
     captureBeyondViewport: false,
@@ -431,6 +432,11 @@ try {
     }
 
     if (persona === "reporting") {
+      await setViewport(1582, 1004, false);
+      const guideWasVisible = await evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(item=>item.textContent.trim()==='Hide guide');if(!button)return false;button.click();return true})()`);
+      if (guideWasVisible) {
+        await waitFor("!document.querySelector('#guided-demo-drawer')", "hidden guide for marketing captures");
+      }
       const preview = await request("/api/public-demo/report-preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -473,6 +479,18 @@ try {
         const state = await evaluate(`({heading:document.querySelector('h1')?.textContent.trim()||'',unavailable:/workspace data is unavailable/i.test(document.body.innerText)})`);
         if (!state.heading || state.unavailable) {
           throw new Error(`Public module ${label} did not render populated content: ${JSON.stringify(state)}`);
+        }
+        if (label === "Explorer 360") {
+          await waitFor("document.querySelectorAll('.user360-list .compact-row').length>5", "Explorer 360 visual data");
+          await capture("explorer-360");
+        }
+        if (label === "Reporting") {
+          await waitFor("document.querySelectorAll('.admin-center-list>button').length===10", "admin-center dashboard visual data");
+          await capture("admin-center-dashboard");
+        }
+        if (label === "Custom reports") {
+          await waitFor("!!document.querySelector('.builder-layout')", "custom report builder visual data");
+          await capture("custom-report-builder");
         }
         moduleSweep.push({ label, heading: state.heading });
       }
