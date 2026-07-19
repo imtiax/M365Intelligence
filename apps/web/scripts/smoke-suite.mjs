@@ -128,7 +128,9 @@ try {
     "location.pathname==='/login'&&document.querySelector('form')",
     "login page",
   );
-  await delay(1000);
+  // Wait for the interactive login client to hydrate before asserting the
+  // optional Entra production-gate disclosure.
+  await delay(2500);
   const entraGate = await evaluate(`(()=>{const button=document.querySelector('.entra-button');if(!button||button.disabled)return false;button.click();return true})()`);
   if (!entraGate) throw new Error("Microsoft Entra production-gate control is unavailable.");
   await waitFor("document.querySelector('#entra-configuration-status')?.textContent.includes('Entra production gate')", "Entra production-gate guidance");

@@ -486,6 +486,17 @@ try {
         }
         if (label === "Reporting") {
           await waitFor("document.querySelectorAll('.admin-center-list>button').length===10", "admin-center dashboard visual data");
+          await evaluate("document.querySelector('[data-testid=report-finder-tab]')?.click()");
+          await waitFor("document.querySelectorAll('[data-testid=report-finder-workspace] .report-finder-card').length>=3", "report finder cards");
+          await capture("report-finder");
+          await evaluate("document.querySelector('[data-testid=report-finder-workspace] .report-finder-card')?.click()");
+          await waitFor("document.querySelector('.detail-drawer')?.textContent.includes('Preview')", "report finder drawer");
+          await evaluate("document.querySelector('.detail-drawer .drawer-head button')?.click()");
+          await waitFor("!document.querySelector('.detail-drawer')", "closed report finder drawer");
+          await evaluate("document.querySelector('[data-testid=service-overview-tab]')?.click()");
+          await waitFor("document.querySelectorAll('[data-testid=service-overview-workspace] .service-overview-card').length===3", "service overview cards");
+          await evaluate("document.querySelector('[data-testid=service-overview-workspace] .service-overview-card footer button')?.click()");
+          await waitFor("document.querySelectorAll('.admin-center-list>button').length===10", "service dashboard drill-down");
           await capture("admin-center-dashboard");
         }
         if (label === "Custom reports") {

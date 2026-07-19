@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Alert24Regular,
   Apps24Regular,
@@ -348,6 +348,149 @@ type ReportRunConfiguration = {
   viewId?: string;
 };
 
+function ReportFinderWorkspace({
+  query,
+  reports,
+  total,
+  workloads,
+  selectedWorkload,
+  onQueryChange,
+  onWorkloadChange,
+  onOpen,
+  onBrowseCatalogue,
+}: {
+  query: string;
+  reports: CatalogueReport[];
+  total: number;
+  workloads: string[];
+  selectedWorkload: string;
+  onQueryChange: (value: string) => void;
+  onWorkloadChange: (value: string) => void;
+  onOpen: (report: CatalogueReport) => void;
+  onBrowseCatalogue: () => void;
+}) {
+  const topWorkloads = workloads.filter((item) => item !== "All workloads").slice(0, 7);
+  const fallback = reportCatalogue.slice(0, 18);
+  const matched = reports.length ? reports : query.trim() ? [] : fallback;
+  const sections = query.trim()
+    ? [{ label: "Search results", hint: `${matched.length} matching templates`, items: matched.slice(0, 8) }]
+    : [
+        {
+          label: "Recently used",
+          hint: "Continue evidence work already in motion",
+          items: reportCatalogue.filter((item) => item.scheduled || item.favorite).slice(0, 6),
+        },
+        {
+          label: "Operator essentials",
+          hint: "High-value reports for daily administration",
+          items: reportCatalogue.filter((item) => /user|mailbox|license|sign-in/i.test(item.name)).slice(0, 6),
+        },
+        {
+          label: "Risk and governance signals",
+          hint: "Evidence used in leadership and audit reviews",
+          items: reportCatalogue.filter((item) => /risk|audit|external|inactive|security/i.test(`${item.name} ${item.category}`)).slice(0, 6),
+        },
+      ];
+
+  return (
+    <section className="report-finder" data-testid="report-finder-workspace">
+      <header className="report-finder-hero">
+        <div>
+          <span className="report-finder-kicker"><Sparkle24Filled /> AEGIS REPORT INTELLIGENCE</span>
+          <h2>Find the next report by decision, not by menu.</h2>
+          <p>Search titles, workloads, and governed reporting categories across {total.toLocaleString("en-US")} local templates.</p>
+        </div>
+        <button type="button" className="report-finder-browse" onClick={onBrowseCatalogue} data-local-action="true">
+          Browse full catalogue <ChevronRight20Regular />
+        </button>
+      </header>
+      <div className="report-finder-search">
+        <Search20Regular />
+        <input
+          aria-label="Find a report"
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          placeholder="Search users, risk, mailboxes, licenses, audit evidence…"
+        />
+        {query && <button type="button" onClick={() => onQueryChange("")} aria-label="Clear report search">Clear</button>}
+      </div>
+      <div className="report-finder-filters" aria-label="Workload filters">
+        <button className={selectedWorkload === "All workloads" ? "selected" : ""} onClick={() => onWorkloadChange("All workloads")}>All workloads</button>
+        {topWorkloads.map((item) => (
+          <button key={item} className={selectedWorkload === item ? "selected" : ""} onClick={() => onWorkloadChange(item)}>{item}</button>
+        ))}
+      </div>
+      <div className="report-finder-sections">
+        {sections.map((section) => (
+          <article key={section.label} className="report-finder-section">
+            <header>
+              <div><h3>{section.label}</h3><p>{section.hint}</p></div>
+              <span>{section.items.length} reports</span>
+            </header>
+            <div className="report-finder-cards">
+              {section.items.map((report) => (
+                <button key={report.id} type="button" className="report-finder-card" onClick={() => onOpen(report)}>
+                  <span><DocumentBulletList24Regular /></span>
+                  <div>
+                    <strong>{report.name}</strong>
+                    <p>{report.description}</p>
+                    <small><b>{report.workload}</b><b>{report.category}</b><b>{report.rows} rows</b></small>
+                  </div>
+                  <ChevronRight20Regular />
+                </button>
+              ))}
+            </div>
+            {!section.items.length && <div className="report-finder-empty">No templates match this search. Try a broader term or workload.</div>}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ServiceOverview({ onOpenDashboard }: { onOpenDashboard: (service: string) => void }) {
+  const services = [
+    suiteModules.find((item) => item.name === "Microsoft Entra ID"),
+    suiteModules.find((item) => item.name === "Defender XDR"),
+    suiteModules.find((item) => item.name === "Exchange Online"),
+  ].filter((item): item is (typeof suiteModules)[number] => Boolean(item));
+
+  return (
+    <section className="service-overview" data-testid="service-overview-workspace">
+      <header>
+        <div>
+          <span className="report-finder-kicker"><DataTrending24Regular /> AEGIS SERVICE POSTURE</span>
+          <h2>Microsoft 365 at a glance</h2>
+          <p>Start with the service signal, then open its governed dashboard and supporting evidence.</p>
+        </div>
+        <span className="service-overview-status"><i /> Local snapshot current</span>
+      </header>
+      <div className="service-overview-grid">
+        {services.map((service) => {
+          const dashboard = dashboardFor(service.name);
+          return (
+            <article key={service.name} className="service-overview-card" style={{ "--service-accent": service.accent } as CSSProperties}>
+              <header>
+                <span><CloudCheckmark24Regular /></span>
+                <div><small>{service.family.toUpperCase()} SERVICE</small><h3>{service.name}</h3></div>
+                <b>{service.health}%</b>
+              </header>
+              <p>{service.description}</p>
+              <div className="service-overview-metrics">
+                {dashboard.metrics.slice(0, 4).map((metric) => <span key={metric.label}><small>{metric.label}</small><strong>{metric.value}</strong><em>{metric.detail}</em></span>)}
+              </div>
+              <footer>
+                <span>{service.reports} governed reports</span>
+                <button type="button" onClick={() => onOpenDashboard(service.name)} data-local-action="true">Open dashboard <ChevronRight20Regular /></button>
+              </footer>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function Reporting({
   notify,
   canManage,
@@ -355,9 +498,9 @@ function Reporting({
   notify: (m: string) => void;
   canManage: boolean;
 }) {
-  const [view, setView] = useState<"dashboards" | "catalogue" | "operations">(
-    "dashboards",
-  );
+  const [view, setView] = useState<
+    "finder" | "service-overview" | "dashboards" | "catalogue" | "operations"
+  >("dashboards");
   const [query, setQuery] = useState("");
   const [workload, setWorkload] = useState("All workloads");
   const [category, setCategory] = useState("All categories");
@@ -501,9 +644,24 @@ function Reporting({
     <>
       <Header
         path="INTELLIGENCE / REPORTING"
-        title="Microsoft 365 report center"
-        description="Search and customize 947 presentation templates across governed Microsoft 365 workload schemas."
+        title={
+          view === "finder"
+            ? "Report Finder"
+            : view === "service-overview"
+              ? "Microsoft 365 service overview"
+              : "Microsoft 365 report center"
+        }
+        description={
+          view === "finder"
+            ? "Find the right evidence in seconds, then run it through Aegis's governed local reporting workflow."
+            : view === "service-overview"
+              ? "Compare identity, security, and collaboration posture in one decision-ready operational view."
+              : "Search and customize 947 presentation templates across governed Microsoft 365 workload schemas."
+        }
       >
+        <Btn localAction onClick={() => setView("finder")}>
+          <Search20Regular /> Open Report Finder
+        </Btn>
         <Btn localAction onClick={() => { setView("operations"); void refreshOperations(); }}>
           <ArrowDownload24Regular /> Run &amp; export history
         </Btn>
@@ -547,6 +705,20 @@ function Reporting({
       </div>
       <div className="report-mode-tabs">
         <button
+          className={view === "finder" ? "selected" : ""}
+          onClick={() => setView("finder")}
+          data-testid="report-finder-tab"
+        >
+          <Search20Regular /> Report Finder
+        </button>
+        <button
+          className={view === "service-overview" ? "selected" : ""}
+          onClick={() => setView("service-overview")}
+          data-testid="service-overview-tab"
+        >
+          <Apps24Regular /> Service overview
+        </button>
+        <button
           className={view === "dashboards" ? "selected" : ""}
           onClick={() => setView("dashboards")}
         >
@@ -569,6 +741,30 @@ function Reporting({
           <CalendarClock24Regular /> Views &amp; operations
         </button>
       </div>
+      {view === "finder" && (
+        <ReportFinderWorkspace
+          query={query}
+          reports={filtered}
+          total={reportCatalogue.length}
+          workloads={workloads}
+          selectedWorkload={workload}
+          onQueryChange={setQuery}
+          onWorkloadChange={setWorkload}
+          onOpen={(report) => {
+            setSelectedSavedView(null);
+            setSelected(report);
+          }}
+          onBrowseCatalogue={() => setView("catalogue")}
+        />
+      )}
+      {view === "service-overview" && (
+        <ServiceOverview
+          onOpenDashboard={(service) => {
+            setDashboardWorkload(service);
+            setView("dashboards");
+          }}
+        />
+      )}
       {view === "dashboards" && (
         <div className="admin-dashboard-layout">
           <aside className="admin-center-list">

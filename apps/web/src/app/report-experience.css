@@ -1,0 +1,141 @@
+/* Original Aegis reporting discovery and service overview experience. */
+.report-finder,
+.service-overview {
+  border: 1px solid var(--stroke, var(--border));
+  border-radius: 12px;
+  background: var(--surface, var(--panel));
+  color: var(--text-primary, var(--text));
+  box-shadow: var(--shadow-raised);
+  overflow: hidden;
+}
+
+.report-finder-hero,
+.service-overview > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  background: linear-gradient(120deg, var(--surface-raised) 0%, var(--surface) 62%, var(--action-soft) 145%);
+  border-bottom: 1px solid var(--stroke);
+}
+
+.report-finder-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--info);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.15px;
+}
+
+.report-finder-kicker svg { width: 15px; height: 15px; }
+.report-finder h2,
+.service-overview h2 { margin: 8px 0 6px; font-size: 25px; letter-spacing: -.6px; }
+.report-finder-hero p,
+.service-overview > header p { max-width: 670px; margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.55; }
+
+.report-finder-browse {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  border: 1px solid var(--stroke-strong, var(--stroke));
+  border-radius: 7px;
+  padding: 0 11px;
+  background: var(--surface);
+  color: var(--action);
+  cursor: pointer;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.report-finder-browse svg { width: 16px; }
+.report-finder-browse:hover { background: var(--action-soft); }
+
+.report-finder-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 24px 14px;
+  min-height: 58px;
+  padding: 0 17px;
+  border: 1px solid var(--stroke-strong, var(--stroke));
+  border-radius: 10px;
+  background: var(--surface-muted);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
+}
+.report-finder-search > svg { width: 23px; height: 23px; color: var(--info); flex: 0 0 auto; }
+.report-finder-search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text-primary); font-size: 16px; }
+.report-finder-search input::placeholder { color: var(--text-tertiary); }
+.report-finder-search button { border: 0; background: transparent; color: var(--action); cursor: pointer; font-size: 12px; font-weight: 700; }
+
+.report-finder-filters { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 24px 22px; }
+.report-finder-filters button { border: 1px solid var(--stroke); border-radius: 99px; padding: 7px 11px; background: var(--surface); color: var(--text-secondary); cursor: pointer; font-size: 11px; }
+.report-finder-filters button:hover,
+.report-finder-filters button.selected { border-color: var(--action); background: var(--action-soft); color: var(--action); }
+
+.report-finder-sections { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--stroke); }
+.report-finder-section { min-width: 0; padding: 20px; border-right: 1px solid var(--stroke); }
+.report-finder-section:last-child { border-right: 0; }
+.report-finder-section > header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+.report-finder-section h3 { margin: 0 0 4px; color: var(--text-primary); font-size: 15px; }
+.report-finder-section p { margin: 0; color: var(--text-tertiary); font-size: 10px; line-height: 1.4; }
+.report-finder-section > header > span { color: var(--info); font-size: 10px; font-weight: 700; white-space: nowrap; }
+.report-finder-cards { display: grid; gap: 9px; }
+.report-finder-card { display: grid; grid-template-columns: 35px minmax(0, 1fr) 18px; align-items: center; gap: 10px; width: 100%; border: 1px solid var(--stroke); border-radius: 9px; padding: 11px; background: var(--surface); color: var(--text-primary); cursor: pointer; text-align: left; }
+.report-finder-card:hover { border-color: var(--focus); background: var(--surface-selected); transform: translateY(-1px); }
+.report-finder-card > span { width: 35px; height: 35px; display: grid; place-items: center; border-radius: 50%; background: var(--action-soft); color: var(--action); }
+.report-finder-card > span svg { width: 19px; height: 19px; }
+.report-finder-card > div { min-width: 0; }
+.report-finder-card strong { display: block; overflow: hidden; color: var(--text-primary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.report-finder-card p { display: -webkit-box; overflow: hidden; margin: 4px 0 7px; color: var(--text-secondary); font-size: 10px; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.report-finder-card small { display: flex; gap: 5px; flex-wrap: wrap; }
+.report-finder-card small b { padding: 2px 5px; border-radius: 4px; background: var(--info-soft); color: var(--info); font-size: 8px; font-weight: 700; }
+.report-finder-card > svg { width: 16px; color: var(--text-tertiary); }
+.report-finder-empty { padding: 24px 0; color: var(--text-secondary); font-size: 12px; }
+
+.service-overview > header { align-items: center; }
+.service-overview-status { display: inline-flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--success) 45%, var(--stroke)); border-radius: 999px; background: var(--success-soft); color: var(--success); font-size: 10px; font-weight: 700; white-space: nowrap; }
+.service-overview-status i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.service-overview-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 18px; background: var(--canvas); }
+.service-overview-card { --service-accent: var(--action); display: flex; min-width: 0; flex-direction: column; min-height: 415px; border: 1px solid var(--stroke); border-top: 3px solid var(--service-accent); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.service-overview-card > header { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 17px 17px 13px; }
+.service-overview-card > header > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 9px; background: color-mix(in srgb, var(--service-accent) 13%, var(--surface)); color: var(--service-accent); }
+.service-overview-card > header > span svg { width: 23px; height: 23px; }
+.service-overview-card > header small { color: var(--text-tertiary); font-size: 9px; letter-spacing: .7px; }
+.service-overview-card h3 { margin: 3px 0 0; color: var(--text-primary); font-size: 15px; }
+.service-overview-card > header > b { color: var(--success); font-size: 13px; }
+.service-overview-card > p { min-height: 39px; margin: 0; padding: 0 17px 14px; color: var(--text-secondary); font-size: 11px; line-height: 1.45; }
+.service-overview-metrics { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--stroke); border-left: 1px solid var(--stroke); margin: 0 17px; }
+.service-overview-metrics > span { display: flex; min-height: 86px; flex-direction: column; justify-content: center; padding: 10px; border-right: 1px solid var(--stroke); border-bottom: 1px solid var(--stroke); background: var(--surface-muted); }
+.service-overview-metrics small { color: var(--text-tertiary); font-size: 9px; text-transform: uppercase; }
+.service-overview-metrics strong { margin: 4px 0; color: var(--text-primary); font-size: 20px; }
+.service-overview-metrics em { color: var(--text-secondary); font-size: 9px; font-style: normal; }
+.service-overview-card footer { display: flex; align-items: center; justify-content: space-between; gap: 9px; margin-top: auto; padding: 16px 17px; border-top: 1px solid var(--stroke); }
+.service-overview-card footer > span { color: var(--text-tertiary); font-size: 10px; }
+.service-overview-card footer button { display: inline-flex; align-items: center; gap: 3px; border: 0; background: transparent; color: var(--action); cursor: pointer; font-size: 11px; font-weight: 800; }
+.service-overview-card footer button svg { width: 16px; }
+
+@media (max-width: 1180px) {
+  .report-finder-sections,
+  .service-overview-grid { grid-template-columns: 1fr; }
+  .report-finder-section { border-right: 0; border-bottom: 1px solid var(--stroke); }
+  .report-finder-section:last-child { border-bottom: 0; }
+  .service-overview-card { min-height: auto; }
+}
+
+@media (max-width: 760px) {
+  .report-finder-hero,
+  .service-overview > header { padding: 18px; flex-direction: column; }
+  .report-finder h2,
+  .service-overview h2 { font-size: 21px; }
+  .report-finder-browse,
+  .service-overview-status { width: 100%; justify-content: center; }
+  .report-finder-search { min-height: 48px; margin: 18px 18px 12px; padding: 0 12px; }
+  .report-finder-search input { font-size: 13px; }
+  .report-finder-filters { padding: 0 18px 18px; overflow-x: auto; flex-wrap: nowrap; }
+  .report-finder-filters button { white-space: nowrap; }
+  .report-finder-section { padding: 18px; }
+  .service-overview-grid { padding: 12px; }
+}
