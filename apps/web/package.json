@@ -8,11 +8,11 @@
     "start": "node scripts/start-production.mjs",
     "lint": "next lint",
     "auth:setup": "node scripts/setup-auth.mjs",
-    "test:smoke": "node scripts/next-smoke.mjs",
+    "test:smoke": "node scripts/smoke-suite.mjs",
     "test:roles": "node scripts/role-access.mjs",
     "test:role-ui": "node scripts/role-navigation.mjs",
     "test:landing": "node scripts/landing-smoke.mjs",
-    "test:public-demo": "node scripts/next-smoke.mjs",
+    "test:public-demo": "node scripts/public-demo-smoke.mjs",
     "test:next": "node scripts/next-smoke.mjs",
     "audit:controls": "node scripts/audit-controls.mjs"
   },

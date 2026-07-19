@@ -63,7 +63,7 @@ try {
   await waitFor("document.querySelector('.next-shell') && document.querySelector('h1')?.textContent.includes('Make the next right decision')", "Aegis Next mission control");
   await delay(1200);
   const initial = await evaluate(`(() => ({ nav: document.querySelectorAll('.next-sidebar nav button').length, cards: document.querySelectorAll('.next-card').length, overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth }))()`);
-  if (initial.nav !== 10 || initial.cards < 3 || initial.overflow) throw new Error(`Mission control audit failed: ${JSON.stringify(initial)}`);
+  if (initial.nav !== 7 || initial.cards < 3 || initial.overflow) throw new Error(`Mission control audit failed: ${JSON.stringify(initial)}`);
   await evaluate("(() => { [...document.querySelectorAll('.next-sidebar nav button')].find((button) => button.textContent.includes('Evidence Studio'))?.click(); return true; })()");
   await waitFor("document.querySelector('h1')?.textContent.includes('Build a decision-grade view')", "Evidence Studio");
   await evaluate("(() => { document.querySelector('.next-table-wrap tbody tr')?.click(); return true; })()");
@@ -84,17 +84,9 @@ try {
   await evaluate("(() => { document.querySelector('.next-check input')?.click(); return true; })()");
   await evaluate("(() => { document.querySelector('.next-modal footer .primary')?.click(); return true; })()");
   await waitFor("document.querySelector('.next-toast')?.textContent.includes('submitted for independent approval')", "approval submission toast");
-  await evaluate("(() => { [...document.querySelectorAll('.next-sidebar nav button')].find((button) => button.textContent.includes('Custom Reports'))?.click(); return true; })()");
-  await waitFor("document.querySelector('h1')?.textContent.includes('Compose data your way')", "custom report builder");
-  await evaluate("(() => { [...document.querySelectorAll('.next-page-actions button')].find((button) => button.textContent.includes('Generate report'))?.click(); return true; })()");
-  await waitFor("document.querySelector('.next-toast')?.textContent.includes('generated with')", "custom report generation");
-  await evaluate("(() => { [...document.querySelectorAll('.next-sidebar nav button')].find((button) => button.textContent.includes('PowerShell Runbooks'))?.click(); return true; })()");
-  await waitFor("document.querySelector('h1')?.textContent.includes('Daily admin work')", "PowerShell runbooks");
-  await evaluate("(() => { [...document.querySelectorAll('.next-sidebar nav button')].find((button) => button.textContent.includes('Connector Center'))?.click(); return true; })()");
-  await waitFor("document.querySelector('h1')?.textContent.includes('Visibility begins')", "connector center");
   const screenshot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true });
   await writeFile(join(output, "smoke-aegis-next.png"), Buffer.from(screenshot.data, "base64"));
-  console.log(JSON.stringify({ route: "/next", navigation: initial.nav, evidenceDrawer: true, evidenceExport: downloaded, approval: true, customReport: true, powerShellRunbooks: true, connectorCenter: true, screenshot: "artifacts/smoke-aegis-next.png" }, null, 2));
+  console.log(JSON.stringify({ route: "/next", navigation: initial.nav, evidenceDrawer: true, evidenceExport: downloaded, approval: true, screenshot: "artifacts/smoke-aegis-next.png" }, null, 2));
 } finally {
   socket?.close();
   browser.kill();

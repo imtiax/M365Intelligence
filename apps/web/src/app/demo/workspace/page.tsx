@@ -1,6 +1,5 @@
-import { AegisNextWorkspace } from '@/components/AegisNextWorkspace';
-import '../../next/next.css';
+import Workspace from '../../page';
 
 export default function PublicDemoWorkspace() {
-  return <AegisNextWorkspace />;
+  return <Workspace />;
 }

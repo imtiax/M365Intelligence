@@ -1,0 +1,1263 @@
+/*
+ * Aegis Signal Blue
+ *
+ * A cool, high-clarity enterprise palette built from semantic tokens. Neutral
+ * layers carry the interface; blue is reserved for brand and interaction;
+ * semantic and chart colors communicate meaning without tinting every surface.
+ */
+
+:root {
+  color-scheme: dark;
+  --canvas: #07111f;
+  --surface: #0f1c2e;
+  --surface-raised: #14233a;
+  --surface-muted: #0b1728;
+  --surface-selected: #182c49;
+  --sidebar-surface: #050d1a;
+  --sidebar-hover: #0e2038;
+  --sidebar-selected: #17345b;
+  --stroke: #2a3c55;
+  --stroke-subtle: #1d2d43;
+  --stroke-strong: #71849d;
+  --text-primary: #f5f7fb;
+  --text-secondary: #b6c3d4;
+  --text-tertiary: #8799af;
+  --text-on-action: #ffffff;
+  --action: #3b82f6;
+  --action-hover: #2563eb;
+  --action-emphasis: #8bb8ff;
+  --action-soft: #102a50;
+  --focus: #60a5fa;
+  --info: #38bdf8;
+  --info-soft: #0b293d;
+  --success: #4ade80;
+  --success-soft: #0c2a20;
+  --warning: #fbbf24;
+  --warning-soft: #33260b;
+  --danger: #fb7185;
+  --danger-soft: #3a1720;
+  --purple-human: #a78bfa;
+  --purple-soft: #251d3b;
+  --shadow-raised: 0 16px 42px rgb(0 0 0 / 36%);
+  --chart-grid: #273a54;
+  --chart-tooltip: #14233a;
+  --chart-1: #60a5fa;
+  --chart-2: #22d3ee;
+  --chart-3: #a78bfa;
+  --chart-4: #34d399;
+  --chart-5: #f59e0b;
+  --chart-6: #fb7185;
+  --panel-soft: var(--surface-muted);
+
+  /* Compatibility aliases for existing components. */
+  --bg: var(--canvas);
+  --sidebar: var(--sidebar-surface);
+  --panel: var(--surface);
+  --panel2: var(--surface-raised);
+  --border: var(--stroke);
+  --text: var(--text-primary);
+  --muted: var(--text-secondary);
+  --teal: var(--action-emphasis);
+  --red: var(--danger);
+  --gold: var(--warning);
+  --blue: var(--info);
+  --purple: var(--purple-human);
+}
+
+html,
+body {
+  background: var(--canvas);
+  color: var(--text-primary);
+  font-family: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
+  font-size: 14px;
+}
+
+.app-shell.light-theme {
+  color-scheme: light;
+  --canvas: #f3f6fb;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-muted: #eef3f9;
+  --surface-selected: #e6efff;
+  --sidebar-surface: #0b1730;
+  --sidebar-hover: #132846;
+  --sidebar-selected: #1b3a66;
+  --stroke: #d5dfeb;
+  --stroke-subtle: #e6edf5;
+  --stroke-strong: #7e8d9a;
+  --text-primary: #172033;
+  --text-secondary: #53637a;
+  --text-tertiary: #708198;
+  --text-on-action: #ffffff;
+  --action: #2563eb;
+  --action-hover: #1d4ed8;
+  --action-emphasis: #1d4ed8;
+  --action-soft: #e7efff;
+  --focus: #2563eb;
+  --info: #0369a1;
+  --info-soft: #e0f2fe;
+  --success: #15803d;
+  --success-soft: #e8f7ed;
+  --warning: #a15c08;
+  --warning-soft: #fff5dc;
+  --danger: #be3144;
+  --danger-soft: #fdecef;
+  --purple-human: #6d49c7;
+  --purple-soft: #f0ebff;
+  --shadow-raised: 0 16px 38px rgb(23 32 51 / 12%);
+  --chart-grid: #d8e1ec;
+  --chart-tooltip: #ffffff;
+  --chart-1: #2563eb;
+  --chart-2: #0284c7;
+  --chart-3: #7c3aed;
+  --chart-4: #059669;
+  --chart-5: #d97706;
+  --chart-6: #e11d48;
+  --panel-soft: var(--surface-muted);
+}
+
+/* Application frame */
+.app-shell,
+.app-shell main,
+.app-shell .content,
+.app-shell .presentation-content {
+  background: var(--canvas);
+  color: var(--text-primary);
+}
+
+.app-shell .sidebar {
+  background: var(--sidebar-surface);
+  background-image: none;
+  border-color: #20314c;
+  box-shadow: none;
+}
+
+.app-shell .brand-mark {
+  background: #2563eb;
+  background-image: none;
+  border: 1px solid #5b8df7;
+  border-radius: 9px;
+  box-shadow: none;
+  color: #ffffff;
+}
+
+.app-shell .brand strong {
+  color: #f7f9fd;
+}
+
+.app-shell .brand small,
+.app-shell .workspace-label,
+.app-shell .nav-group .workspace-label {
+  color: #91a5c0;
+  font-size: 10px;
+  letter-spacing: 0.9px;
+}
+
+.app-shell .sidebar button {
+  color: #c7d2e2;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.app-shell .sidebar button:hover {
+  background: var(--sidebar-hover);
+  color: #ffffff;
+}
+
+.app-shell .sidebar button.active {
+  background: var(--sidebar-selected);
+  background-image: none;
+  color: #ffffff;
+  box-shadow: inset 3px 0 #60a5fa;
+}
+
+.app-shell .sidebar button em {
+  background: #7f1d2d;
+  color: #ffe4e8;
+}
+
+.app-shell .local-badge {
+  background: #0d1c31;
+  border-color: #253b5a;
+  color: #7dd3fc;
+  border-radius: 8px;
+}
+
+.app-shell .local-badge span {
+  color: #f3f6fb;
+}
+
+.app-shell .local-badge small {
+  color: #9fb0c6;
+}
+
+.app-shell .local-badge i,
+.app-shell .sync-state i,
+.app-shell .fresh-dot,
+.app-shell .health i {
+  background: var(--success);
+  box-shadow: none;
+}
+
+.app-shell .topbar {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  background-image: none;
+  border-color: var(--stroke);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--stroke) 80%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.app-shell .tenant-switch:hover,
+.app-shell .icon-button:hover {
+  background: var(--surface-muted);
+}
+
+.app-shell .tenant-avatar {
+  background: var(--info-soft);
+  color: var(--info);
+  border-radius: 7px;
+}
+
+.app-shell .profile {
+  background: #6d49c7;
+  background-image: none;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.app-shell .global-search,
+.app-shell .global-search kbd {
+  background: var(--surface-muted);
+  border-color: var(--stroke-strong);
+  color: var(--text-tertiary);
+}
+
+.app-shell .global-search input {
+  background: transparent;
+  border: 0;
+  color: var(--text-primary);
+}
+
+/* Controls */
+.app-shell :is(button, a, input, select, textarea):focus-visible,
+.login-page :is(button, a, input):focus-visible,
+.landing-page :is(a, button):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus, #2563eb) 42%, transparent);
+  outline-offset: 2px;
+}
+
+.app-shell :is(.primary-button, .login-submit) {
+  background: var(--action);
+  background-image: none;
+  border-color: var(--action);
+  color: var(--text-on-action);
+  box-shadow: none;
+  border-radius: 6px;
+}
+
+.app-shell .primary-button:hover:not(:disabled) {
+  background: var(--action-hover);
+  border-color: var(--action-hover);
+}
+
+.app-shell :is(.secondary-button, .panel-heading > button) {
+  background: var(--surface);
+  background-image: none;
+  border-color: var(--stroke-strong);
+  color: var(--text-secondary);
+  box-shadow: none;
+  border-radius: 6px;
+}
+
+.app-shell .ask-ai {
+  background: var(--surface);
+  border-color: var(--stroke);
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+.app-shell .ask-ai svg,
+.app-shell .text-button,
+.app-shell a:not(.linked-workflow) {
+  color: var(--action-emphasis);
+}
+
+.app-shell :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  background-color: var(--surface);
+  border-color: var(--stroke-strong);
+  color: var(--text-primary);
+}
+
+.app-shell :is(input, textarea)::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Primary surfaces */
+.app-shell :is(
+    .panel,
+    .metric-card,
+    .suite-card,
+    .suite-kpi,
+    .suite-module-grid article,
+    .framework-card,
+    .template-grid article,
+    .connector-grid article,
+    .policy-grid article,
+    .agent-grid article,
+    .domain-grid article,
+    .opportunity-grid article,
+    .report-workspace,
+    .report-results,
+    .suite-drawer,
+    .detail-drawer,
+    .report-preview,
+    .topbar-popover,
+    .action-dialog,
+    .builder-titlebar,
+    .builder-layout,
+    .builder-preview,
+    .schedule-designer,
+    .report-security,
+    .configuration-layout,
+    .dashboard-builder,
+    .saved-artifacts,
+    .roi-inputs,
+    .roi-results,
+    .buyer-proof,
+    .differentiator-grid article,
+    .admin-dashboard,
+    .admin-dashboard-grid > article,
+    .admin-dashboard-metrics > button,
+    .admin-dashboard-table,
+    .admin-quick-reports,
+    .report-operations,
+    .report-operation-section,
+    .saved-view-grid article,
+    .operation-list article,
+    .generated-report,
+    .commercial-panel,
+    .commercial-summary,
+    .commercial-state,
+    .license-box,
+    .portal-grid article
+  ) {
+  background: var(--surface);
+  background-image: none;
+  border-color: var(--stroke);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.app-shell :is(
+    .report-tree,
+    .source-panel,
+    .configuration-panel,
+    .dashboard-builder > aside,
+    .configuration-layout > aside,
+    .ai-sidebar,
+    .workflow-list,
+    .admin-center-list
+  ) {
+  background: var(--surface-muted);
+  background-image: none;
+  border-color: var(--stroke);
+  color: var(--text-primary);
+}
+
+.app-shell :is(.panel, .metric-card, .suite-card, .suite-kpi, .suite-module-grid article) {
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgb(23 32 51 / 7%);
+}
+
+.app-shell :is(.metric-card, .suite-kpi, .admin-dashboard-metrics > button)::after {
+  display: none;
+}
+
+.app-shell :is(.metric-icon, .workload-icon, .entity-icon, .suite-module-grid article > span) {
+  background: var(--surface-muted);
+  background-image: none;
+  border: 1px solid var(--stroke-subtle);
+  box-shadow: none;
+}
+
+/* Typography and readable data density */
+.app-shell :is(.page-heading, .suite-page-heading, .studio-heading) h1,
+.app-shell :is(.drawer-head, .panel-heading, .showcase-heading) h2,
+.app-shell :is(.compact-row, .data-row, .catalogue-list > button) strong {
+  color: var(--text-primary);
+}
+
+.app-shell :is(.page-heading, .suite-page-heading, .studio-heading) p,
+.app-shell :is(.panel-heading, .showcase-heading) p,
+.app-shell :is(.compact-row, .data-row, .catalogue-list > button) small,
+.app-shell .drawer-sub {
+  color: var(--text-secondary);
+}
+
+.app-shell :is(
+    .eyebrow,
+    .metric-head,
+    .data-head,
+    .compact-head,
+    .table-head,
+    .catalogue-head,
+    .commercial-table-head,
+    .admin-dashboard-table > div:first-child,
+    .report-run-table > div:first-child
+  ) {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  letter-spacing: 0.65px;
+}
+
+.app-shell :is(
+    .data-row,
+    .compact-row,
+    .finding-row,
+    .catalogue-list > button,
+    .commercial-table-row,
+    .admin-dashboard-table > div,
+    .report-run-table > div
+  ) {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.app-shell :is(.panel-heading, .showcase-heading) h2 {
+  font-size: 15px;
+}
+
+.app-shell :is(.panel-heading, .showcase-heading) p {
+  font-size: 11px;
+}
+
+.app-shell :is(.metric-detail, .sync-state, .health, .operation-status) {
+  font-size: 11px;
+}
+
+/* Tables, lists and selected states */
+.app-shell :is(
+    .data-head,
+    .compact-head,
+    .table-head,
+    .catalogue-head,
+    .commercial-table-head,
+    .result-table > div:first-child,
+    .access-table > div:first-child,
+    .admin-dashboard-table > div:first-child,
+    .report-run-table > div:first-child
+  ) {
+  background: var(--surface-muted);
+  border-color: var(--stroke);
+}
+
+.app-shell :is(
+    .data-row,
+    .compact-row,
+    .finding-row,
+    .catalogue-list > button,
+    .commercial-table-row,
+    .result-table > div,
+    .access-table > div,
+    .admin-dashboard-table > div,
+    .report-run-table > div,
+    .saved-artifacts article,
+    .buyer-proof article
+  ) {
+  background-color: transparent;
+  border-color: var(--stroke-subtle);
+}
+
+.app-shell :is(.data-row, .compact-row, .finding-row, .catalogue-list > button, .commercial-table-row):hover {
+  background: var(--surface-muted);
+}
+
+.app-shell :is(
+    .filters,
+    .filter-tabs,
+    .admin-tabs,
+    .builder-tabs,
+    .drawer-tabs,
+    .report-mode-tabs,
+    .catalogue-toggle
+  ) button.selected,
+.app-shell :is(.catalogue-list, .workflow-list, .admin-center-list, .source-list) > button.selected {
+  background: var(--action-soft);
+  background-image: none;
+  border-color: color-mix(in srgb, var(--action) 40%, var(--stroke));
+  color: var(--action-emphasis);
+  box-shadow: inset 3px 0 var(--action);
+}
+
+.app-shell :is(.filters, .filter-tabs, .admin-tabs, .builder-tabs, .drawer-tabs, .report-mode-tabs) button {
+  color: var(--text-secondary);
+}
+
+/* Studio, report and configuration workspaces */
+.app-shell :is(
+    .builder-tabs,
+    .report-mode-tabs,
+    .catalogue-toolbar,
+    .audit-toolbar,
+    .preview-toolbar,
+    .dashboard-config,
+    .report-operations > header,
+    .report-operation-section > header,
+    .generated-toolbar,
+    .drawer-head,
+    .finding-heading
+  ) {
+  background: var(--surface);
+  background-image: none;
+  border-color: var(--stroke);
+}
+
+.app-shell :is(.builder-tabs, .report-mode-tabs) {
+  background: var(--surface);
+  border-color: var(--stroke);
+  box-shadow: none;
+}
+
+.app-shell .report-mode-tabs button.selected {
+  background: var(--action-soft);
+  color: var(--action-emphasis);
+  box-shadow: none;
+}
+
+.app-shell :is(
+    .selected-fields > div,
+    .field-search,
+    .calculated-section,
+    .calculated-section > header,
+    .calculated-row,
+    .condition,
+    .semantic-plan,
+    .visual-options button,
+    .channel-options button,
+    .schedule-designer > section,
+    .report-security > section,
+    .config-panel > section,
+    .config-toggles label,
+    .config-status,
+    .config-health,
+    .advanced-filter-builder,
+    .column-picker,
+    .report-definition-summary,
+    .config-disclosure,
+    .admin-health-card,
+    .admin-trend-card
+  ) {
+  background: var(--surface-muted);
+  background-image: none;
+  border-color: var(--stroke);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.app-shell .field-search input {
+  background: transparent;
+  border: 0;
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
+.app-shell :is(.calculated-row input, .calculated-row code) {
+  background: var(--surface);
+  border-color: var(--stroke);
+  color: var(--text-primary);
+}
+
+.app-shell .admin-center-list > button {
+  border-color: var(--stroke-subtle);
+  color: var(--text-primary);
+}
+
+.app-shell .admin-center-list > button:hover,
+.app-shell .admin-center-list > button.selected {
+  background: var(--action-soft);
+}
+
+.app-shell .admin-dashboard-table {
+  background: var(--surface);
+  border-color: var(--stroke);
+}
+
+.app-shell :is(
+    .source-list strong,
+    .selected-fields b,
+    .source-panel > header strong,
+    .configuration-panel > header strong,
+    .config-title strong,
+    .schedule-designer h2,
+    .report-security h2,
+    .admin-center-list b,
+    .admin-dashboard-table header strong,
+    .admin-health-card header strong,
+    .admin-trend-card header strong,
+    .admin-quick-reports header strong
+  ) {
+  color: var(--text-primary);
+  font-size: 10px;
+}
+
+.app-shell :is(
+    .source-list small,
+    .source-panel > header small,
+    .configuration-panel > header small,
+    .selected-fields em,
+    .admin-center-list small,
+    .admin-dashboard-table header small,
+    .admin-health-card header small,
+    .admin-trend-card header small,
+    .admin-quick-reports header small
+  ) {
+  color: var(--text-secondary);
+  font-size: 9px;
+}
+
+.app-shell :is(
+    .builder-tabs button,
+    .visual-options button,
+    .channel-options button,
+    .calculated-row input,
+    .calculated-row code,
+    .condition input,
+    .condition select,
+    .configuration-panel section > label,
+    .configuration-panel section > label select
+  ) {
+  font-size: 10px;
+}
+
+.app-shell :is(.semantic-plan, .config-status, .config-health) {
+  border-left: 3px solid var(--action);
+}
+
+.app-shell :is(.visual-options button.selected, .channel-options button.selected) {
+  background: var(--action-soft);
+  border-color: var(--action);
+  color: var(--action-emphasis);
+}
+
+.app-shell .dashboard-canvas {
+  background-color: var(--surface-muted);
+  background-image: linear-gradient(var(--stroke-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--stroke-subtle) 1px, transparent 1px);
+}
+
+.app-shell .dashboard-canvas article {
+  background: var(--surface);
+  border-color: var(--stroke);
+  box-shadow: none;
+}
+
+.app-shell :is(.fake-table span, .wide-meter, .risk-meter, .coverage-line, .value-breakdown > span > i) {
+  background: var(--surface-selected);
+  background-image: none;
+}
+
+.app-shell :is(.wide-meter i, .risk-meter i, .coverage-line i, .value-breakdown > span > i) {
+  background: var(--info);
+  background-image: none;
+}
+
+.app-shell .fake-trend polyline {
+  stroke: var(--chart-1);
+}
+
+.app-shell .fake-gauge {
+  border-color: var(--action);
+  border-right-color: var(--stroke);
+}
+
+.app-shell .admin-health-row > i {
+  background: var(--surface-selected);
+}
+
+.app-shell .admin-health-row > i b,
+.app-shell .admin-trend-card > div i {
+  background: var(--chart-1);
+  background-image: none;
+}
+
+.app-shell .admin-health-row em,
+.app-shell .admin-health-card header > b {
+  color: var(--success);
+}
+
+.app-shell .admin-trend-card > div {
+  border-color: var(--stroke);
+}
+
+.app-shell .ai-conversation,
+.app-shell .ai-hero > span,
+.app-shell .roi-results > div:first-child {
+  background: var(--surface);
+  background-image: none;
+}
+
+.app-shell .user360-list .compact-row.selected {
+  background: var(--action-soft);
+}
+
+.app-shell .profile-hero > span {
+  background: var(--info);
+  color: #ffffff;
+}
+
+.app-shell .user360-profile dl div,
+.app-shell .recommendation {
+  background: var(--surface-muted);
+}
+
+.app-shell .recommendation {
+  border-color: var(--warning);
+}
+
+.app-shell .ask-ai,
+.app-shell .semantic-plan {
+  color: var(--text-secondary);
+}
+
+/* Popovers, dialogs and drawers are the only elevated surfaces. */
+.app-shell :is(.topbar-popover, .global-results, .action-dialog, .detail-drawer, .suite-drawer, .report-preview) {
+  background: var(--surface-raised);
+  border-color: var(--stroke);
+  box-shadow: var(--shadow-raised);
+  color: var(--text-primary);
+}
+
+.app-shell :is(.topbar-popover, .global-results) button:hover {
+  background: var(--surface-muted);
+}
+
+.app-shell :is(.modal-backdrop, .action-modal-backdrop, .generated-report-backdrop) {
+  background: rgb(5 13 26 / 68%);
+  backdrop-filter: blur(3px);
+}
+
+.app-shell .toast {
+  background: #123829;
+  border-color: #2f7d5c;
+  color: #f2fbf6;
+  box-shadow: var(--shadow-raised);
+}
+
+/* Semantic states: color supports the label rather than decorating the UI. */
+.app-shell :is(.status.active, .runtime-live.online, .sync-state.live, .operation-status.completed, .finding-case-status.approved) {
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 40%, var(--stroke));
+  color: var(--success);
+  box-shadow: none;
+}
+
+.app-shell :is(.status.remediating, .operation-status.running, .runtime-live) {
+  background: var(--info-soft);
+  border-color: color-mix(in srgb, var(--info) 40%, var(--stroke));
+  color: var(--info);
+  box-shadow: none;
+}
+
+.app-shell :is(.status.investigating, .health.warning, .operation-status.pending, .sync-state.preview) {
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--stroke));
+  color: var(--warning);
+  box-shadow: none;
+}
+
+.app-shell :is(.status.critical, .operation-status.failed, .runtime-live.offline, .action-error) {
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--stroke));
+  color: var(--danger);
+  box-shadow: none;
+}
+
+.app-shell :is(.severity.critical, .entity-icon.critical) {
+  color: var(--danger);
+}
+
+.app-shell :is(.severity.high, .entity-icon.high) {
+  color: #d97706;
+}
+
+.app-shell :is(.severity.medium, .entity-icon.medium) {
+  color: var(--warning);
+}
+
+.app-shell :is(.severity.low, .entity-icon.low) {
+  color: var(--success);
+}
+
+/* Charts use the same restrained categorical palette in both themes. */
+.app-shell .recharts-cartesian-axis-tick text,
+.app-shell .recharts-text {
+  fill: var(--text-tertiary);
+}
+
+.app-shell .recharts-tooltip-wrapper {
+  color: var(--text-primary);
+}
+
+/* Final coverage for legacy modules that still ship literal presentation colors. */
+.app-shell :is(.runtime-live.online, .runtime-live.offline) i {
+  box-shadow: none;
+}
+
+.app-shell .runtime-live.online i {
+  background: var(--success);
+}
+
+.app-shell .runtime-live.offline i {
+  background: var(--danger);
+}
+
+.app-shell :is(.finding-case-grid > span, .exception-review label, .action-steps span) {
+  background: var(--surface-muted);
+  border-color: var(--stroke);
+  color: var(--text-secondary);
+}
+
+.app-shell :is(.finding-case-grid strong, .linked-workflow strong, .finding-activity strong) {
+  color: var(--text-primary);
+}
+
+.app-shell :is(.finding-case-grid small, .linked-workflow small, .finding-activity small) {
+  color: var(--text-tertiary);
+}
+
+.app-shell :is(.finding-case-note, .linked-workflow) {
+  background: var(--action-soft);
+  border-color: color-mix(in srgb, var(--action) 42%, var(--stroke));
+  color: var(--action-emphasis) !important;
+}
+
+.app-shell .finding-required-actions li {
+  color: var(--text-secondary);
+}
+
+.app-shell :is(.finding-required-actions b, .action-steps b) {
+  background: var(--action-soft);
+  color: var(--action-emphasis);
+}
+
+.app-shell .scenario-selector button.selected {
+  border-color: var(--action);
+  box-shadow: inset 0 0 0 1px var(--action);
+}
+
+.app-shell .live-timeline article {
+  border-left-color: var(--info);
+}
+
+.app-shell .user360-list .compact-row.selected {
+  background: var(--action-soft);
+}
+
+.app-shell :is(.framework-grid b, .report-operation-section > header > b) {
+  color: var(--action-emphasis);
+}
+
+.app-shell :is(.action-dialog > header, .generated-report > header) {
+  background: var(--surface-muted);
+  background-image: none;
+  border-color: var(--stroke);
+  color: var(--text-primary);
+}
+
+.app-shell :is(.action-dialog > header > span, .generated-meta svg) {
+  background: var(--action-soft);
+  color: var(--action-emphasis);
+}
+
+.app-shell :is(.action-dialog header small, .generated-report > header small) {
+  color: var(--action-emphasis);
+}
+
+.app-shell :is(.action-dialog header p, .action-dialog h3, .action-form label, .generated-report > header p) {
+  color: var(--text-secondary);
+}
+
+.app-shell :is(.action-dialog header > button, .generated-actions .close-generated) {
+  background: var(--surface-selected);
+  border-color: var(--stroke);
+  color: var(--text-secondary);
+}
+
+.app-shell :is(.action-dialog > section, .finding-action-dialog form > section, .action-steps span) {
+  border-color: var(--stroke-subtle);
+}
+
+.app-shell .action-warning {
+  background: var(--info-soft);
+  border-color: color-mix(in srgb, var(--info) 40%, var(--stroke));
+  color: var(--info);
+}
+
+.app-shell .action-warning > span {
+  color: var(--text-primary);
+}
+
+.app-shell .action-warning small {
+  color: var(--text-secondary);
+}
+
+.app-shell :is(.tenant-popover > button, .notification-popover > button) {
+  color: var(--text-secondary);
+  border-color: var(--stroke-subtle);
+}
+
+.app-shell :is(.tenant-popover > button:hover, .tenant-popover > button.selected, .notification-popover > button:hover) {
+  background: var(--surface-muted);
+}
+
+.app-shell :is(.tenant-popover small, .notification-popover small, .notification-popover em) {
+  color: var(--text-tertiary);
+}
+
+.app-shell :is(.tenant-popover > button:last-child, .notification-popover header button) {
+  color: var(--action-emphasis);
+}
+
+.app-shell :is(
+    .commercial-boundary,
+    .commercial-note,
+    .license-box,
+    .commercial-disclosure,
+    .connector-head > span,
+    .saved-view-grid article > span
+  ) {
+  background: var(--info-soft);
+  border-color: color-mix(in srgb, var(--info) 36%, var(--stroke));
+  color: var(--info);
+}
+
+.app-shell :is(.commercial-state, .entitlement-list span) {
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 40%, var(--stroke));
+  color: var(--success);
+}
+
+.app-shell :is(.commercial-state.degraded, .commercial-state.action_required, .commercial-state.evaluation) {
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--stroke));
+  color: var(--warning);
+}
+
+.app-shell :is(.connector-grid dl, .portal-details div, .commercial-panel .panel-heading, .commercial-table-row) {
+  border-color: var(--stroke-subtle);
+}
+
+.app-shell :is(.commercial-table-head, .report-run-table > div:first-child, .generated-report > footer) {
+  background: var(--surface-muted);
+  border-color: var(--stroke);
+  color: var(--text-tertiary);
+}
+
+.app-shell :is(.commercial-table-row > span:last-child, .saved-view-strip span) {
+  color: var(--success);
+}
+
+.app-shell :is(.generated-meta, .generated-toolbar, .generated-report > footer) {
+  border-color: var(--stroke);
+}
+
+.app-shell .generated-meta > span {
+  border-color: var(--stroke-subtle);
+}
+
+.app-shell :is(.generated-metrics article, .admin-quick-reports button, .report-operations-state) {
+  background: var(--surface-muted);
+  background-image: none;
+  border-color: var(--stroke);
+  color: var(--text-primary);
+}
+
+.app-shell :is(.generated-actions button, .generated-toolbar button, .saved-view-grid article button, .operation-list article button) {
+  background: var(--action-soft);
+  border-color: color-mix(in srgb, var(--action) 45%, var(--stroke));
+  color: var(--action-emphasis);
+}
+
+.app-shell :is(.admin-data-scroll th, .generated-table-wrap th) {
+  background: var(--surface-muted);
+  color: var(--text-tertiary);
+}
+
+.app-shell :is(.admin-data-scroll td, .generated-table-wrap td, .report-run-table > div) {
+  border-color: var(--stroke-subtle);
+  color: var(--text-secondary);
+}
+
+.app-shell :is(.admin-health-row > i b, .admin-trend-card > div i, .coverage-line em) {
+  background: var(--chart-1);
+  background-image: none;
+}
+
+.app-shell :is(.operation-status.active, .operation-status.completed, .config-success) {
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 40%, var(--stroke));
+  color: var(--success);
+}
+
+.app-shell :is(.alert-severity.info, .report-readonly) {
+  background: var(--info-soft);
+  border-color: color-mix(in srgb, var(--info) 40%, var(--stroke));
+  color: var(--info);
+}
+
+.app-shell .alert-severity.warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.app-shell :is(.alert-severity.critical, .report-config-error) {
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--stroke));
+  color: var(--danger);
+}
+
+/* Login: midnight blue trust plane with a cool, high-clarity form surface. */
+.login-page {
+  color-scheme: light;
+  --focus: #2563eb;
+  background: #f3f6fb;
+  color: #172033;
+  font-family: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
+}
+
+.login-story {
+  background: #0b1730;
+  background-image: none;
+  color: #f7f7f4;
+}
+
+.login-story::before,
+.login-story::after {
+  display: none;
+}
+
+.login-brand > span,
+.mobile-login-brand > span {
+  background: #2563eb;
+  background-image: none;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.login-brand small,
+.story-kicker {
+  color: #7dd3fc;
+}
+
+.story-copy h1 em {
+  color: #93c5fd;
+}
+
+.story-copy > p,
+.story-points small {
+  color: #c4d0e0;
+}
+
+.story-kicker {
+  font-size: 10px;
+}
+
+.story-copy > p {
+  font-size: 14px;
+}
+
+.story-points b {
+  font-size: 12px;
+}
+
+.story-points small {
+  font-size: 10px;
+}
+
+.story-points i {
+  background: #122746;
+  border-color: #29466f;
+  color: #7dd3fc;
+}
+
+.login-story footer {
+  color: #91a5c0;
+}
+
+.login-form-side {
+  background: #f3f6fb;
+  background-image: none;
+}
+
+.login-card {
+  background: #ffffff;
+  background-image: none;
+  border-color: #d5dfeb;
+  border-radius: 12px;
+  box-shadow: 0 24px 58px rgb(23 32 51 / 13%);
+  color: #172033;
+}
+
+.secure-chip {
+  background: #e7efff;
+  border-color: #bfd2ff;
+  color: #1d4ed8;
+}
+
+.login-card > p,
+.login-card form > label,
+.login-help {
+  color: #53637a !important;
+}
+
+.login-card > p {
+  font-size: 12px;
+}
+
+.login-card form > label {
+  font-size: 11px;
+}
+
+.login-input {
+  background: #ffffff;
+  border-color: #b9c6d8;
+}
+
+.login-input:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 15%);
+}
+
+.login-input > svg,
+.login-input button {
+  color: #708198;
+}
+
+.login-input input {
+  color: #172033;
+  font-size: 12px;
+}
+
+.login-submit {
+  background: #2563eb;
+  background-image: none;
+  color: #ffffff;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.login-submit:hover:not(:disabled) {
+  background: #1d4ed8;
+  filter: none;
+}
+
+.login-divider,
+.login-assurance small {
+  color: #708198;
+}
+
+.login-divider::before,
+.login-divider::after,
+.login-assurance {
+  border-color: #d5dfeb;
+}
+
+.entra-button {
+  background: #f7f9fc;
+  border-color: #c8d3e1;
+  color: #34445b;
+  opacity: 1;
+  font-size: 11px;
+}
+
+.entra-button > small {
+  color: #708198;
+  font-size: 9px;
+}
+
+.login-assurance {
+  color: #15803d;
+}
+
+.login-assurance > span {
+  color: #34445b;
+  font-size: 10px;
+}
+
+.login-assurance small,
+.login-help {
+  font-size: 9px !important;
+}
+
+.entra-status {
+  background: #fff5dc !important;
+  border-color: #e7c77d !important;
+}
+
+.entra-status svg {
+  color: #a15c08 !important;
+}
+
+.login-error {
+  background: #fdecef;
+  border-color: #e9aeb7;
+  color: #9d2638;
+}
+
+@media (max-width: 480px) {
+  .login-form-side,
+  .login-card {
+    background: #ffffff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *,
+  .login-page *,
+  .landing-page * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+.session-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #f3f6fb;
+  color: #172033;
+  font: 600 14px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+
+.session-loading .brand-mark {
+  color: #fff;
+}
+
+[data-guided-demo-target="true"] {
+  position: relative;
+  outline: 4px solid #3b82f6 !important;
+  outline-offset: 5px !important;
+  scroll-margin-block: 160px 300px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-guided-demo-target="true"] {
+    scroll-behavior: auto;
+  }
+}
+
+@media (forced-colors: active) {
+  [data-guided-demo-target="true"] {
+    outline-color: Highlight !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell .topbar > .runtime-live {
+    display: none;
+  }
+}
