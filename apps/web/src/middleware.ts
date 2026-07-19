@@ -6,10 +6,11 @@ export async function middleware(request: NextRequest) {
   const isPublicLanding =
     pathname === '/landing' ||
     pathname.startsWith('/landing/');
+  const isPublicNextPreview = pathname === '/next' || pathname.startsWith('/next/');
 
-  if (isPublicLanding) {
+  if (isPublicLanding || isPublicNextPreview) {
     const response = NextResponse.next();
-    if (pathname === '/landing/demo' || pathname.startsWith('/landing/demo/')) {
+    if (isPublicNextPreview || pathname === '/landing/demo' || pathname.startsWith('/landing/demo/')) {
       response.headers.set('Cache-Control', 'no-store, max-age=0');
       response.headers.set('X-Robots-Tag', 'noindex, nofollow');
     } else {

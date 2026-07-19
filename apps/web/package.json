@@ -13,6 +13,7 @@
     "test:role-ui": "node scripts/role-navigation.mjs",
     "test:landing": "node scripts/landing-smoke.mjs",
     "test:public-demo": "node scripts/public-demo-smoke.mjs",
+    "test:next": "node scripts/next-smoke.mjs",
     "audit:controls": "node scripts/audit-controls.mjs"
   },
   "dependencies": {
