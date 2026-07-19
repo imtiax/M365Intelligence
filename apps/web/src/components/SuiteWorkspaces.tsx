@@ -348,14 +348,25 @@ type ReportRunConfiguration = {
   viewId?: string;
 };
 
+type ReportPlane = "All planes" | "State" | "Audit" | "Analytics";
+
+function reportPlaneFor(report: CatalogueReport): Exclude<ReportPlane, "All planes"> {
+  const signal = `${report.name} ${report.category} ${report.description}`.toLowerCase();
+  if (/audit|activity|sign-in|forwarding|permission|dlp|incident/.test(signal)) return "Audit";
+  if (/trend|growth|usage|forecast|adoption|analytics|capacity/.test(signal)) return "Analytics";
+  return "State";
+}
+
 function ReportFinderWorkspace({
   query,
   reports,
   total,
   workloads,
   selectedWorkload,
+  plane,
   onQueryChange,
   onWorkloadChange,
+  onPlaneChange,
   onOpen,
   onBrowseCatalogue,
 }: {
@@ -364,16 +375,18 @@ function ReportFinderWorkspace({
   total: number;
   workloads: string[];
   selectedWorkload: string;
+  plane: ReportPlane;
   onQueryChange: (value: string) => void;
   onWorkloadChange: (value: string) => void;
+  onPlaneChange: (value: ReportPlane) => void;
   onOpen: (report: CatalogueReport) => void;
   onBrowseCatalogue: () => void;
 }) {
   const topWorkloads = workloads.filter((item) => item !== "All workloads").slice(0, 7);
-  const fallback = reportCatalogue.slice(0, 18);
-  const matched = reports.length ? reports : query.trim() ? [] : fallback;
-  const sections = query.trim()
-    ? [{ label: "Search results", hint: `${matched.length} matching templates`, items: matched.slice(0, 8) }]
+  const hasScopedFilters = Boolean(query.trim()) || selectedWorkload !== "All workloads" || plane !== "All planes";
+  const matched = hasScopedFilters ? reports : reportCatalogue.slice(0, 18);
+  const sections = hasScopedFilters
+    ? [{ label: query.trim() ? "Search results" : "Filtered report results", hint: `${matched.length} matching templates`, items: matched.slice(0, 8) }]
     : [
         {
           label: "Recently used",
@@ -419,6 +432,13 @@ function ReportFinderWorkspace({
         {topWorkloads.map((item) => (
           <button key={item} className={selectedWorkload === item ? "selected" : ""} onClick={() => onWorkloadChange(item)}>{item}</button>
         ))}
+      </div>
+      <div className="report-plane-filters" aria-label="Report plane filters">
+        <span>Service plane</span>
+        {(["All planes", "State", "Audit", "Analytics"] as ReportPlane[]).map((item) => (
+          <button key={item} className={plane === item ? "selected" : ""} onClick={() => onPlaneChange(item)}>{item}</button>
+        ))}
+        <small>Every service follows the same state, audit, and analytics model.</small>
       </div>
       <div className="report-finder-sections">
         {sections.map((section) => (
@@ -503,6 +523,7 @@ function Reporting({
   >("dashboards");
   const [query, setQuery] = useState("");
   const [workload, setWorkload] = useState("All workloads");
+  const [plane, setPlane] = useState<ReportPlane>("All planes");
   const [category, setCategory] = useState("All categories");
   const [freshness, setFreshness] = useState("Any freshness");
   const [advancedFilters, setAdvancedFilters] = useState(false);
@@ -560,6 +581,7 @@ function Reporting({
         .filter(
           (r) =>
             (workload === "All workloads" || r.workload === workload) &&
+            (plane === "All planes" || reportPlaneFor(r) === plane) &&
             (category === "All categories" || r.category === category) &&
             isFresh(r.updated) &&
             (!favorites || r.favorite) &&
@@ -569,7 +591,7 @@ function Reporting({
               .includes(query.toLowerCase()),
         )
         .slice(0, 75),
-    [query, workload, category, freshness, favorites, scheduled],
+    [query, workload, plane, category, freshness, favorites, scheduled],
   );
   const refreshOperations = async () => {
     try {
@@ -748,8 +770,10 @@ function Reporting({
           total={reportCatalogue.length}
           workloads={workloads}
           selectedWorkload={workload}
+          plane={plane}
           onQueryChange={setQuery}
           onWorkloadChange={setWorkload}
+          onPlaneChange={setPlane}
           onOpen={(report) => {
             setSelectedSavedView(null);
             setSelected(report);
@@ -1460,6 +1484,20 @@ function ReportDrawer({
       setSaving(false);
     }
   };
+  const quickFilters: Array<{ label: string; filter: ReportFilter }> = [
+    { label: "High risk", filter: { field: "risk", operator: "gte", value: "70", logic: "and" } },
+    { label: "External exposure", filter: { field: "external", operator: "equals", value: "true", logic: "and" } },
+    { label: "Needs attention", filter: { field: "status", operator: "equals", value: "warning", logic: "and" } },
+    { label: "Low activity", filter: { field: "activityScore", operator: "lte", value: "25", logic: "and" } },
+  ];
+  const applyQuickFilter = (candidate: ReportFilter) => {
+    setSavedView(null);
+    setFilters((current) => current.some((item) => item.field === candidate.field && item.operator === candidate.operator && item.value === candidate.value)
+      ? current
+      : [...current, candidate]);
+    notify(`${candidate.field.replace(/([A-Z])/g, " $1")} filter added to this report definition.`);
+  };
+  const insightBars = [44, 61, 53, 78, 68, 88, 74, 92, 71, 84, 96, 81];
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <aside
@@ -1492,11 +1530,29 @@ function ReportDrawer({
           {tab === "Preview" && (
             <>
               <section>
+                <h3>Easy filters</h3>
+                <p className="config-help">Apply common decision filters without building expressions. Each selection becomes a visible server-side condition.</p>
+                <div className="report-easy-filters">
+                  {quickFilters.map((item) => {
+                    const active = filters.some((filter) => filter.field === item.filter.field && filter.operator === item.filter.operator && filter.value === item.filter.value);
+                    return <button type="button" key={item.label} className={active ? "selected" : ""} onClick={() => applyQuickFilter(item.filter)}>{active ? "✓ " : ""}{item.label}</button>;
+                  })}
+                  {filters.length > 0 && <button type="button" className="clear" onClick={() => { setSavedView(null); setFilters([]); notify("All report filters cleared."); }}>Clear filters</button>}
+                </div>
+              </section>
+              <section>
                 <h3>Report scope</h3>
                 <div className="config-row">
                   <span>Tenant<strong>Northstar Example Group (synthetic)</strong></span>
                   <span>Snapshot<strong>Current · {report.updated} old</strong></span>
                 </div>
+              </section>
+              <section className="report-visual-signal">
+                <header><div><h3>Live visual context</h3><p>Signal distribution updates when this saved definition runs.</p></div><span>30-day trend</span></header>
+                <div className="report-visual-bars" aria-label="Thirty day report trend">
+                  {insightBars.map((value, index) => <i key={index} style={{ height: `${value}%` }} title={`Interval ${index + 1}: ${value}`} />)}
+                </div>
+                <footer><span>Earlier</span><b>Current evidence set</b><span>Now</span></footer>
               </section>
               <section>
                 <h3>Execution definition</h3>

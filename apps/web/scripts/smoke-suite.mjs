@@ -367,6 +367,10 @@ try {
     "document.querySelectorAll('.generated-table-wrap tbody tr').length===250",
     "generated report result rows",
   );
+  await evaluate("document.querySelector('.generated-table-wrap tbody tr')?.click()");
+  await waitFor("!!document.querySelector('[data-testid=generated-row-detail]')", "generated report row drill-through");
+  await evaluate("document.querySelector('[data-testid=generated-row-detail] button')?.click()");
+  await waitFor("!document.querySelector('[data-testid=generated-row-detail]')", "generated report row detail close");
   await evaluate(
     `([...document.querySelectorAll('.generated-actions button')].find(x=>x.textContent.includes('Download Excel'))).click()`,
   );
@@ -375,10 +379,22 @@ try {
     `([...document.querySelectorAll('.generated-actions button')].find(x=>x.textContent.includes('Download PDF'))).click()`,
   );
   const pdfDownload = await waitForDownload(".pdf");
+  await evaluate(`([...document.querySelectorAll('.generated-actions button')].find(x=>x.textContent.trim()==='CSV')).click()`);
+  const csvDownload = await waitForDownload(".csv");
+  await evaluate(`([...document.querySelectorAll('.generated-actions button')].find(x=>x.textContent.trim()==='HTML')).click()`);
+  const htmlDownload = await waitForDownload(".html");
+  await evaluate(`([...document.querySelectorAll('.generated-actions button')].find(x=>x.textContent.trim()==='RAW')).click()`);
+  const rawDownload = await waitForDownload(".raw.json");
   const excelHeader = (await readFile(join(downloadPath, excelDownload.file))).subarray(0, 64).toString("utf8");
   if (!excelHeader.includes("<?xml") || !excelHeader.includes("mso-application")) throw new Error("Excel export is not a valid SpreadsheetML workbook.");
   const pdfHeader = (await readFile(join(downloadPath, pdfDownload.file))).subarray(0, 8).toString("ascii");
   if (!pdfHeader.startsWith("%PDF-")) throw new Error("PDF export does not contain a valid PDF signature.");
+  const csvHeader = (await readFile(join(downloadPath, csvDownload.file))).subarray(0, 100).toString("utf8");
+  if (!csvHeader.includes('"Display name"')) throw new Error("CSV export is missing report columns.");
+  const htmlHeader = (await readFile(join(downloadPath, htmlDownload.file))).subarray(0, 100).toString("utf8");
+  if (!htmlHeader.includes("<!doctype html>")) throw new Error("HTML export is not a standalone document.");
+  const rawHeader = (await readFile(join(downloadPath, rawDownload.file))).subarray(0, 160).toString("utf8");
+  if (!rawHeader.includes('"aegis.report.raw.v1"')) throw new Error("RAW export is missing its Aegis schema marker.");
   await evaluate("document.querySelector('.close-generated').click()");
   await waitFor(
     "!document.querySelector('.generated-report')",
@@ -768,6 +784,9 @@ try {
           customGeneration: true,
           excelDownload,
           pdfDownload,
+          csvDownload,
+          htmlDownload,
+          rawDownload,
           screenshot: "artifacts/smoke-admin-center-dashboard.png",
         },
         operationalExports,

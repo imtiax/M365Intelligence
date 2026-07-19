@@ -1001,6 +1001,32 @@ export function exportReportExcel(report: GeneratedReport) {
   );
 }
 
+function csvCell(value: string) {
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+export function exportReportCsv(report: GeneratedReport) {
+  const content = [report.columns, ...report.rows]
+    .map((row) => row.map((cell) => csvCell(String(cell))).join(","))
+    .join("\r\n");
+  download(new Blob([content], { type: "text/csv;charset=utf-8" }), `${safeFileName(report.name)}.csv`);
+}
+
+export function exportReportHtml(report: GeneratedReport) {
+  const table = `<table><thead><tr>${report.columns.map((column) => `<th>${xml(column)}</th>`).join("")}</tr></thead><tbody>${report.rows.map((row) => `<tr>${row.map((cell) => `<td>${xml(String(cell))}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  const content = `<!doctype html><html><head><meta charset="utf-8"><title>${xml(report.name)}</title><style>body{font:14px Segoe UI,Arial;color:#172033;padding:32px}h1{color:#0b1730}table{border-collapse:collapse;width:100%;margin-top:24px}th{background:#e7efff;text-align:left}th,td{border:1px solid #d5dfeb;padding:8px}small{color:#53637a}</style></head><body><h1>${xml(report.name)}</h1><small>Generated locally · ${xml(report.generatedAt)} · ${xml(report.workload)}</small>${table}</body></html>`;
+  download(new Blob([content], { type: "text/html;charset=utf-8" }), `${safeFileName(report.name)}.html`);
+}
+
+export function exportReportRaw(report: GeneratedReport) {
+  const payload = {
+    schema: "aegis.report.raw.v1",
+    generatedLocally: true,
+    report,
+  };
+  download(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" }), `${safeFileName(report.name)}.raw.json`);
+}
+
 function ascii(value: string) {
   return value.normalize("NFKD").replace(/[^\x20-\x7E]/g, "");
 }

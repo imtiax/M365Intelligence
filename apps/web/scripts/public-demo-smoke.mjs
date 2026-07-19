@@ -489,6 +489,8 @@ try {
           await evaluate("document.querySelector('[data-testid=report-finder-tab]')?.click()");
           await waitFor("document.querySelectorAll('[data-testid=report-finder-workspace] .report-finder-card').length>=3", "report finder cards");
           await capture("report-finder");
+          await evaluate("([...document.querySelectorAll('.report-plane-filters button')].find((item) => item.textContent.trim() === 'Audit'))?.click()");
+          await waitFor("document.querySelectorAll('[data-testid=report-finder-workspace] .report-finder-card').length>0", "audit-plane report finder results");
           await evaluate("document.querySelector('[data-testid=report-finder-workspace] .report-finder-card')?.click()");
           await waitFor("document.querySelector('.detail-drawer')?.textContent.includes('Preview')", "report finder drawer");
           await evaluate("document.querySelector('.detail-drawer .drawer-head button')?.click()");
