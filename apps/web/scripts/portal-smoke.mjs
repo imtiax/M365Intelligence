@@ -162,28 +162,10 @@ try {
   const token = await mintSession();
   await send("Network.setCookie", { name: "aegis_session", value: token, url: baseUrl, httpOnly: true, sameSite: "Strict" });
 
-  // ---- reporting workspace integration
+  // ---- primary product entry point
   await send("Page.navigate", { url: `${baseUrl}/` });
-  await waitFor("Boolean(document.querySelector('.app-shell'))", "authenticated Aegis workspace");
-  const openedReporting = await evaluate(`(() => {
-    const button = [...document.querySelectorAll('.sidebar nav button')]
-      .find((item) => item.textContent.trim() === 'Reporting');
-    if (!button) return false;
-    button.click();
-    return true;
-  })()`);
-  if (!openedReporting) throw new Error("Reporting navigation was not available to the signed-in workspace.");
-  await waitFor("[...document.querySelectorAll('button')].some((item) => item.textContent.includes('Open Reporter 360'))", "Reporter 360 launch action");
-  const openedPortal = await evaluate(`(() => {
-    const button = [...document.querySelectorAll('button')]
-      .find((item) => item.textContent.includes('Open Reporter 360'));
-    if (!button) return false;
-    button.click();
-    return true;
-  })()`);
-  if (!openedPortal) throw new Error("Reporter 360 launch action did not render.");
-  await waitFor("location.pathname === '/portal' && Boolean(document.querySelector('.pr-shell'))", "Reporter 360 launch");
-  pass("Reporting workspace opens the dedicated Reporter 360 experience");
+  await waitFor("location.pathname === '/portal' && Boolean(document.querySelector('.pr-shell'))", "Reporter 360 primary product entry");
+  pass("Primary application route opens Reporter 360");
 
   await send("Page.navigate", { url: `${baseUrl}/portal` });
 

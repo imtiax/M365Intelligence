@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname === '/login') {
     if (session?.sessionType === 'public-demo') return NextResponse.redirect(new URL('/demo/workspace', request.url));
-    if (session) return NextResponse.redirect(new URL('/', request.url));
+    if (session) return NextResponse.redirect(new URL('/portal', request.url));
     return NextResponse.next();
   }
 

@@ -16,7 +16,7 @@ import "./human-theme.css";
 import "./ux-remediation.css";
 
 export const metadata: Metadata = {
-  title: "Aegis M365 | Command Center",
+  title: "Aegis M365 | Reporter 360",
   description:
     "Private Microsoft 365 intelligence and security operations platform",
 };

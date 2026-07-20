@@ -3,6 +3,15 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   output: 'standalone',
   poweredByHeader: false,
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/portal',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [{
       source: '/(.*)',

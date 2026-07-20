@@ -349,7 +349,7 @@ export function ReporterPortal() {
                     <small>{profile?.username ?? "admin@apex.local"}</small>
                     <span>{(profile?.roles ?? []).map((role) => roleLabels[role] ?? role).join(" · ") || "Workforce session"}</span>
                   </div>
-                  <a className="pr-btn pr-menu-item" href="/">Open command center</a>
+                  <a className="pr-btn pr-menu-item" href="/portal">Reporter 360 dashboard</a>
                   <button className="pr-btn pr-menu-item" onClick={() => { setProfileOpen(false); setSettingsOpen(true); }}>Tenant & data settings</button>
                   <button className="pr-btn pr-menu-item pr-danger" onClick={signOut} data-testid="portal-signout">Sign out</button>
                 </div>

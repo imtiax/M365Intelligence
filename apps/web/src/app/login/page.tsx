@@ -22,7 +22,7 @@ export default function LoginPage() {
       const response=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
       const result=await response.json() as {error?:string};
       if(!response.ok){setError(result.error||'Sign-in failed.');return;}
-      window.location.assign('/');
+      window.location.assign('/portal');
     } catch { setError('The local identity service is unavailable.'); }
     finally { setLoading(false); }
   }
