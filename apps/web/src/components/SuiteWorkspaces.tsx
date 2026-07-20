@@ -681,6 +681,9 @@ function Reporting({
               : "Search and customize 947 presentation templates across governed Microsoft 365 workload schemas."
         }
       >
+        <Btn localAction onClick={() => window.location.assign("/portal")}>
+          <Apps24Regular /> Open Reporter 360
+        </Btn>
         <Btn localAction onClick={() => setView("finder")}>
           <Search20Regular /> Open Report Finder
         </Btn>
