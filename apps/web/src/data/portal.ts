@@ -83,6 +83,7 @@ export type PortalTables = {
   drives: Row[];
   devices: Row[];
   distributionGroups: Row[];
+  groupMembers: Row[];
   caPolicies: Row[];
   auditEvents: Row[];
   signIns: Row[];
@@ -262,6 +263,49 @@ for (let i = 0; i < 40; i++) {
   });
 }
 
+// Membership is modeled as a separate evidence table so administrators can
+// report on individual owners and members, rather than only group counts.
+const groupMembers: Row[] = [];
+for (const team of teams) {
+  const total = Math.min(Number(team.members), 18);
+  const ownerCount = Math.min(Number(team.owners), total);
+  for (let index = 0; index < total; index++) {
+    const user = users[(groupMembers.length * 17 + index * 13) % users.length];
+    groupMembers.push({
+      groupName: team.teamName,
+      groupEmail: `${String(team.teamName).toLowerCase().replaceAll(/[^a-z0-9]+/g, ".").replaceAll(/^\.|\.$/g, "")}@northstar.example`,
+      groupType: "Microsoft 365 group",
+      memberName: user.displayName,
+      memberUpn: user.upn,
+      memberType: user.userType,
+      membershipRole: index < ownerCount ? "Owner" : "Member",
+      department: user.department,
+      accountEnabled: user.accountEnabled,
+      lastSignIn: user.lastSignIn,
+      addedDate: daysAgoDate(int(8, 950)),
+    });
+  }
+}
+for (const group of distributionGroups) {
+  const total = Math.min(Number(group.members), 16);
+  for (let index = 0; index < total; index++) {
+    const user = users[(groupMembers.length * 11 + index * 19) % users.length];
+    groupMembers.push({
+      groupName: group.groupName,
+      groupEmail: group.email,
+      groupType: "Distribution group",
+      memberName: user.displayName,
+      memberUpn: user.upn,
+      memberType: user.userType,
+      membershipRole: index === 0 ? "Owner" : "Member",
+      department: user.department,
+      accountEnabled: user.accountEnabled,
+      lastSignIn: user.lastSignIn,
+      addedDate: daysAgoDate(int(8, 950)),
+    });
+  }
+}
+
 const caPolicies: Row[] = CA_POLICIES.map((name, i) => ({
   policyName: name,
   state: i === 4 ? "Report-only" : "Enabled",
@@ -326,7 +370,7 @@ for (let i = 0; i < 900; i++) {
 }
 signIns.sort((a, b) => String(b.time).localeCompare(String(a.time)));
 
-export const tables: PortalTables = { users, mailboxes, teams, sites, drives, devices, distributionGroups, caPolicies, auditEvents, signIns };
+export const tables: PortalTables = { users, mailboxes, teams, sites, drives, devices, distributionGroups, groupMembers, caPolicies, auditEvents, signIns };
 
 // ---------------------------------------------------------------- time series (analytics)
 
@@ -448,6 +492,19 @@ export const columnCatalog: Record<keyof PortalTables, Column[]> = {
     { key: "externalSenders", label: "External senders", type: "badge", width: 120 },
     { key: "createdDate", label: "Created", type: "date", width: 100 },
   ],
+  groupMembers: [
+    { key: "groupName", label: "Group", type: "text", width: 220 },
+    { key: "groupEmail", label: "Group email", type: "text", width: 230 },
+    { key: "groupType", label: "Group type", type: "badge", width: 150 },
+    { key: "memberName", label: "Member", type: "text", width: 180 },
+    { key: "memberUpn", label: "Member UPN", type: "text", width: 260 },
+    { key: "memberType", label: "Member type", type: "badge", width: 100 },
+    { key: "membershipRole", label: "Role", type: "badge", width: 90 },
+    { key: "department", label: "Department", type: "text", width: 160 },
+    { key: "accountEnabled", label: "Account", type: "badge", width: 90 },
+    { key: "lastSignIn", label: "Last sign-in", type: "date", width: 110 },
+    { key: "addedDate", label: "Added", type: "date", width: 110 },
+  ],
   caPolicies: [
     { key: "policyName", label: "Policy", type: "text", width: 230 },
     { key: "state", label: "State", type: "badge", width: 100 },
@@ -541,6 +598,22 @@ export const reportCatalog: ReportDef[] = [
   r({ id: "entra-ca-policies", name: "Conditional Access Policies", service: "Entra ID", plane: "reports", category: "Security Posture", description: "Policy inventory with 30-day application and failure counts.", source: "caPolicies",
     columns: ["policyName","state","includedUsers","excludedUsers","controls","appliedLast30d","failuresLast30d","modifiedDate"],
     chart: { kind: "bar", groupBy: "controls" } }),
+  r({ id: "entra-m365-groups", name: "Microsoft 365 Groups", service: "Entra ID", plane: "reports", category: "Groups & Membership", description: "Team-backed Microsoft 365 groups with ownership, membership, guest exposure, and activity.", source: "teams",
+    columns: ["teamName","privacy","owners","members","guests","channels","messages30d","lastActivity","createdDate"],
+    quickFilters: [
+      { label: "Ownerless groups", filter: { column: "owners", op: "lt", value: "1" } },
+      { label: "Guest access", filter: { column: "guests", op: "gt", value: "0" } },
+      { label: "Public groups", filter: { column: "privacy", op: "equals", value: "Public" } },
+    ],
+    chart: { kind: "donut", groupBy: "privacy" } }),
+  r({ id: "entra-group-members", name: "Group Membership Detail", service: "Entra ID", plane: "reports", category: "Groups & Membership", description: "Owner and member evidence across Microsoft 365 and distribution groups, with member identity and sign-in context.", source: "groupMembers",
+    columns: ["groupName","groupType","memberName","memberUpn","memberType","membershipRole","department","accountEnabled","lastSignIn","addedDate"],
+    quickFilters: [
+      { label: "Owners", filter: { column: "membershipRole", op: "equals", value: "Owner" } },
+      { label: "Guest members", filter: { column: "memberType", op: "equals", value: "Guest" } },
+      { label: "Disabled members", filter: { column: "accountEnabled", op: "equals", value: "Disabled" } },
+    ],
+    chart: { kind: "bar", groupBy: "groupType" } }),
   // ----- Entra ID · audit
   r({ id: "entra-signins", name: "User Sign-in Activity", service: "Entra ID", plane: "auditing", category: "Sign-in Audit", description: "Every interactive sign-in with Conditional Access outcome, client, and location.", source: "signIns",
     columns: ["time","user","upn","application","status","caPolicyApplied","caResult","mfaRequired","ipAddress","location","client"],

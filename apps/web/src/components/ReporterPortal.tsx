@@ -85,6 +85,8 @@ import {
   exportReportRaw,
 } from "@/lib/reporting";
 import { roleLabels, type PlatformRole } from "@/lib/identity";
+import { AdvancedReportBuilder } from "@/components/AdvancedReportBuilder";
+import { PowerShellWorkspace } from "@/components/PowerShellWorkspace";
 
 // Validated categorical palette (dataviz skill, references/palette.md) — fixed
 // hue order, red reserved for critical status and never assigned to a service.
@@ -116,7 +118,9 @@ type Route =
   | { kind: "report"; id: string; preset?: Filter[]; presetColumns?: string[]; presetSort?: SortSpec[] }
   | { kind: "views" }
   | { kind: "schedules" }
-  | { kind: "alerts" };
+  | { kind: "alerts" }
+  | { kind: "builder" }
+  | { kind: "powershell" };
 
 type Snapshot = { columns: string[]; filters: Filter[]; sort: SortSpec[] };
 type Delivery = { def: ReportDef; schedule: PortalSchedule; rows: Row[]; outcome: "delivered" | "suppressed"; windowLabel: string };
@@ -260,7 +264,12 @@ export function ReporterPortal() {
 
   const crumbs = route.kind === "report" && activeReport
     ? [activeReport.service, PLANE_LABEL[activeReport.plane], activeReport.name]
-    : route.kind === "home" ? ["Dashboard"] : route.kind === "views" ? ["My Views"] : route.kind === "schedules" ? ["Schedules"] : ["Alert Center"];
+    : route.kind === "home" ? ["Dashboard"]
+      : route.kind === "views" ? ["My Views"]
+        : route.kind === "schedules" ? ["Schedules"]
+          : route.kind === "alerts" ? ["Alert Center"]
+            : route.kind === "builder" ? ["Advanced report builder"]
+              : ["PowerShell workspace"];
 
   return (
     <div className="pr-shell">
@@ -289,6 +298,14 @@ export function ReporterPortal() {
           </button>
           <button className={`pr-nav-top ${route.kind === "alerts" ? "pr-active" : ""}`} onClick={() => setRoute({ kind: "alerts" })} data-testid="portal-nav-alerts">
             <Alert24Regular /> Alert Center <span className="pr-count">{alerts.filter((a) => a.status !== "Closed").length}</span>
+          </button>
+
+          <div className="pr-nav-section">Engineering</div>
+          <button className={`pr-nav-top ${route.kind === "builder" ? "pr-active" : ""}`} onClick={() => setRoute({ kind: "builder" })} data-testid="portal-nav-builder">
+            <DocumentBulletList24Regular /> Advanced builder
+          </button>
+          <button className={`pr-nav-top ${route.kind === "powershell" ? "pr-active" : ""}`} onClick={() => setRoute({ kind: "powershell" })} data-testid="portal-nav-powershell">
+            <ClipboardTask24Regular /> PowerShell workspace
           </button>
 
           <div className="pr-nav-section">Services</div>
@@ -430,6 +447,8 @@ export function ReporterPortal() {
               }))}
             />
           )}
+          {route.kind === "builder" && <AdvancedReportBuilder notify={setToast} />}
+          {route.kind === "powershell" && <PowerShellWorkspace notify={setToast} />}
         </div>
       </div>
 

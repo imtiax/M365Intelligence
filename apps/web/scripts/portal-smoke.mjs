@@ -182,7 +182,38 @@ try {
   if (await navCount("portal-nav-alerts") !== "2") throw new Error("Seeded open-alerts count is not 2.");
   pass("Shell renders with 7 services, 8 drillable tiles, and seeded views/schedules/alerts");
 
-  // ---- 2. dashboard tile drill-through
+  // ---- 2. group membership evidence report
+  await openReportViaSearch("Group Membership", "Group Membership Detail");
+  await waitFor("document.querySelectorAll('.pr-grid tbody tr').length > 0 && document.querySelector('.pr-grid')?.textContent.includes('Group type')", "group membership evidence rows");
+  pass("Group and member evidence is searchable and reportable");
+
+  // ---- 3. advanced builder
+  await clickTestId("portal-nav-builder");
+  await waitFor("Boolean(document.querySelector('[data-testid=portal-builder]'))", "advanced report builder");
+  await setSelect('[data-testid="portal-builder-source"]', "groupMembers");
+  await waitFor("document.querySelector('[data-testid=portal-builder]')?.textContent.includes('Group members & owners')", "membership builder source");
+  await setSelect('[data-testid="portal-builder-filter-column"]', "groupType");
+  await setSelect('[data-testid="portal-builder-filter-operator"]', "equals");
+  await setInput('[data-testid="portal-builder-filter-value"]', "Distribution group");
+  await clickTestId("portal-builder-filter-add");
+  await waitFor("document.querySelectorAll('[data-testid=portal-builder] .pr-builder-chips .pr-chip').length === 1", "builder membership filter");
+  await clickTestId("portal-builder-save");
+  await waitFor("document.querySelector('[data-testid=portal-builder-save]')?.textContent.includes('Saved')", "builder definition save");
+  pass("Advanced builder composes and saves a filtered group-membership report");
+
+  // ---- 4. PowerShell role workspace
+  await clickTestId("portal-nav-powershell");
+  await waitFor("Boolean(document.querySelector('[data-testid=portal-powershell]'))", "PowerShell workspace");
+  await clickTestId("portal-ps-persona-intune");
+  await clickTestId("portal-ps-intune-stale");
+  await waitFor("document.querySelector('[data-testid=portal-ps-output]')?.textContent.includes('days since check-in')", "Intune synthetic command preview");
+  await clickTestId("portal-ps-preview");
+  pass("Role-specific PowerShell runbook renders a clearly synthetic preview");
+
+  await clickTestId("portal-nav-home");
+  await waitFor("document.querySelectorAll('.pr-tile').length === 8", "dashboard restored after engineering workspaces");
+
+  // ---- 5. dashboard tile drill-through
   await evaluate("(() => { [...document.querySelectorAll('.pr-tile')].find((t) => t.textContent.includes('Users without MFA'))?.click(); return true; })()");
   await waitFor(`document.querySelector('[data-testid="portal-report-title"]')?.textContent.includes('Users without MFA')`, "tile drill-through");
   pass("Dashboard tile drills through to the underlying report");
