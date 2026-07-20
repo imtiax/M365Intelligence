@@ -1,0 +1,232 @@
+/*
+ * Cross-module UX remediation
+ *
+ * Legacy workspace components use several literal dark fills. The semantic
+ * theme owns all foreground/background pairs here so a light surface can
+ * never inherit a dark-mode foreground (or the inverse).
+ */
+
+.app-shell :is(
+  .workflow-canvas,
+  .workflow-list,
+  .risk-quadrants > div,
+  .insight-callout,
+  .twin-grid article,
+  .relationship-list > div,
+  .template-grid button,
+  .ai-sidebar,
+  .ai-conversation,
+  .chat > p,
+  .chat.assistant > div,
+  .risk-summary > div,
+  .evidence-box,
+  .tag-list span,
+  .report-preview header,
+  .report-preview,
+  .detail-drawer,
+  .suite-drawer,
+  .action-dialog,
+  .generated-report,
+  .time-banner,
+  .recommendation,
+  .user360-profile dl div
+) {
+  background: var(--surface) !important;
+  background-image: none !important;
+  border-color: var(--stroke) !important;
+  color: var(--text-primary) !important;
+}
+
+.app-shell :is(
+  .data-head,
+  .compact-head,
+  .table-head,
+  .workflow-meta,
+  .report-preview footer,
+  .ai-sources,
+  .relationship-list > div,
+  .risk-summary,
+  .detail-drawer section,
+  .builder-tabs,
+  .drawer-tabs,
+  .admin-tabs,
+  .filter-tabs
+) {
+  border-color: var(--stroke-subtle) !important;
+}
+
+/* Automation: the reported workflow contrast failure path. */
+.app-shell .workflow-canvas {
+  margin: 0;
+  padding: 20px clamp(16px, 4vw, 48px);
+  gap: 3px;
+  border-top: 1px solid var(--stroke-subtle);
+  border-bottom: 1px solid var(--stroke-subtle);
+}
+
+.app-shell .workflow-canvas > div {
+  width: min(100%, 760px);
+  min-height: 68px;
+  padding: 12px 14px;
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--stroke) !important;
+  border-radius: 8px;
+  color: var(--text-primary) !important;
+  box-shadow: 0 1px 2px rgb(23 32 51 / 7%);
+}
+
+.app-shell .workflow-canvas > div > span {
+  background: var(--action-soft) !important;
+  color: var(--action-emphasis) !important;
+  border: 1px solid color-mix(in srgb, var(--action) 40%, var(--stroke));
+  width: 26px;
+  height: 26px;
+  font-weight: 700;
+}
+
+.app-shell .workflow-canvas strong {
+  color: var(--text-primary) !important;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.app-shell .workflow-canvas small {
+  color: var(--text-secondary) !important;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.app-shell .workflow-canvas > div > i {
+  color: var(--action) !important;
+  bottom: -18px;
+  font-size: 16px;
+}
+
+.app-shell .workflow-meta {
+  background: var(--surface-muted);
+}
+
+.app-shell .workflow-meta span {
+  color: var(--text-tertiary) !important;
+  border-color: var(--stroke) !important;
+  padding: 14px 16px;
+}
+
+.app-shell .workflow-meta strong {
+  color: var(--text-primary) !important;
+  font-size: 11px;
+}
+
+.app-shell .workflow-list button {
+  color: var(--text-secondary) !important;
+  border-color: var(--stroke-subtle) !important;
+}
+
+.app-shell .workflow-list button:hover,
+.app-shell .workflow-list button.selected {
+  background: var(--action-soft) !important;
+  color: var(--text-primary) !important;
+}
+
+.app-shell .workflow-list strong,
+.app-shell .workflow-list b {
+  color: var(--text-primary) !important;
+}
+
+.app-shell .workflow-list small {
+  color: var(--text-tertiary) !important;
+}
+
+/* Tables, lists, and empty states follow one readable density scale. */
+.app-shell :is(.data-row, .compact-row, .finding-row, .catalogue-list > button, .commercial-table-row) {
+  min-height: 52px;
+}
+
+.app-shell :is(.data-row, .compact-row, .finding-row, .catalogue-list > button, .commercial-table-row) :is(strong, b) {
+  color: var(--text-primary) !important;
+}
+
+.app-shell :is(.data-row, .compact-row, .finding-row, .catalogue-list > button, .commercial-table-row) :is(small, em) {
+  color: var(--text-secondary) !important;
+}
+
+.app-shell :is(.empty-state, .compact-table > p, .catalogue-empty, .report-empty) {
+  color: var(--text-secondary) !important;
+  background: var(--surface-muted);
+  border: 1px dashed var(--stroke);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+/* Nested analytics, governance, and explorer content. */
+.app-shell :is(.risk-quadrants > div, .twin-grid article, .template-grid button, .framework-card) :is(strong, b) {
+  color: var(--text-primary) !important;
+}
+
+.app-shell :is(.risk-quadrants > div, .twin-grid article, .template-grid button, .framework-card) :is(small, em, p) {
+  color: var(--text-secondary) !important;
+}
+
+.app-shell .insight-callout {
+  border-left: 3px solid var(--info) !important;
+}
+
+.app-shell .insight-callout :is(strong, span, p) {
+  color: var(--text-secondary) !important;
+}
+
+.app-shell .ai-conversation,
+.app-shell .ai-sidebar {
+  min-height: 0;
+}
+
+.app-shell :is(.ai-hero p, .chat > p, .chat.assistant > div, .ai-sidebar > button, .ai-sidebar > div span, .ai-sidebar > div small) {
+  color: var(--text-secondary) !important;
+}
+
+.app-shell .ai-input {
+  background: var(--surface-raised) !important;
+  border-color: var(--stroke-strong) !important;
+}
+
+.app-shell .ai-input button {
+  background: var(--action) !important;
+  color: var(--text-on-action) !important;
+}
+
+/* Drawers and previews get a clear hierarchy instead of inverted text. */
+.app-shell :is(.detail-drawer, .suite-drawer, .action-dialog, .generated-report, .report-preview) :is(h2, h3, strong, b) {
+  color: var(--text-primary) !important;
+}
+
+.app-shell :is(.detail-drawer, .suite-drawer, .action-dialog, .generated-report, .report-preview) :is(p, small, li, dt, .drawer-sub) {
+  color: var(--text-secondary) !important;
+}
+
+.app-shell .evidence-box {
+  border-left: 3px solid var(--success) !important;
+}
+
+.app-shell .evidence-box :is(p, b) {
+  color: var(--text-secondary) !important;
+}
+
+@media (max-width: 760px) {
+  .app-shell .workflow-canvas {
+    padding: 16px;
+  }
+
+  .app-shell .workflow-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell .workflow-meta span {
+    border-right: 0;
+    border-bottom: 1px solid var(--stroke);
+    text-align: left;
+  }
+
+  .app-shell .workflow-meta span:last-child {
+    border-bottom: 0;
+  }
+}

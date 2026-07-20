@@ -505,6 +505,29 @@ try {
           await waitFor("!!document.querySelector('.builder-layout')", "custom report builder visual data");
           await capture("custom-report-builder");
         }
+        if (label === "Automations") {
+          await waitFor("document.querySelectorAll('.workflow-canvas>div').length>=5", "automation workflow steps");
+          const contrast = await evaluate(`(() => {
+            const step = document.querySelector('.workflow-canvas>div');
+            const label = step?.querySelector('strong');
+            const rgb = (value) => (value.match(/\\d+(?:\\.\\d+)?/g) || []).slice(0, 3).map(Number);
+            const luminance = (value) => {
+              const [red, green, blue] = rgb(value).map((channel) => {
+                const normalized = channel / 255;
+                return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+              });
+              return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+            };
+            const surface = getComputedStyle(step).backgroundColor;
+            const foreground = getComputedStyle(label).color;
+            const a = luminance(surface), b = luminance(foreground);
+            return { surface, foreground, ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) };
+          })()`);
+          if (!Number.isFinite(contrast.ratio) || contrast.ratio < 4.5) {
+            throw new Error(`Automation workflow text contrast failed: ${JSON.stringify(contrast)}`);
+          }
+          await capture("automations-workflow");
+        }
         moduleSweep.push({ label, heading: state.heading });
       }
       await capture("workspace");

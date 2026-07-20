@@ -13,6 +13,7 @@ import "./report-experience.css";
 import "./runtime.css";
 import "./commercial.css";
 import "./human-theme.css";
+import "./ux-remediation.css";
 
 export const metadata: Metadata = {
   title: "Aegis M365 | Command Center",
