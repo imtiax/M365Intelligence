@@ -3,21 +3,6 @@ import { SESSION_COOKIE, verifySession } from '@/lib/session';
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isPublicLanding =
-    pathname === '/landing' ||
-    pathname.startsWith('/landing/');
-  const isPublicNextPreview = pathname === '/next' || pathname.startsWith('/next/');
-
-  if (isPublicLanding || isPublicNextPreview) {
-    const response = NextResponse.next();
-    if (isPublicNextPreview || pathname === '/landing/demo' || pathname.startsWith('/landing/demo/')) {
-      response.headers.set('Cache-Control', 'no-store, max-age=0');
-      response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-    } else {
-      response.headers.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
-    }
-    return response;
-  }
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   let session = null;
@@ -26,22 +11,8 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname === '/login') {
-    if (session?.sessionType === 'public-demo') return NextResponse.redirect(new URL('/demo/workspace', request.url));
     if (session) return NextResponse.redirect(new URL('/portal', request.url));
     return NextResponse.next();
-  }
-
-  if (pathname === '/demo/workspace' || pathname.startsWith('/demo/workspace/')) {
-    if (session?.sessionType === 'public-demo') {
-      const response = NextResponse.next();
-      response.headers.set('Cache-Control', 'private, no-store, max-age=0');
-      response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-      return response;
-    }
-    if (session) return NextResponse.redirect(new URL('/', request.url));
-    const launcher = NextResponse.redirect(new URL('/landing/demo', request.url));
-    if (token) launcher.cookies.delete(SESSION_COOKIE);
-    return launcher;
   }
 
   if (!session) {
@@ -52,15 +23,11 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  if (session.sessionType === 'public-demo') {
-    return NextResponse.redirect(new URL('/demo/workspace', request.url));
-  }
-
   const response = NextResponse.next();
   response.headers.set('Cache-Control', 'private, no-store, max-age=0');
   return response;
 }
 
 export const config = {
-  matcher: ['/((?!api/auth|api/runtime|api/public-demo|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api/auth|api/runtime|_next/static|_next/image|favicon.ico).*)'],
 };

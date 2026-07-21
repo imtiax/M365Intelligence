@@ -208,7 +208,66 @@ try {
   await clickTestId("portal-ps-intune-stale");
   await waitFor("document.querySelector('[data-testid=portal-ps-output]')?.textContent.includes('days since check-in')", "Intune synthetic command preview");
   await clickTestId("portal-ps-preview");
-  pass("Role-specific PowerShell runbook renders a clearly synthetic preview");
+  await clickTestId("portal-ps-persona-collaboration");
+  await clickTestId("portal-ps-spo-external-sharing");
+  await clickTestId("portal-ps-open-report");
+  await waitFor(`document.querySelector('[data-testid="portal-report-title"]')?.textContent.includes('Sites with External Sharing')`, "PowerShell supporting report route");
+  await clickTestId("portal-nav-powershell");
+  await clickTestId("portal-ps-persona-licensing-and-finops");
+  await clickTestId("portal-ps-license-unlicensed-users");
+  await waitFor("document.querySelector('[data-testid=portal-ps-output]')?.textContent.includes('enabled, unlicensed')", "Licensing and FinOps synthetic command preview");
+  pass("Role-specific PowerShell runbooks render synthetic previews, cover licence evidence, and open supporting reports");
+
+  // ---- 5. Connection Center: protected readiness, release gates, assessment export
+  await clickTestId("portal-nav-connections");
+  await waitFor("Boolean(document.querySelector('[data-testid=portal-connection-center]')) && document.querySelectorAll('.cc-packs article').length === 5", "Connection Center");
+  await clickTestId("cc-refresh");
+  await waitFor("document.querySelector('.cc-source.cc-live')?.textContent.includes('Protected control-plane check')", "protected connection readiness response");
+  await waitFor("Boolean(document.querySelector('.cc-gates'))", "connection release gates");
+  await clickTestId("cc-export");
+  await waitDownload(/aegis-connection-readiness\.json$/, "connection readiness assessment");
+  pass("Connection Center shows safe Entra and connector readiness gates and exports an assessment");
+
+  // ---- 6. Defender SOC: alert triage, investigation, governed response, automation, evidence
+  await clickTestId("portal-nav-soc");
+  await waitFor("Boolean(document.querySelector('[data-testid=portal-soc]')) && Boolean(document.querySelector('[data-testid=soc-alert-MDA-20481]'))", "Defender SOC workspace");
+  await evaluate("(() => { const tab = [...document.querySelectorAll('.soc-tabs button')].find((b) => b.textContent.trim() === 'Investigation'); if (!tab) return false; tab.click(); return true; })()");
+  await clickTestId("soc-step-timeline");
+  await waitFor("document.querySelector('[data-testid=soc-step-timeline]')?.classList.contains('soc-step-done')", "SOC investigation step completion");
+  await setInput('[data-testid="soc-note"]', "Smoke validation captured endpoint evidence.");
+  await clickTestId("soc-add-note");
+  await waitFor("document.querySelector('.soc-notes')?.textContent.includes('Smoke validation captured endpoint evidence.')", "SOC analyst note");
+  await evaluate("(() => { const tab = [...document.querySelectorAll('.soc-tabs button')].find((b) => b.textContent.trim() === 'Response'); if (!tab) return false; tab.click(); return true; })()");
+  await clickTestId("soc-action-isolate");
+  await waitFor("document.querySelector('[data-testid=soc-action-isolate]')?.textContent.includes('Execute approved action')", "SOC containment approval request");
+  await clickTestId("soc-action-isolate");
+  await waitFor("document.querySelector('[data-testid=soc-action-isolate]')?.textContent.includes('Recorded')", "SOC containment action recorded");
+  await evaluate("(() => { const tab = [...document.querySelectorAll('.soc-tabs button')].find((b) => b.textContent.trim() === 'Automation & audit'); if (!tab) return false; tab.click(); return true; })()");
+  await clickTestId("soc-playbook-critical-xdr");
+  await waitFor("document.querySelector('[data-testid=soc-audit]')?.textContent.includes('Playbook run simulated')", "SOC playbook audit evidence");
+  await evaluate("(() => { const tab = [...document.querySelectorAll('.soc-tabs button')].find((b) => b.textContent.trim() === 'Overview'); if (!tab) return false; tab.click(); return true; })()");
+  await clickTestId("soc-open-report");
+  await waitFor(`document.querySelector('[data-testid="portal-report-title"]')?.textContent.includes('Non-Compliant Devices')`, "SOC supporting report route");
+  pass("Defender SOC triages alerts, records evidence, governs response actions, runs playbooks, and opens supporting reports");
+
+  // ---- 6. Administrator audit & governance: audit intelligence, approval, evidence, reports
+  await clickTestId("portal-nav-admin-audit");
+  await waitFor("Boolean(document.querySelector('[data-testid=portal-admin-audit]')) && Boolean(document.querySelector('[data-testid=aga-event-ADM-30291]'))", "Administrator audit workspace");
+  await clickTestId("aga-filter-critical");
+  await clickTestId("aga-event-ADM-30290");
+  await evaluate("(() => { const tab = [...document.querySelectorAll('.aga-tabs button')].find((b) => b.textContent.trim() === 'Before / after'); if (!tab) return false; tab.click(); return true; })()");
+  await waitFor("document.querySelector('.aga-compare')?.textContent.includes('No directory role')", "administrator audit before and after evidence");
+  await evaluate("(() => { const tab = [...document.querySelectorAll('.aga-tabs button')].find((b) => b.textContent.trim() === 'Governance'); if (!tab) return false; tab.click(); return true; })()");
+  await setInput('[data-testid="aga-justification"]', "Smoke validation emergency approval evidence.");
+  await clickTestId("aga-approve");
+  await waitFor("document.querySelector('[data-testid=aga-audit]')?.textContent.includes('Administrative change approved')", "administrator audit approval evidence");
+  await evaluate("(() => { const tab = [...document.querySelectorAll('.aga-tabs button')].find((b) => b.textContent.trim() === 'Reports'); if (!tab) return false; tab.click(); return true; })()");
+  await clickTestId("aga-report-high-risk");
+  await waitDownload(/high-risk-administrative-changes\.csv$/, "administrator audit high-risk CSV export");
+  await evaluate("(() => { const tab = [...document.querySelectorAll('.aga-tabs button')].find((b) => b.textContent.trim() === 'Activity detail'); if (!tab) return false; tab.click(); return true; })()");
+  await clickTestId("aga-open-report");
+  await waitFor(`document.querySelector('[data-testid="portal-report-title"]')?.textContent.includes('Admin Role Members')`, "administrator audit supporting report route");
+  pass("Administrator audit captures before/after evidence, governs critical changes, exports compliance reports, and opens supporting reports");
 
   await clickTestId("portal-nav-home");
   await waitFor("document.querySelectorAll('.pr-tile').length === 8", "dashboard restored after engineering workspaces");

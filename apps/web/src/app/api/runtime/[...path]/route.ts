@@ -23,16 +23,6 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   try { session = await verifySession(token); }
   catch { return NextResponse.json({ message: "Session is invalid or expired." }, { status: 401 }); }
 
-  if (session.sessionType === "public-demo") {
-    return NextResponse.json(
-      {
-        code: "public_demo_boundary",
-        message: "This operation is outside the isolated public demo. Use a workforce session in a private deployment.",
-      },
-      { status: 403, headers: { "Cache-Control": "no-store" } },
-    );
-  }
-
   const secret = process.env.AEGIS_INTERNAL_API_SECRET;
   if (!secret || secret.length < 43) return NextResponse.json({ message: "Internal API trust is not configured." }, { status: 503 });
   const identity = Buffer.from(JSON.stringify({

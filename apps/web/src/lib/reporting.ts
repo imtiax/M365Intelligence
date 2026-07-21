@@ -1,4 +1,3 @@
-import type { CatalogueReport } from "@/data/suite";
 
 export type ReportMetric = { label: string; value: string; detail: string };
 export type GeneratedReport = {
@@ -895,27 +894,6 @@ const templates: Record<string, Template> = {
 };
 
 const fallback = templates["Microsoft Entra ID"];
-
-export function generateCatalogueReport(
-  report: CatalogueReport,
-): GeneratedReport {
-  const template = templates[report.workload] ?? fallback;
-  return {
-    id: `${report.id}-${Date.now()}`,
-    name: report.name,
-    workload: report.workload,
-    description: report.description,
-    generatedAt: new Intl.DateTimeFormat("en-GB", {
-      dateStyle: "medium",
-      timeStyle: "medium",
-    }).format(new Date()),
-    sourceFreshness: `${report.updated} old`,
-    totalRows: report.rows,
-    columns: template.columns,
-    rows: template.rows,
-    metrics: template.metrics,
-  };
-}
 
 export function generateCustomReport(
   name: string,

@@ -27,7 +27,6 @@ services:
       AEGIS_INTERNAL_API_SECRET: ${AEGIS_INTERNAL_API_SECRET}
       INTERNAL_API_URL: http://api:3001
       AEGIS_COOKIE_SECURE: ${AEGIS_COOKIE_SECURE:-true}
-      AEGIS_PUBLIC_DEMO_ENABLED: ${AEGIS_PUBLIC_DEMO_ENABLED:-false}
     expose: ["3000"]
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000"]
@@ -46,7 +45,6 @@ services:
       NODE_ENV: production
       AUTH_MODE: internal
       AEGIS_INTERNAL_API_SECRET: ${AEGIS_INTERNAL_API_SECRET}
-      AEGIS_PUBLIC_DEMO_ENABLED: ${AEGIS_PUBLIC_DEMO_ENABLED:-false}
       WEB_ORIGIN: http://localhost:8080
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
@@ -60,6 +58,11 @@ services:
       M365_GRAPH_BASE_URL: ${M365_GRAPH_BASE_URL:-https://graph.microsoft.com/v1.0}
       M365_CERTIFICATE_THUMBPRINT: ${M365_CERTIFICATE_THUMBPRINT:-}
       M365_CERTIFICATE_PATH: ${M365_CERTIFICATE_PATH:-/run/secrets/m365-collector.pem}
+      ENTRA_OIDC_ENABLED: ${ENTRA_OIDC_ENABLED:-false}
+      ENTRA_OIDC_TENANT_ID: ${ENTRA_OIDC_TENANT_ID:-}
+      ENTRA_OIDC_CLIENT_ID: ${ENTRA_OIDC_CLIENT_ID:-}
+      ENTRA_OIDC_REDIRECT_URI: ${ENTRA_OIDC_REDIRECT_URI:-}
+      ENTRA_OIDC_ALLOWED_TENANT_ID: ${ENTRA_OIDC_ALLOWED_TENANT_ID:-}
       RUNTIME_DATA_PATH: /var/lib/m365ops/runtime-state.json
     expose: ["3001"]
     healthcheck:

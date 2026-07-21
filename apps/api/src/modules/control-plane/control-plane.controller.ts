@@ -11,6 +11,7 @@ export class ControlPlaneController {
   constructor(private readonly service: ControlPlaneService) {}
 
   @Get("overview") overview(@Req() request: Request) { return this.service.overview(request.tenantContext!.tenantId); }
+  @Get("connection-readiness") connectionReadiness(@Req() request: Request) { return this.service.connectionReadiness(request.tenantContext!.tenantId); }
   @Get("connectors") connectors(@Req() request: Request) { return this.service.listConnectors(request.tenantContext!.tenantId); }
   @Get("reports") reports(@Req() request: Request) { return this.service.listReports(request.tenantContext!.tenantId); }
   @Post("reports") createReport(@Req() request: Request, @Body() dto: CreateReportDefinitionDto) { const context = request.tenantContext!; return this.service.createReport(context.tenantId, context.actorId, context.roles, dto); }

@@ -1,19 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "./showcase.css";
 import "./login.css";
-import "./login-status.css";
-import "./suite.css";
-import "./search.css";
-import "./product-studio.css";
-import "./interactions.css";
-import "./report-output.css";
-import "./report-enterprise.css";
-import "./report-experience.css";
-import "./runtime.css";
-import "./commercial.css";
-import "./human-theme.css";
-import "./ux-remediation.css";
 
 export const metadata: Metadata = {
   title: "Aegis M365 | Reporter 360",

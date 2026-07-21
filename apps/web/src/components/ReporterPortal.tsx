@@ -17,6 +17,7 @@ import {
   Desktop24Regular,
   DocumentBulletList24Regular,
   Grid24Regular,
+  History24Regular,
   Mail24Regular,
   PeopleTeam24Regular,
   Person24Regular,
@@ -87,6 +88,9 @@ import {
 import { roleLabels, type PlatformRole } from "@/lib/identity";
 import { AdvancedReportBuilder } from "@/components/AdvancedReportBuilder";
 import { PowerShellWorkspace } from "@/components/PowerShellWorkspace";
+import { SocWorkspace } from "@/components/SocWorkspace";
+import { AdminAuditWorkspace } from "@/components/AdminAuditWorkspace";
+import { ConnectionCenter } from "@/components/ConnectionCenter";
 
 // Validated categorical palette (dataviz skill, references/palette.md) — fixed
 // hue order, red reserved for critical status and never assigned to a service.
@@ -119,6 +123,9 @@ type Route =
   | { kind: "views" }
   | { kind: "schedules" }
   | { kind: "alerts" }
+  | { kind: "soc" }
+  | { kind: "admin-audit" }
+  | { kind: "connections" }
   | { kind: "builder" }
   | { kind: "powershell" };
 
@@ -268,7 +275,10 @@ export function ReporterPortal() {
       : route.kind === "views" ? ["My Views"]
         : route.kind === "schedules" ? ["Schedules"]
           : route.kind === "alerts" ? ["Alert Center"]
-            : route.kind === "builder" ? ["Advanced report builder"]
+            : route.kind === "soc" ? ["Security & Compliance", "Defender SOC"]
+              : route.kind === "admin-audit" ? ["Security, Compliance & Governance", "Administrator audit"]
+                : route.kind === "connections" ? ["Administration", "Connection Center"]
+                : route.kind === "builder" ? ["Advanced report builder"]
               : ["PowerShell workspace"];
 
   return (
@@ -299,6 +309,12 @@ export function ReporterPortal() {
           <button className={`pr-nav-top ${route.kind === "alerts" ? "pr-active" : ""}`} onClick={() => setRoute({ kind: "alerts" })} data-testid="portal-nav-alerts">
             <Alert24Regular /> Alert Center <span className="pr-count">{alerts.filter((a) => a.status !== "Closed").length}</span>
           </button>
+          <button className={`pr-nav-top ${route.kind === "soc" ? "pr-active" : ""}`} onClick={() => setRoute({ kind: "soc" })} data-testid="portal-nav-soc">
+            <ShieldCheckmark24Regular /> Defender SOC <span className="pr-count">6</span>
+          </button>
+          <button className={`pr-nav-top ${route.kind === "admin-audit" ? "pr-active" : ""}`} onClick={() => setRoute({ kind: "admin-audit" })} data-testid="portal-nav-admin-audit">
+            <History24Regular /> Admin audit & governance <span className="pr-count">12</span>
+          </button>
 
           <div className="pr-nav-section">Engineering</div>
           <button className={`pr-nav-top ${route.kind === "builder" ? "pr-active" : ""}`} onClick={() => setRoute({ kind: "builder" })} data-testid="portal-nav-builder">
@@ -306,6 +322,9 @@ export function ReporterPortal() {
           </button>
           <button className={`pr-nav-top ${route.kind === "powershell" ? "pr-active" : ""}`} onClick={() => setRoute({ kind: "powershell" })} data-testid="portal-nav-powershell">
             <ClipboardTask24Regular /> PowerShell workspace
+          </button>
+          <button className={`pr-nav-top ${route.kind === "connections" ? "pr-active" : ""}`} onClick={() => setRoute({ kind: "connections" })} data-testid="portal-nav-connections">
+            <CloudCheckmark24Regular /> Connection Center
           </button>
 
           <div className="pr-nav-section">Services</div>
@@ -447,8 +466,11 @@ export function ReporterPortal() {
               }))}
             />
           )}
+          {route.kind === "soc" && <SocWorkspace notify={setToast} onOpenReport={(id) => openReport(id)} />}
+          {route.kind === "admin-audit" && <AdminAuditWorkspace notify={setToast} onOpenReport={(id) => openReport(id)} />}
           {route.kind === "builder" && <AdvancedReportBuilder notify={setToast} />}
-          {route.kind === "powershell" && <PowerShellWorkspace notify={setToast} />}
+          {route.kind === "powershell" && <PowerShellWorkspace notify={setToast} onOpenReport={(id) => openReport(id)} />}
+          {route.kind === "connections" && <ConnectionCenter notify={setToast} />}
         </div>
       </div>
 

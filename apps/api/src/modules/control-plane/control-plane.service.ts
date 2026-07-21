@@ -10,6 +10,41 @@ type ConnectorRow = { connectorCode: string; displayName: string; state: string;
 export class ControlPlaneService {
   constructor(private readonly database: DatabaseService) {}
 
+  connectionReadiness(tenantId: string) {
+    const configured = (value: string | undefined, pattern?: RegExp) => !!value && value.trim().length > 0 && (!pattern || pattern.test(value.trim()));
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const graphEnabled = process.env.M365_GRAPH_ENABLED === "true";
+    const graphRequirements = [
+      ["Tenant ID", configured(process.env.M365_TENANT_ID, uuid)],
+      ["Client ID", configured(process.env.M365_CLIENT_ID, uuid)],
+      ["Certificate reference", configured(process.env.M365_CERTIFICATE_THUMBPRINT) || configured(process.env.M365_CERTIFICATE_PATH)],
+      ["Collector explicitly enabled", graphEnabled],
+    ] as const;
+    const oidcEnabled = process.env.ENTRA_OIDC_ENABLED === "true";
+    const oidcRequirements = [
+      ["Tenant ID", configured(process.env.ENTRA_OIDC_TENANT_ID, uuid)],
+      ["Application client ID", configured(process.env.ENTRA_OIDC_CLIENT_ID, uuid)],
+      ["HTTPS redirect URI", configured(process.env.ENTRA_OIDC_REDIRECT_URI) && process.env.ENTRA_OIDC_REDIRECT_URI!.startsWith("https://")],
+      ["Allowed tenant binding", configured(process.env.ENTRA_OIDC_ALLOWED_TENANT_ID, uuid)],
+      ["Federation explicitly enabled", oidcEnabled],
+    ] as const;
+    const packs = [
+      { code: "entra-read", name: "Entra identity and sign-in", permissions: ["User.Read.All", "Group.Read.All", "AuditLog.Read.All", "RoleManagement.Read.Directory"], status: "blocked_until_consent" },
+      { code: "licensing", name: "Licensing and usage", permissions: ["Organization.Read.All", "Reports.Read.All"], status: "blocked_until_consent" },
+      { code: "defender-xdr", name: "Defender XDR and incidents", permissions: ["SecurityIncident.Read.All", "SecurityAlert.Read.All"], status: "blocked_until_consent" },
+      { code: "purview-audit", name: "Purview audit", permissions: ["AuditLogsQuery-Exchange.Read.All", "AuditLogsQuery-SharePoint.Read.All"], status: "blocked_until_consent" },
+      { code: "intune", name: "Intune devices and compliance", permissions: ["DeviceManagementManagedDevices.Read.All", "DeviceManagementConfiguration.Read.All"], status: "blocked_until_consent" },
+    ];
+    return {
+      tenantId,
+      mode: "configuration_gated",
+      graphCollector: { enabled: graphEnabled, ready: graphRequirements.every(([, ready]) => ready), requirements: graphRequirements.map(([name, ready]) => ({ name, ready })) },
+      workforceSso: { enabled: oidcEnabled, ready: oidcRequirements.every(([, ready]) => ready), requirements: oidcRequirements.map(([name, ready]) => ({ name, ready })) },
+      connectorPacks: packs,
+      releaseGates: ["least-privilege permission review", "admin consent evidence", "certificate rotation runbook", "tenant isolation test", "pagination, throttling, and retry test", "backup and audit-ledger restore test"],
+    };
+  }
+
   async overview(tenantId: string) {
     const [connectors, reports, workflows] = await Promise.all([
       this.database.tenantQuery<{ total: string; healthy: string }>(tenantId, "SELECT count(*)::text AS total, count(*) FILTER (WHERE state = 'healthy')::text AS healthy FROM control.connector_installations"),
