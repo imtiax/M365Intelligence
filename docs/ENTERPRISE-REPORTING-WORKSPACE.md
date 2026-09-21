@@ -1,4 +1,4 @@
-# Aegis Enterprise Reporting Workspace v1
+# M365Intelligence Enterprise Reporting Workspace v1
 
 Status: implementation candidate in the current working branch
 
@@ -8,25 +8,13 @@ Evidence date: 2026-07-17
 
 ## Purpose
 
-The Aegis Enterprise Reporting Workspace gives Microsoft 365 administrators one governed path from an executive indicator to the contributing records, a reusable report definition, an executed report job, an export, and retained operational evidence.
+The M365Intelligence Enterprise Reporting Workspace gives Microsoft 365 administrators one governed path from an executive indicator to the contributing records, a reusable report definition, an executed report job, an export, and retained operational evidence.
 
-Version 1 is designed for a credible local client demonstration. It runs against the Aegis deterministic enterprise dataset and local API state. It does not represent live Microsoft Graph collection, unattended scheduling, or external email and Teams delivery. Those boundaries are stated throughout this document and in the product experience.
+Version 1 is designed for a credible local client demonstration. It runs against the M365Intelligence deterministic enterprise dataset and local API state. It does not represent live Microsoft Graph collection, unattended scheduling, or external email and Teams delivery. Those boundaries are stated throughout this document and in the product experience.
 
 ## Public research basis
 
-The workspace was informed by clean-room review of publicly accessible enterprise reporting and management patterns. The research involved public product pages and the no-login AdminDroid sample-data demonstration only. No authentication was bypassed, no tenant was connected, no management action was executed, and no proprietary source code, assets, screenshots, report definitions, or demo records were copied.
-
-Public references reviewed:
-
-- [AdminDroid public demo](https://demo.admindroid.com/)
-- [AdminDroid dashboard gallery](https://admindroid.com/office-365-analytics-monitoring-dashboard-gallery)
-- [AdminDroid Microsoft 365 reporting](https://admindroid.com/microsoft-365-reporting-tool)
-- [AdminDroid Microsoft 365 management](https://admindroid.com/microsoft-365-management-tool)
-- [AdminDroid Microsoft 365 automation](https://admindroid.com/microsoft-365-automation)
-- [AdminDroid Microsoft 365 alerting](https://admindroid.com/microsoft-365-alerting)
-- [AdminDroid Microsoft 365 auditing](https://admindroid.com/microsoft-365-auditing)
-- [AdminDroid delegation](https://admindroid.com/microsoft-365-delegation)
-- [AdminDroid documentation index](https://admindroid.com/docs)
+The workspace was informed by clean-room review of general, publicly accessible enterprise reporting and management patterns. No authentication was bypassed, no tenant was connected, no management action was executed, and no third-party source code, assets, screenshots, report definitions, or demo records were copied.
 
 The reusable industry patterns identified were:
 
@@ -38,20 +26,20 @@ The reusable industry patterns identified were:
 - separation between report access, data scope, and permission to create or execute operational objects; and
 - an explicit workflow from observation to evidence, action, verification, and accountability.
 
-These are general product and workflow concepts. Aegis implements them with its own information architecture, data model, visual system, terminology, code, synthetic data, security controls, and acceptance tests.
+These are general product and workflow concepts. M365Intelligence implements them with its own information architecture, data model, visual system, terminology, code, synthetic data, security controls, and acceptance tests.
 
 ## Originality and no-copy boundary
 
-Aegis is not an AdminDroid clone, derivative interface, embedded service, or integration. AdminDroid is not a runtime dependency.
+M365Intelligence is an original implementation, not a clone, derivative interface, embedded service, or integration of any third-party product.
 
-The following material must not be imported into Aegis:
+The following material must not be imported into M365Intelligence:
 
-- AdminDroid names, branding, logos, iconography, color system, screenshots, layout measurements, copy, or marketing claims;
-- its HTML, JavaScript, stylesheets, network responses, internal APIs, route structure, product assets, or compiled resources;
-- its proprietary report catalogue, report descriptions, identifiers, sample records, workflow templates, alert templates, or dashboard compositions; and
+- third-party names, branding, logos, iconography, color systems, screenshots, layout measurements, copy, or marketing claims;
+- third-party HTML, JavaScript, stylesheets, network responses, internal APIs, route structure, product assets, or compiled resources;
+- proprietary report catalogues, report descriptions, identifiers, sample records, workflow templates, alert templates, or dashboard compositions; and
 - unsupported comparison claims based only on a public demonstration.
 
-The 947-entry Aegis catalogue is original demonstration template content. It is assembled from Aegis-owned base definitions, customer-presentation templates, and workload perspectives such as overview, trend, exception, risk, owner, region, evidence, cohort, exposure, and lifecycle. It is not scraped data and it must not be presented as 947 independently implemented reports or Microsoft Graph collectors. Microsoft product and workload names are used descriptively.
+The 947-entry M365Intelligence catalogue is original demonstration template content. It is assembled from M365Intelligence-owned base definitions, customer-presentation templates, and workload perspectives such as overview, trend, exception, risk, owner, region, evidence, cohort, exposure, and lifecycle. It is not scraped data and it must not be presented as 947 independently implemented reports or Microsoft Graph collectors. Microsoft product and workload names are used descriptively.
 
 ## Version 1 capability
 

@@ -5,7 +5,7 @@ Evidence date: 2026-07-16
 
 ## Scope and decision
 
-This matrix records what the automated gate actually proves. The accepted target is the local enterprise demonstration on ports 3008 and 3001 using the deterministic Global Enterprise Holdings dataset. It does not certify a public SaaS service or live Microsoft 365 collection/remediation.
+This matrix records what the automated gate actually proves. The accepted target is the local enterprise demonstration on ports 3008 and 3001 using the deterministic Example Organization dataset. It does not certify a public SaaS service or live Microsoft 365 collection/remediation.
 
 `Server-persistent` means the action survives a browser reload in the tenant-scoped local API state. `Browser-persistent` means versioned non-secret state survives in that browser. `Session outcome` means the control produces a visible, testable result during the current workspace session but is not yet a durable production record.
 

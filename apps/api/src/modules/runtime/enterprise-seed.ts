@@ -15,7 +15,7 @@ function entities(prefix: string, count: number, label: string, statuses = ["Act
     id: `${prefix}-${String(index + 1).padStart(6, "0")}`,
     name: `${label} ${String(index + 1).padStart(4, "0")}`,
     status: statuses[index % statuses.length],
-    owner: `user${String((index % 5000) + 1).padStart(4, "0")}@globalholdings.com`,
+    owner: `user${String((index % 5000) + 1).padStart(4, "0")}@sample.invalid`,
     detail: departments[index % departments.length],
   }));
 }
@@ -28,7 +28,7 @@ function users(now: number): DemoUser[] {
     return {
       id: `USR-${String(number).padStart(6, "0")}`,
       displayName: name,
-      username: `${firstNames[index % firstNames.length].toLowerCase()}.${lastNames[(index * 7) % lastNames.length].toLowerCase()}${number}@globalholdings.com`,
+      username: `${firstNames[index % firstNames.length].toLowerCase()}.${lastNames[(index * 7) % lastNames.length].toLowerCase()}${number}@sample.invalid`,
       department: departments[index % departments.length],
       location: locations[(index * 3) % locations.length][0],
       manager: `Manager ${String((index % 250) + 1).padStart(3, "0")}`,
@@ -47,15 +47,15 @@ function users(now: number): DemoUser[] {
 
 function securityEvents(now: number): SecurityEvent[] {
   const primary: SecurityEvent[] = [
-    { id: "SEC-000001", title: "Global Admin Login From Unknown Country", severity: "Critical", user: "john.admin@globalholdings.com", location: "Russia", detection: "Impossible Travel Detection", occurredAt: new Date(now - 2 * 60_000).toISOString(), status: "Active" },
-    { id: "SEC-000002", title: "Multiple Failed MFA Attempts", severity: "High", user: "finance.manager@globalholdings.com", location: "Dubai", detection: "Identity Protection", occurredAt: new Date(now - 8 * 60_000).toISOString(), status: "Investigating" },
+    { id: "SEC-000001", title: "Global Admin Login From Unknown Country", severity: "Critical", user: "john.admin@sample.invalid", location: "Russia", detection: "Impossible Travel Detection", occurredAt: new Date(now - 2 * 60_000).toISOString(), status: "Active" },
+    { id: "SEC-000002", title: "Multiple Failed MFA Attempts", severity: "High", user: "finance.manager@sample.invalid", location: "Dubai", detection: "Identity Protection", occurredAt: new Date(now - 8 * 60_000).toISOString(), status: "Investigating" },
     { id: "SEC-000003", title: "Legacy Authentication Detected", severity: "High", user: "145 affected users", location: "Global", detection: "Sign-in Analytics", occurredAt: new Date(now - 21 * 60_000).toISOString(), status: "Active" },
   ];
   return primary.concat(Array.from({ length: 97 }, (_, index) => ({
     id: `SEC-${String(index + 4).padStart(6, "0")}`,
     title: ["Suspicious inbox rule", "Unmanaged device access", "Anonymous sharing link", "Malware attachment blocked"][index % 4],
     severity: (["High", "Medium", "Low", "Medium"] as const)[index % 4],
-    user: `user${String((index * 43) % 5000 + 1).padStart(4, "0")}@globalholdings.com`,
+    user: `user${String((index * 43) % 5000 + 1).padStart(4, "0")}@sample.invalid`,
     location: locations[index % locations.length][0],
     detection: ["Defender for Office 365", "Conditional Access", "Defender for Cloud Apps", "Defender XDR"][index % 4],
     occurredAt: new Date(now - (index + 1) * 19 * 60_000).toISOString(),
@@ -79,7 +79,7 @@ function timeline(now: number): DemoTimelineEvent[] {
     occurredAt: new Date(now - index * 2 * 60_000).toISOString(),
     type: types[index % types.length],
     title: ["User sign-in succeeded", "Identity risk detected", "Security alert generated", "AI recommendation created", "License assignment changed", "Device compliance changed"][index % 6],
-    detail: `Global enterprise simulation event ${index + 1}`,
+    detail: `Example organization simulation event ${index + 1}`,
     severity: index % 11 === 0 ? "critical" : index % 4 === 0 ? "warning" : "info",
   }));
 }
@@ -87,7 +87,7 @@ function timeline(now: number): DemoTimelineEvent[] {
 export function createEnterpriseDemo(tenantId: string): EnterpriseDemoState {
   const now = Date.now();
   return {
-    tenant: { id: tenantId, name: "Global Enterprise Holdings", industry: "Logistics · Manufacturing · Financial Services", countries: 25, activeScenario: "baseline", lastSimulationAt: new Date(now).toISOString(), kpis: { users: 5000, activeUsers: 4620, inactiveUsers: 380, securityScore: 87, complianceScore: 91, licenseUtilization: 76, storageUsage: 68, highRiskUsers: 24 } },
+    tenant: { id: tenantId, name: "Example Organization", industry: "Logistics · Manufacturing · Financial Services", countries: 25, activeScenario: "baseline", lastSimulationAt: new Date(now).toISOString(), kpis: { users: 5000, activeUsers: 4620, inactiveUsers: 380, securityScore: 87, complianceScore: 91, licenseUtilization: 76, storageUsage: 68, highRiskUsers: 24 } },
     departments: departments.map((name, index) => ({ id: `DEP-${index + 1}`, name, status: "Active", detail: `${Math.floor(5000 / departments.length) + (index < 5 ? 1 : 0)} employees` })),
     locations: locations.map(([city, country], index) => ({ id: `LOC-${index + 1}`, name: city, status: "Active", detail: country })),
     users: users(now),

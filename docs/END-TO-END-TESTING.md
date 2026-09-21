@@ -27,7 +27,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-acceptance.ps1 -ResetDa
 
 Use `-SkipBuild` after the first successful build. Open `http://localhost:3008/login`. API documentation is at `http://localhost:3001/api/docs`.
 
-The generated acceptance organization includes `admin@apex.local`, `security@apex.local`, `m365admin@apex.local`, `reports@apex.local`, `auditor@apex.local`, and `viewer@apex.local`. They use the shared local password printed by `auth:setup`, but receive different signed roles and effective access.
+The generated acceptance organization includes `admin@local.invalid`, `security@local.invalid`, `m365admin@local.invalid`, `reports@local.invalid`, `auditor@local.invalid`, and `viewer@local.invalid`. They use the shared local password printed by `auth:setup`, but receive different signed roles and effective access.
 
 Stop the environment:
 
@@ -72,7 +72,7 @@ npm.cmd run test:e2e
 The HTTP suite validates:
 
 - readiness and deterministic reset;
-- the 5,000-user Global Enterprise Holdings ecosystem and exact Microsoft 365 object populations;
+- the 5,000-user Example Organization ecosystem and exact Microsoft 365 object populations;
 - user 360, security incidents, risk findings, license optimization, four compliance frameworks, report templates, grounded AI, scenario activation, and timeline ticks;
 - ten admin centers and 7,850 resources;
 - invalid report rejection;

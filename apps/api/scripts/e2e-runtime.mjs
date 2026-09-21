@@ -26,7 +26,7 @@ async function call(
   {
     method = "GET",
     body,
-    actor = "acceptance.requester@apex.local",
+    actor = "acceptance.requester@local.invalid",
     roles = "platform-admin,security-admin",
     expected,
   } = {},
@@ -60,7 +60,7 @@ async function waitFor(path, state) {
 }
 
 const health = await call("/health/ready");
-const replayHeaders = authHeaders("acceptance.replay@apex.local", "read-only");
+const replayHeaders = authHeaders("acceptance.replay@local.invalid", "read-only");
 const firstEnvelopeUse = await fetch(`${base}/api/v1/admin-centers`, { headers: replayHeaders });
 const replayedEnvelope = await fetch(`${base}/api/v1/admin-centers`, { headers: replayHeaders });
 if (firstEnvelopeUse.status !== 200 || replayedEnvelope.status !== 401) throw new Error(`Internal identity replay defense failed (${firstEnvelopeUse.status}/${replayedEnvelope.status}).`);
@@ -88,7 +88,7 @@ await call("/api/v1/findings/FND-1034/remediation", {
   expected: 400,
 });
 const assignment = {
-  assigneeId: "omar.rahman@apex.local",
+  assigneeId: "omar.rahman@local.invalid",
   assigneeName: "Omar Rahman",
   team: "FinOps",
   priority: "high",
@@ -159,12 +159,12 @@ await call(`/api/v1/workflows/${remediatingFinding.case.remediationWorkflowId}/a
 await call(`/api/v1/workflows/${remediatingFinding.case.remediationWorkflowId}/approve`, {
   method: "POST",
   body: {},
-  actor: "finops.approver@apex.local",
+  actor: "finops.approver@local.invalid",
 });
 await call(`/api/v1/workflows/${remediatingFinding.case.remediationWorkflowId}/execute`, {
   method: "POST",
   body: {},
-  actor: "m365.executor@apex.local",
+  actor: "m365.executor@local.invalid",
   roles: "m365-admin",
 });
 const completedFindingWorkflow = await waitFor(
@@ -187,7 +187,7 @@ if (
 await call(`/api/v1/workflows/${remediatingFinding.case.remediationWorkflowId}/rollback`, {
   method: "POST",
   body: {},
-  actor: "m365.executor@apex.local",
+  actor: "m365.executor@local.invalid",
   roles: "m365-admin",
 });
 const rolledBackFindingCase = await call("/api/v1/findings/FND-1029/case");
@@ -214,7 +214,7 @@ if (
   throw new Error("Rolled-back finding could not create a revised remediation draft.");
 await call("/api/v1/simulation/reset", { method: "POST" });
 const enterprise = await call("/api/v1/demo/overview");
-if (enterprise.tenant.name !== "Global Enterprise Holdings" || enterprise.objectCounts.users !== 5000 || enterprise.objectCounts.devices !== 7000 || enterprise.objectCounts.channels !== 5000) throw new Error("Enterprise overview counts are incorrect.");
+if (enterprise.tenant.name !== "Example Organization" || enterprise.objectCounts.users !== 5000 || enterprise.objectCounts.devices !== 7000 || enterprise.objectCounts.channels !== 5000) throw new Error("Enterprise overview counts are incorrect.");
 const commercialOrganization = await call("/api/v1/commercial/organization");
 if (commercialOrganization.tenantId !== tenant || commercialOrganization.dataBoundary !== "customer-controlled") throw new Error("Commercial organization context is incorrect.");
 const commercialLicense = await call("/api/v1/commercial/license");
@@ -370,7 +370,7 @@ if (
   throw new Error("The scheduled saved-view run did not apply its persisted filters.");
 const linkedInteractiveJob = await call(`/api/v1/report-views/${savedReportView.id}/run`, {
   method: "POST",
-  actor: "interactive.reporter@apex.local",
+  actor: "interactive.reporter@local.invalid",
   roles: "report-admin",
 });
 const linkedInteractiveReport = await waitFor(
@@ -384,7 +384,7 @@ if (
 )
   throw new Error("Interactive saved-view execution did not preserve its governed definition.");
 
-const privateReportOwner = "private.reporter@apex.local";
+const privateReportOwner = "private.reporter@local.invalid";
 const privateReportView = await call("/api/v1/report-views", {
   method: "POST",
   actor: privateReportOwner,
@@ -406,7 +406,7 @@ const privateLinkedJob = await call(`/api/v1/report-views/${privateReportView.id
   roles: "report-admin",
 });
 await call(`/api/v1/report-jobs/${privateLinkedJob.id}`, {
-  actor: "different.reporter@apex.local",
+  actor: "different.reporter@local.invalid",
   roles: "report-admin",
   expected: 404,
 });
@@ -421,16 +421,16 @@ const privateUnlinkedJob = await call("/api/v1/report-jobs", {
   },
 });
 await call(`/api/v1/report-jobs/${privateUnlinkedJob.id}`, {
-  actor: "different.reporter@apex.local",
+  actor: "different.reporter@local.invalid",
   roles: "report-admin",
   expected: 404,
 });
 const otherReporterJobs = await call("/api/v1/report-jobs?limit=100", {
-  actor: "different.reporter@apex.local",
+  actor: "different.reporter@local.invalid",
   roles: "report-admin",
 });
 const otherReporterOperations = await call("/api/v1/report-operations", {
-  actor: "different.reporter@apex.local",
+  actor: "different.reporter@local.invalid",
   roles: "report-admin",
 });
 if (
@@ -440,7 +440,7 @@ if (
 )
   throw new Error("Private or requester-only report results crossed the reporting identity boundary.");
 await call(`/api/v1/report-jobs/${privateLinkedJob.id}`, {
-  actor: "platform.inspector@apex.local",
+  actor: "platform.inspector@local.invalid",
   roles: "platform-admin",
 });
 const reportOperations = await call("/api/v1/report-operations");
@@ -479,12 +479,12 @@ await call(`/api/v1/workflows/${workflow.id}/approve`, {
 await call(`/api/v1/workflows/${workflow.id}/approve`, {
   method: "POST",
   body: {},
-  actor: "acceptance.approver@apex.local",
+  actor: "acceptance.approver@local.invalid",
 });
 await call(`/api/v1/workflows/${workflow.id}/execute`, {
   method: "POST",
   body: {},
-  actor: "workflow.engine@apex.local",
+  actor: "workflow.engine@local.invalid",
 });
 const completedWorkflow = await waitFor(
   `/api/v1/workflows/${workflow.id}`,
@@ -495,7 +495,7 @@ if (!completedWorkflow.execution?.succeeded)
 const rolledBack = await call(`/api/v1/workflows/${workflow.id}/rollback`, {
   method: "POST",
   body: {},
-  actor: "workflow.engine@apex.local",
+  actor: "workflow.engine@local.invalid",
 });
 if (rolledBack.state !== "rolled_back")
   throw new Error("Workflow rollback failed.");
@@ -521,7 +521,7 @@ await call(`/api/v1/workflows/${rejectionCandidate.id}/reject`, {
 const rejectedWorkflow = await call(`/api/v1/workflows/${rejectionCandidate.id}/reject`, {
   method: "POST",
   body: { comment: "Scope requires additional business-owner evidence." },
-  actor: "acceptance.approver@apex.local",
+  actor: "acceptance.approver@local.invalid",
 });
 if (
   rejectedWorkflow.state !== "rejected" ||
@@ -546,12 +546,12 @@ await call(`/api/v1/workflows/${failure.id}/submit`, {
 await call(`/api/v1/workflows/${failure.id}/approve`, {
   method: "POST",
   body: {},
-  actor: "acceptance.approver@apex.local",
+  actor: "acceptance.approver@local.invalid",
 });
 await call(`/api/v1/workflows/${failure.id}/execute`, {
   method: "POST",
   body: {},
-  actor: "workflow.engine@apex.local",
+  actor: "workflow.engine@local.invalid",
 });
 const failedWorkflow = await waitFor(
   `/api/v1/workflows/${failure.id}`,
@@ -564,7 +564,7 @@ const streamController = new AbortController();
 const isolationController = new AbortController();
 const isolationPromise = fetch(`${base}/api/v1/events/stream`, {
   headers: authHeaders(
-    "other-tenant.observer@apex.local",
+    "other-tenant.observer@local.invalid",
     "platform-admin",
     "00000000-0000-4000-8000-000000000099",
   ),
@@ -581,7 +581,7 @@ const isolationPromise = fetch(`${base}/api/v1/events/stream`, {
   }
 }).catch(() => false);
 const eventPromise = fetch(`${base}/api/v1/events/stream`, {
-  headers: authHeaders("acceptance.stream@apex.local", "platform-admin"),
+  headers: authHeaders("acceptance.stream@local.invalid", "platform-admin"),
   signal: streamController.signal,
 }).then(async (response) => {
   const reader = response.body.getReader();

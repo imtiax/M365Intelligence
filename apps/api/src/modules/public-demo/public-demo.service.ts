@@ -383,21 +383,21 @@ export class PublicDemoService {
         generatedAt,
         summary: { views: 3, activeSchedules: 2, activeAlerts: 2, completedRuns: 4 },
         views: [
-          { id: 'demo-view-identity', tenantId: 'public-demo-v1', reportId: 'identity-posture', name: 'Identity risk owner review', reportName: 'Identity posture and exceptions', workload: 'Microsoft Entra ID', columns: ['Display name', 'Owner', 'Risk score'], filters: [], visibility: 'team', favorite: true, createdBy: 'reporting@northstar.example', createdAt: generatedAt, updatedAt: generatedAt },
-          { id: 'demo-view-license', tenantId: 'public-demo-v1', reportId: 'licenses-posture', name: 'Inactive license candidates', reportName: 'License posture and exceptions', workload: 'Licensing & Cost', columns: ['Display name', 'Owner', 'Activity'], filters: [], visibility: 'team', favorite: true, createdBy: 'finops@northstar.example', createdAt: generatedAt, updatedAt: generatedAt },
-          { id: 'demo-view-compliance', tenantId: 'public-demo-v1', reportId: 'compliance-posture', name: 'Failed control evidence', reportName: 'Compliance posture and exceptions', workload: 'Microsoft Purview', columns: ['Display name', 'Status', 'Owner'], filters: [], visibility: 'private', favorite: false, createdBy: 'audit@northstar.example', createdAt: generatedAt, updatedAt: generatedAt },
+          { id: 'demo-view-identity', tenantId: 'public-demo-v1', reportId: 'identity-posture', name: 'Identity risk owner review', reportName: 'Identity posture and exceptions', workload: 'Microsoft Entra ID', columns: ['Display name', 'Owner', 'Risk score'], filters: [], visibility: 'team', favorite: true, createdBy: 'reporting@sample.invalid', createdAt: generatedAt, updatedAt: generatedAt },
+          { id: 'demo-view-license', tenantId: 'public-demo-v1', reportId: 'licenses-posture', name: 'Inactive license candidates', reportName: 'License posture and exceptions', workload: 'Licensing & Cost', columns: ['Display name', 'Owner', 'Activity'], filters: [], visibility: 'team', favorite: true, createdBy: 'finops@sample.invalid', createdAt: generatedAt, updatedAt: generatedAt },
+          { id: 'demo-view-compliance', tenantId: 'public-demo-v1', reportId: 'compliance-posture', name: 'Failed control evidence', reportName: 'Compliance posture and exceptions', workload: 'Microsoft Purview', columns: ['Display name', 'Status', 'Owner'], filters: [], visibility: 'private', favorite: false, createdBy: 'audit@sample.invalid', createdAt: generatedAt, updatedAt: generatedAt },
         ],
         schedules: [
-          { id: 'demo-schedule-1', tenantId: 'public-demo-v1', viewId: 'demo-view-identity', name: 'Weekly identity review', cadence: 'weekly', timezone: 'Asia/Dubai', runAt: '08:30', delivery: 'local_archive', status: 'active', createdBy: 'reporting@northstar.example', createdAt: generatedAt, updatedAt: generatedAt },
-          { id: 'demo-schedule-2', tenantId: 'public-demo-v1', viewId: 'demo-view-license', name: 'Monthly FinOps review', cadence: 'monthly', timezone: 'UTC', runAt: '07:00', delivery: 'local_archive', status: 'active', createdBy: 'finops@northstar.example', createdAt: generatedAt, updatedAt: generatedAt },
+          { id: 'demo-schedule-1', tenantId: 'public-demo-v1', viewId: 'demo-view-identity', name: 'Weekly identity review', cadence: 'weekly', timezone: 'Asia/Dubai', runAt: '08:30', delivery: 'local_archive', status: 'active', createdBy: 'reporting@sample.invalid', createdAt: generatedAt, updatedAt: generatedAt },
+          { id: 'demo-schedule-2', tenantId: 'public-demo-v1', viewId: 'demo-view-license', name: 'Monthly FinOps review', cadence: 'monthly', timezone: 'UTC', runAt: '07:00', delivery: 'local_archive', status: 'active', createdBy: 'finops@sample.invalid', createdAt: generatedAt, updatedAt: generatedAt },
         ],
         alerts: [
-          { id: 'demo-alert-1', tenantId: 'public-demo-v1', viewId: 'demo-view-identity', name: 'Critical identities detected', metric: 'critical_count', operator: 'gt', threshold: 0, severity: 'critical', status: 'active', createdBy: 'security@northstar.example', createdAt: generatedAt, updatedAt: generatedAt },
-          { id: 'demo-alert-2', tenantId: 'public-demo-v1', viewId: 'demo-view-license', name: 'Recovery cohort detected', metric: 'row_count', operator: 'gt', threshold: 50, severity: 'warning', status: 'active', createdBy: 'finops@northstar.example', createdAt: generatedAt, updatedAt: generatedAt },
+          { id: 'demo-alert-1', tenantId: 'public-demo-v1', viewId: 'demo-view-identity', name: 'Critical identities detected', metric: 'critical_count', operator: 'gt', threshold: 0, severity: 'critical', status: 'active', createdBy: 'security@sample.invalid', createdAt: generatedAt, updatedAt: generatedAt },
+          { id: 'demo-alert-2', tenantId: 'public-demo-v1', viewId: 'demo-view-license', name: 'Recovery cohort detected', metric: 'row_count', operator: 'gt', threshold: 50, severity: 'warning', status: 'active', createdBy: 'finops@sample.invalid', createdAt: generatedAt, updatedAt: generatedAt },
         ],
         runs: [
-          { id: 'demo-run-1', name: 'Identity risk owner review', workload: 'Microsoft Entra ID', status: 'completed', trigger: 'interactive', requestedBy: 'reporting@northstar.example', createdAt: generatedAt, completedAt: generatedAt, result: { totalRows: 86 } },
-          { id: 'demo-run-2', name: 'Inactive license candidates', workload: 'Licensing & Cost', status: 'completed', trigger: 'schedule_manual', requestedBy: 'finops@northstar.example', createdAt: generatedAt, completedAt: generatedAt, result: { totalRows: 87 } },
+          { id: 'demo-run-1', name: 'Identity risk owner review', workload: 'Microsoft Entra ID', status: 'completed', trigger: 'interactive', requestedBy: 'reporting@sample.invalid', createdAt: generatedAt, completedAt: generatedAt, result: { totalRows: 86 } },
+          { id: 'demo-run-2', name: 'Inactive license candidates', workload: 'Licensing & Cost', status: 'completed', trigger: 'schedule_manual', requestedBy: 'finops@sample.invalid', createdAt: generatedAt, completedAt: generatedAt, result: { totalRows: 87 } },
         ],
       };
     }
@@ -405,18 +405,18 @@ export class PublicDemoService {
     if (moduleId === 'workflows') {
       return {
         items: [
-          { id: 'demo-workflow-1', title: 'Dormant E5 assignment review', requestedBy: 'finops@northstar.example', owner: 'FinOps', approver: 'security@northstar.example', state: 'pending_approval' },
-          { id: 'demo-workflow-2', title: 'Phishing-resistant MFA registration', requestedBy: 'identity@northstar.example', owner: 'Identity Operations', approver: 'security@northstar.example', state: 'approved' },
-          { id: 'demo-workflow-3', title: 'External sharing exception review', requestedBy: 'governance@northstar.example', owner: 'Data Governance', approver: 'audit@northstar.example', state: 'completed', execution: { affected: 42, succeeded: 39, failed: 0, skipped: 3, message: 'Synthetic preview completed; no customer service was changed.' } },
+          { id: 'demo-workflow-1', title: 'Dormant E5 assignment review', requestedBy: 'finops@sample.invalid', owner: 'FinOps', approver: 'security@sample.invalid', state: 'pending_approval' },
+          { id: 'demo-workflow-2', title: 'Phishing-resistant MFA registration', requestedBy: 'identity@sample.invalid', owner: 'Identity Operations', approver: 'security@sample.invalid', state: 'approved' },
+          { id: 'demo-workflow-3', title: 'External sharing exception review', requestedBy: 'governance@sample.invalid', owner: 'Data Governance', approver: 'audit@sample.invalid', state: 'completed', execution: { affected: 42, succeeded: 39, failed: 0, skipped: 3, message: 'Synthetic preview completed; no customer service was changed.' } },
         ],
       };
     }
 
     const organization = {
-      id: 'northstar-example',
+      id: 'example-organization',
       tenantId: 'public-demo-v1',
-      legalName: 'Northstar Example Group Ltd',
-      displayName: 'Northstar Example Group',
+      legalName: 'Example Organization Ltd',
+      displayName: 'Example Organization',
       industry: ['Logistics', 'Manufacturing', 'Financial Services'],
       companySize: '5,000 synthetic users',
       primaryRegion: 'Global synthetic organization',
@@ -436,7 +436,7 @@ export class PublicDemoService {
       return { generatedAt, items: names.map((name, index) => ({ code: name.toLowerCase().replaceAll(' ', '-'), name, domain: 'Synthetic', reports: 72 + index * 9, state: index === 6 ? 'degraded' : 'healthy', permissionCoverage: index === 6 ? 88 : 100, lastSyncAt: generatedAt, nextSyncAt: generatedAt, objectsProcessed: 840 + index * 731, missingPermissions: index === 6 ? ['Synthetic.Records.Read'] : [] })) };
     }
     if (moduleId === 'commercial-customers') {
-      return { summary: { customers: 1, activeTrials: 0, paidSubscriptions: 0, expiringLicenses: 0 }, items: [{ organization: 'Northstar Example Group', tenantId: 'public-demo-v1', mode: 'Synthetic public demo', subscription: 'Not billable', license: 'Synthetic', connectors: '7 healthy · 1 simulated warning', dataBoundary: 'Isolated session' }], disclosure: PUBLIC_DEMO_SEED.disclosure };
+      return { summary: { customers: 1, activeTrials: 0, paidSubscriptions: 0, expiringLicenses: 0 }, items: [{ organization: 'Example Organization', tenantId: 'public-demo-v1', mode: 'Synthetic public demo', subscription: 'Not billable', license: 'Synthetic', connectors: '7 healthy · 1 simulated warning', dataBoundary: 'Isolated session' }], disclosure: PUBLIC_DEMO_SEED.disclosure };
     }
 
     return undefined;
@@ -558,7 +558,7 @@ export class PublicDemoService {
           ? `The synthetic license model contains 1,500 inactive E5 assignments and a modeled annual opportunity above $150,000, subject to fictional owner exceptions.`
           : compliance
             ? `Synthetic compliance readiness is ${scenario.metrics.complianceScore}%. The modeled gaps concern MFA enforcement, sharing governance, and evidence ownership.`
-            : `Northstar Example Group is a fictional 5,000-user organization. Its modeled security score is ${scenario.metrics.securityScore}%, compliance is ${scenario.metrics.complianceScore}%, and license utilization is ${scenario.metrics.licenseUtilization}%.`,
+            : `Example Organization is a fictional 5,000-user organization. Its modeled security score is ${scenario.metrics.securityScore}%, compliance is ${scenario.metrics.complianceScore}%, and license utilization is ${scenario.metrics.licenseUtilization}%.`,
       findings: security
         ? PUBLIC_DEMO_ENTERPRISE.riskFindings.slice(0, 3).map(({ title, count }) => ({ title, count }))
         : [],

@@ -371,7 +371,7 @@ export function ReporterPortal() {
           </span>
           <div className="pr-topbar-right">
             <button className="pr-tenant" onClick={() => setSettingsOpen(true)} data-testid="portal-tenant" title="Tenant & data source details">
-              <i>NE</i><span>Northstar Example Group<small>{tables.users.length} users · demo data</small></span>
+              <i>NE</i><span>Example Organization<small>{tables.users.length} users · demo data</small></span>
             </button>
             <button className="pr-btn" onClick={() => setSettingsOpen(true)} aria-label="Portal settings" data-testid="portal-settings"><Settings24Regular /></button>
             <span className="pr-popwrap">
@@ -382,7 +382,7 @@ export function ReporterPortal() {
                 <div className="pr-pop pr-right" style={{ minWidth: 250 }}>
                   <div className="pr-menu-id">
                     <strong>{profile?.name ?? "Local administrator"}</strong>
-                    <small>{profile?.username ?? "admin@apex.local"}</small>
+                    <small>{profile?.username ?? "admin@local.invalid"}</small>
                     <span>{(profile?.roles ?? []).map((role) => roleLabels[role] ?? role).join(" · ") || "Workforce session"}</span>
                   </div>
                   <a className="pr-btn pr-menu-item" href="/portal">Reporter 360 dashboard</a>
@@ -1011,7 +1011,7 @@ function ScheduleModal({ def, snapshot, save, close }: { def: ReportDef; snapsho
           </div>
           <div className="pr-form-row"><label>Delivery time</label><input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
         </div>
-        <div className="pr-form-row"><label>Recipients (comma-separated)</label><input placeholder="admin@northstar.example" value={recipients} onChange={(e) => setRecipients(e.target.value)} data-testid="portal-schedule-recipients" /></div>
+        <div className="pr-form-row"><label>Recipients (comma-separated)</label><input placeholder="admin@sample.invalid" value={recipients} onChange={(e) => setRecipients(e.target.value)} data-testid="portal-schedule-recipients" /></div>
         <div className="pr-form-row"><label>Attachment format</label>
           <select value={format} onChange={(e) => setFormat(e.target.value)} data-testid="portal-schedule-format"><option>XLSX</option><option>CSV</option><option>PDF</option><option>HTML</option></select>
         </div>
@@ -1145,7 +1145,7 @@ function SettingsModal({ workspace, onReset, onClose, notify }: {
       <div className="pr-overlay" onClick={onClose} />
       <div className="pr-modal" data-testid="portal-settings-modal">
         <h3>Tenant & data source</h3>
-        <p className="pr-sub">Northstar Example Group — deterministic synthetic twin. In a connected deployment this panel shows Graph connector health, permissions, and sync freshness.</p>
+        <p className="pr-sub">Example Organization — deterministic synthetic twin. In a connected deployment this panel shows Graph connector health, permissions, and sync freshness.</p>
         <div className="pr-stat-grid">
           {stats.map(([label, value]) => (
             <div key={label}><b>{fmt(value)}</b><span>{label}</span></div>

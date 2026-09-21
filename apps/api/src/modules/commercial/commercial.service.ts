@@ -37,8 +37,8 @@ export class CommercialService {
     return {
       id: "8edba2cc-2a5c-4d2e-9f46-9cc32e0f4177",
       tenantId,
-      legalName: "Global Enterprise Holdings Ltd",
-      displayName: "Global Enterprise Holdings",
+      legalName: "Example Organization Ltd",
+      displayName: "Example Organization",
       industry: ["Logistics", "Manufacturing", "Financial Services"],
       companySize: "5,000 users",
       primaryRegion: "United Arab Emirates",
@@ -108,7 +108,7 @@ export class CommercialService {
     this.organization(tenantId);
     return {
       summary: { customers: 1, activeTrials: 1, paidSubscriptions: 0, expiringLicenses: 1 },
-      items: [{ organization: "Global Enterprise Holdings", tenantId, mode: "Customer preview", subscription: "Enterprise evaluation", license: "Evaluation", connectors: "7 healthy · 1 degraded", dataBoundary: "Local" }],
+      items: [{ organization: "Example Organization", tenantId, mode: "Customer preview", subscription: "Enterprise evaluation", license: "Evaluation", connectors: "7 healthy · 1 degraded", dataBoundary: "Local" }],
       disclosure: "Super Admin contains commercial metadata only; customer operational records are not available in this workspace.",
     };
   }

@@ -116,7 +116,7 @@ describe('public demo API boundary', () => {
   it('preserves a legacy signed workforce context', () => {
     const request = signedRequest({
       tenantId: '00000000-0000-4000-8000-000000000001',
-      actorId: 'workforce@northstar.example',
+      actorId: 'workforce@sample.invalid',
       roles: ['platform-admin'],
       issuedAt: Date.now(),
       nonce: randomUUID(),
@@ -154,7 +154,7 @@ describe('public demo API boundary', () => {
     const request = {
       tenantContext: {
         tenantId: 'tenant-a',
-        actorId: 'admin@northstar.example',
+        actorId: 'admin@sample.invalid',
         roles: ['platform-admin'],
         sessionType: 'workforce',
       },

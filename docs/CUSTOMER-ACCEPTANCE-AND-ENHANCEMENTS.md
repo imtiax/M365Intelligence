@@ -51,12 +51,12 @@ This review treats the local platform as a customer pilot. The production Next.j
 
 | Account | Effective role | Primary access |
 | --- | --- | --- |
-| `admin@apex.local` | Platform Administrator | Full platform and organization administration |
-| `security@apex.local` | Security Administrator | Security, identity, audit and approval |
-| `m365admin@apex.local` | Microsoft 365 Administrator | Management, execution and rollback |
-| `reports@apex.local` | Reporting Administrator | Reporting, report design and dashboards |
-| `auditor@apex.local` | Compliance Auditor | Read-only security, compliance and audit evidence |
-| `viewer@apex.local` | Read-only Analyst | Restricted business intelligence views |
+| `admin@local.invalid` | Platform Administrator | Full platform and organization administration |
+| `security@local.invalid` | Security Administrator | Security, identity, audit and approval |
+| `m365admin@local.invalid` | Microsoft 365 Administrator | Management, execution and rollback |
+| `reports@local.invalid` | Reporting Administrator | Reporting, report design and dashboards |
+| `auditor@local.invalid` | Compliance Auditor | Read-only security, compliance and audit evidence |
+| `viewer@local.invalid` | Read-only Analyst | Restricted business intelligence views |
 
 These accounts share the generated local acceptance password only for the local pilot. Production must use Microsoft Entra OIDC, MFA/authentication-strength claims, group or app-role mapping, Conditional Access, and managed identity or certificate authentication between services.
 

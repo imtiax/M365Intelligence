@@ -74,7 +74,7 @@ if (-not $ready) {
 if ($ResetData) {
   $identityJson = @{
     tenantId = '00000000-0000-4000-8000-000000000001'
-    actorId = 'acceptance.bootstrap@apex.local'
+    actorId = 'acceptance.bootstrap@local.invalid'
     roles = @('platform-admin')
     issuedAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
     nonce = [guid]::NewGuid().ToString()

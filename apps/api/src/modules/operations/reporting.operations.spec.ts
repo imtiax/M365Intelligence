@@ -42,7 +42,7 @@ describe("Persistent enterprise reporting operations", () => {
   afterEach(() => rmSync(path, { force: true }));
 
   it("persists a filtered saved view, schedule, alert, run history, and audit evidence", async () => {
-    const actorId = "report.author@apex.local";
+    const actorId = "report.author@local.invalid";
     const view = service.createReportView(
       DEMO_TENANT,
       actorId,
@@ -248,7 +248,7 @@ describe("Persistent enterprise reporting operations", () => {
           name: "Legacy completed report",
           workload: "Microsoft Entra ID",
           status: "completed",
-          requestedBy: "legacy@apex.local",
+          requestedBy: "legacy@local.invalid",
           createdAt: "2026-07-16T08:00:00.000Z",
           completedAt: "2026-07-16T08:01:00.000Z",
           progress: 100,
@@ -276,8 +276,8 @@ describe("Persistent enterprise reporting operations", () => {
   });
 
   it("protects private job results and evaluates alerts for an interactive saved-view run", async () => {
-    const owner = "private.owner@apex.local";
-    const other = "other.reporter@apex.local";
+    const owner = "private.owner@local.invalid";
+    const other = "other.reporter@local.invalid";
     const privateView = service.createReportView(
       DEMO_TENANT,
       owner,
@@ -350,7 +350,7 @@ describe("Persistent enterprise reporting operations", () => {
       service.reportOperations(DEMO_TENANT, other, false).runs,
     ).toHaveLength(0);
     expect(
-      service.getReport(DEMO_TENANT, linkedJob.id, "platform@apex.local", true)
+      service.getReport(DEMO_TENANT, linkedJob.id, "platform@local.invalid", true)
         .id,
     ).toBe(linkedJob.id);
 
@@ -429,33 +429,33 @@ describe("Persistent enterprise reporting operations", () => {
 
     expect(() =>
       controller.createReportView(
-        requestFor("viewer@apex.local", ["read-only"]),
+        requestFor("viewer@local.invalid", ["read-only"]),
         body,
       ),
     ).toThrow(ForbiddenException);
 
-    const authorRequest = requestFor("reports@apex.local", ["report-admin"]);
+    const authorRequest = requestFor("reports@local.invalid", ["report-admin"]);
     const view = controller.createReportView(authorRequest, body);
-    expect(view.createdBy).toBe("reports@apex.local");
+    expect(view.createdBy).toBe("reports@local.invalid");
     expect(() =>
       controller.runReportView(
-        requestFor("viewer@apex.local", ["read-only"]),
+        requestFor("viewer@local.invalid", ["read-only"]),
         view.id,
       ),
     ).toThrow(ForbiddenException);
     expect(
       service.listReportViews(
         DEMO_TENANT,
-        "different-report-admin@apex.local",
+        "different-report-admin@local.invalid",
       ),
     ).toHaveLength(0);
-    expect(service.listReportViews(DEMO_TENANT, "admin@apex.local", true)).toHaveLength(
+    expect(service.listReportViews(DEMO_TENANT, "admin@local.invalid", true)).toHaveLength(
       1,
     );
     expect(() =>
       service.createReportSchedule(
         DEMO_TENANT,
-        "different-report-admin@apex.local",
+        "different-report-admin@local.invalid",
         randomUUID(),
         view.id,
         {

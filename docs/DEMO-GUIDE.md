@@ -2,7 +2,7 @@
 
 ## Purpose and safety
 
-The local showcase represents Global Enterprise Holdings, a synthetic logistics, manufacturing, and financial-services multinational with 5,000 users across 25 countries and 28,900 normalized Microsoft 365 objects. Every person, alert, control result, cost, finding, connector state, report, and workflow action is fictional. The UI displays persistent demo labeling; do not remove it when presenting generated data as a product capability.
+The local showcase represents Example Organization, a synthetic logistics, manufacturing, and financial-services multinational with 5,000 users across 25 countries and 28,900 normalized Microsoft 365 objects. Every person, alert, control result, cost, finding, connector state, report, and workflow action is fictional. The UI displays persistent demo labeling; do not remove it when presenting generated data as a product capability.
 
 No Microsoft 365 tenant, internet connection, or external model is required for the showcase. Local finding assignments, remediation workflows, approvals, deterministic execution results, audit records, exports, and rollbacks are real within the local runtime; they never change Microsoft 365.
 

@@ -11,12 +11,12 @@ if (password.length < 14) throw new Error('Password must contain at least 14 cha
 
 const tenantId = '00000000-0000-4000-8000-000000000001';
 const profiles = [
-  ['admin@apex.local', 'Alex Morgan', 'Platform Administrator', ['platform-admin']],
-  ['security@apex.local', 'Sara Khan', 'Security Operations Lead', ['security-admin']],
-  ['m365admin@apex.local', 'Omar Rahman', 'Microsoft 365 Administrator', ['m365-admin']],
-  ['reports@apex.local', 'Nadia Ali', 'Reporting Administrator', ['report-admin']],
-  ['auditor@apex.local', 'David Chen', 'Compliance Auditor', ['auditor']],
-  ['viewer@apex.local', 'Maya Patel', 'Business Risk Viewer', ['read-only']],
+  ['admin@local.invalid', 'Alex Morgan', 'Platform Administrator', ['platform-admin']],
+  ['security@local.invalid', 'Sara Khan', 'Security Operations Lead', ['security-admin']],
+  ['m365admin@local.invalid', 'Omar Rahman', 'Microsoft 365 Administrator', ['m365-admin']],
+  ['reports@local.invalid', 'Nadia Ali', 'Reporting Administrator', ['report-admin']],
+  ['auditor@local.invalid', 'David Chen', 'Compliance Auditor', ['auditor']],
+  ['viewer@local.invalid', 'Maya Patel', 'Business Risk Viewer', ['read-only']],
 ];
 const users = await Promise.all(profiles.map(async ([username, name, title, roles]) => {
   const salt = randomBytes(24).toString('base64url');

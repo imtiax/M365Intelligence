@@ -63,7 +63,7 @@ function seedResources(tenantId: string): ResourceRecord[] {
         ).toISOString(),
         details: {
           enabled: index % 19 !== 0,
-          owner: `owner${(index % 180) + 1}@globalholdings.com`,
+          owner: `owner${(index % 180) + 1}@sample.invalid`,
           region: ["Dubai", "London", "Singapore", "New York", "Germany", "India", "Australia"][index % 7],
           activityScore: 100 - ((index * 7) % 91),
           external: index % 13 === 0,

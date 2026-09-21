@@ -9,7 +9,7 @@ describe("CommercialService", () => {
   beforeEach(() => jest.clearAllMocks());
 
   it("returns commercial metadata only for the active organization tenant", () => {
-    expect(service.organization(DEMO_TENANT).displayName).toBe("Global Enterprise Holdings");
+    expect(service.organization(DEMO_TENANT).displayName).toBe("Example Organization");
     expect(() => service.organization("00000000-0000-4000-8000-000000000099")).toThrow(NotFoundException);
   });
 

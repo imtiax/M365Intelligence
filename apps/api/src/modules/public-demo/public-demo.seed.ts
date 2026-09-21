@@ -89,11 +89,11 @@ type PublicDemoSeed = {
 };
 
 const owners = [
-  'amina.rahman@northstar.example',
-  'david.chen@northstar.example',
-  'maya.patel@northstar.example',
-  'omar.hassan@northstar.example',
-  'sara.wilson@northstar.example',
+  'amina.rahman@sample.invalid',
+  'david.chen@sample.invalid',
+  'maya.patel@sample.invalid',
+  'omar.hassan@sample.invalid',
+  'sara.wilson@sample.invalid',
 ] as const;
 
 const regions = ['Dubai', 'London', 'Singapore', 'New York', 'Frankfurt'] as const;
@@ -168,9 +168,9 @@ function deepFreeze<T>(value: T): Readonly<T> {
 function sanitizeSyntheticValue(value: unknown): unknown {
   if (typeof value === 'string') {
     return value
-      .replaceAll('Global Enterprise Holdings', 'Northstar Example Group')
-      .replaceAll('globalholdings.onmicrosoft.com', 'northstar.example')
-      .replaceAll('@globalholdings.com', '@northstar.example');
+      .replaceAll('Example Organization', 'Example Organization')
+      .replaceAll('sample.invalid', 'sample.invalid')
+      .replaceAll('@sample.invalid', '@sample.invalid');
   }
   if (Array.isArray(value)) return value.map(sanitizeSyntheticValue);
   if (value && typeof value === 'object') {
@@ -205,8 +205,8 @@ export const PUBLIC_DEMO_SEED: Readonly<PublicDemoSeed> = deepFreeze({
     'Synthetic demonstration data only. No customer tenant, credentials, or Microsoft 365 service is connected.',
   tenant: {
     id: 'public-demo-v1',
-    name: 'Northstar Example Group',
-    primaryDomain: 'northstar.example',
+    name: 'Example Organization',
+    primaryDomain: 'sample.invalid',
     industry: 'Logistics · Manufacturing · Financial Services',
     region: 'Global synthetic organization',
     users: 5000,

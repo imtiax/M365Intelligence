@@ -54,7 +54,7 @@ async function mintSession() {
     roles: ["platform-admin"], sessionType: "workforce",
   })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-    .setSubject("admin@apex.local")
+    .setSubject("admin@local.invalid")
     .setIssuer("aegis-local")
     .setAudience("aegis-web")
     .setJti(crypto.randomUUID())
@@ -352,7 +352,7 @@ try {
   await openReportViaSearch("Inactive Users", "Inactive Users by Last Sign-in");
   await clickTestId("portal-schedule");
   await setInput('[data-testid="portal-schedule-name"]', "Smoke Sched");
-  await setInput('[data-testid="portal-schedule-recipients"]', "it-admins@northstar.example");
+  await setInput('[data-testid="portal-schedule-recipients"]', "it-admins@sample.invalid");
   await setSelect('[data-testid="portal-schedule-format"]', "CSV");
   await clickTestId("portal-schedule-create");
   await waitFor(`document.querySelector('[data-testid="portal-nav-schedules"] .pr-count')?.textContent === '3'`, "schedule created");

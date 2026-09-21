@@ -1,0 +1,31 @@
+name: Feature request
+description: Propose a product improvement or integration.
+title: "[Feature]: "
+labels: [enhancement, needs-triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Explain the operational problem without naming customers or exposing tenant information.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Permission, privacy, and audit impact
+      description: Identify Graph permissions, data classification, approval, or audit implications if relevant.
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Are you interested in contributing this?
+      options:
+        - I can contribute an implementation.
+        - I can help with design or testing.
+        - I am requesting the feature only.

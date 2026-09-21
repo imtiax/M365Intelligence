@@ -2,7 +2,7 @@
 
 ## Customer environment
 
-The local acceptance environment simulates **Global Enterprise Holdings**, a 5,000-user logistics, manufacturing, and financial-services organization operating across 25 countries. It is deterministic, persistent, resettable, and connected to the secured application APIs. It does not claim to be live Microsoft Graph data.
+The local acceptance environment simulates **Example Organization**, a 5,000-user logistics, manufacturing, and financial-services organization operating across 25 countries. It is deterministic, persistent, resettable, and connected to the secured application APIs. It does not claim to be live Microsoft Graph data.
 
 ## Generated ecosystem
 

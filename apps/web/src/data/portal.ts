@@ -98,8 +98,8 @@ for (let i = 0; i < 420; i++) {
   usedNames.add(`${first}.${last}`);
   const guest = chance(0.09);
   const upn = guest
-    ? `${first.toLowerCase()}.${last.toLowerCase()}_partner#EXT#@northstar.example`
-    : `${first.toLowerCase()}.${last.toLowerCase()}@northstar.example`;
+    ? `${first.toLowerCase()}.${last.toLowerCase()}_partner#EXT#@sample.invalid`
+    : `${first.toLowerCase()}.${last.toLowerCase()}@sample.invalid`;
   const licensed = !guest && chance(0.86);
   const skus = licensed ? [pick(SKUS.slice(0, 3)), ...(chance(0.3) ? [pick(SKUS.slice(3))] : [])] : [];
   const admin = !guest && chance(0.055);
@@ -146,7 +146,7 @@ const mailboxes: Row[] = users
       itemCount: int(2_000, 240_000),
       lastActivity: u.lastSignIn,
       inactiveDays: u.inactiveDays,
-      forwardingTo: chance(0.06) ? `${pick(["archive","backup","assistant"])}@${chance(0.4) ? "outside-partner.example" : "northstar.example"}` : "—",
+      forwardingTo: chance(0.06) ? `${pick(["archive","backup","assistant"])}@${chance(0.4) ? "outside-partner.example" : "sample.invalid"}` : "—",
       fullAccessDelegates: chance(0.12) ? int(1, 4) : 0,
       archiveEnabled: chance(0.4) ? "Yes" : "No",
       holdStatus: chance(0.18) ? "Litigation hold" : "None",
@@ -157,7 +157,7 @@ for (let i = 0; i < 24; i++) {
   const size = Math.round(rand() * 30 * 10) / 10;
   mailboxes.push({
     displayName: `${pick(["Support","Invoices","Careers","Info","Press","Facilities","Ops","Sales"])} ${pick(["Desk","Team","Inbox","Group"])} ${i + 1}`,
-    upn: `shared.${i + 1}@northstar.example`,
+    upn: `shared.${i + 1}@sample.invalid`,
     mailboxType: chance(0.7) ? "Shared" : "Room",
     sizeGB: size, quotaGB: quota, usagePercent: Math.round((size / quota) * 100),
     itemCount: int(500, 80_000),
@@ -255,7 +255,7 @@ const distributionGroups: Row[] = [];
 for (let i = 0; i < 40; i++) {
   distributionGroups.push({
     groupName: `DL - ${pick(DEPARTMENTS)} ${pick(["All","Leads","Announcements","Region","Core"])}`,
-    email: `dl.${i + 1}@northstar.example`,
+    email: `dl.${i + 1}@sample.invalid`,
     members: chance(0.1) ? 0 : int(3, 400),
     managedBy: String(pick(users).displayName),
     externalSenders: chance(0.2) ? "Allowed" : "Blocked",
@@ -273,7 +273,7 @@ for (const team of teams) {
     const user = users[(groupMembers.length * 17 + index * 13) % users.length];
     groupMembers.push({
       groupName: team.teamName,
-      groupEmail: `${String(team.teamName).toLowerCase().replaceAll(/[^a-z0-9]+/g, ".").replaceAll(/^\.|\.$/g, "")}@northstar.example`,
+      groupEmail: `${String(team.teamName).toLowerCase().replaceAll(/[^a-z0-9]+/g, ".").replaceAll(/^\.|\.$/g, "")}@sample.invalid`,
       groupType: "Microsoft 365 group",
       memberName: user.displayName,
       memberUpn: user.upn,
@@ -837,12 +837,12 @@ export const seedViews: PortalView[] = [
 
 export const seedSchedules: PortalSchedule[] = [
   { id: "s-seed-signin", name: "Daily failed sign-ins to SecOps", reportId: "entra-signin-failures", frequency: "Daily", time: "07:00",
-    recipients: "secops@northstar.example", format: "XLSX", suppressEmpty: true, status: "Active",
+    recipients: "secops@sample.invalid", format: "XLSX", suppressEmpty: true, status: "Active",
     columns: colsOf("entra-signin-failures"), filters: [], sort: [],
     runs: [{ at: "2026-07-18 07:00", rows: 141, outcome: "delivered" }, { at: "2026-07-17 07:00", rows: 129, outcome: "delivered" }],
     createdAt: "2026-07-10T07:00:00Z" },
   { id: "s-seed-quota", name: "Weekly mailbox quota watch", reportId: "exo-mailbox-size", frequency: "Weekly", time: "06:30",
-    recipients: "exchange-admins@northstar.example", format: "PDF", suppressEmpty: true, status: "Active",
+    recipients: "exchange-admins@sample.invalid", format: "PDF", suppressEmpty: true, status: "Active",
     columns: colsOf("exo-mailbox-size"), filters: [{ column: "usagePercent", op: "gt", value: "80" }], sort: [{ column: "usagePercent", dir: "desc" }],
     runs: [{ at: "2026-07-13 06:30", rows: 38, outcome: "delivered" }],
     createdAt: "2026-07-06T06:30:00Z" },

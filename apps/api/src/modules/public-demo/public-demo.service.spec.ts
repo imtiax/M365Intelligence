@@ -19,12 +19,15 @@ describe('PublicDemoService', () => {
     expect(Object.isFrozen(PUBLIC_DEMO_SEED)).toBe(true);
     expect(Object.isFrozen(PUBLIC_DEMO_ENTERPRISE)).toBe(true);
     expect(Object.isFrozen(PUBLIC_DEMO_ENTERPRISE.users)).toBe(true);
-    expect(PUBLIC_DEMO_SEED.tenant.primaryDomain).toBe('northstar.example');
+    expect(PUBLIC_DEMO_SEED.tenant.primaryDomain).toBe('sample.invalid');
     expect(PUBLIC_DEMO_ENTERPRISE.users[0].username).toMatch(
-      /@northstar\.example$/,
+      /@sample\.invalid$/,
     );
     expect(JSON.stringify(PUBLIC_DEMO_ENTERPRISE).toLowerCase()).not.toContain(
-      'globalholdings',
+      'production-tenant',
+    );
+    expect(JSON.stringify(PUBLIC_DEMO_ENTERPRISE).toLowerCase()).not.toContain(
+      'customer-brand',
     );
   });
 
@@ -82,7 +85,7 @@ describe('PublicDemoService', () => {
       moduleQuery(),
     ) as { summary: { views: number }; views: unknown[] };
 
-    expect(overview.tenant.name).toBe('Northstar Example Group');
+    expect(overview.tenant.name).toBe('Example Organization');
     expect(overview.objectCounts.users).toBe(5000);
     expect(users.total).toBe(24);
     expect(users.items.every((user) => user.username.endsWith('.example'))).toBe(

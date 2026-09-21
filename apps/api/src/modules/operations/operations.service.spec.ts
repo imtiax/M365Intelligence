@@ -33,7 +33,7 @@ describe("OperationsService acceptance logic", () => {
   it("executes a custom-column report job to completion", async () => {
     const job = service.createReport(
       DEMO_TENANT,
-      "report.author@apex.local",
+      "report.author@local.invalid",
       randomUUID(),
       {
         name: "Identity acceptance report",
@@ -45,7 +45,7 @@ describe("OperationsService acceptance logic", () => {
     const completed = service.getReport(
       DEMO_TENANT,
       job.id,
-      "report.author@apex.local",
+      "report.author@local.invalid",
       false,
     );
     expect(completed.status).toBe("completed");
@@ -61,7 +61,7 @@ describe("OperationsService acceptance logic", () => {
   it("enforces separation of duties and completes an approved workflow", async () => {
     const workflow = service.createWorkflow(
       DEMO_TENANT,
-      "requester@apex.local",
+      "requester@local.invalid",
       randomUUID(),
       {
         title: "Reclaim inactive licenses",
@@ -73,27 +73,27 @@ describe("OperationsService acceptance logic", () => {
     service.submitWorkflow(
       DEMO_TENANT,
       workflow.id,
-      "requester@apex.local",
+      "requester@local.invalid",
       randomUUID(),
     );
     expect(() =>
       service.approveWorkflow(
         DEMO_TENANT,
         workflow.id,
-        "requester@apex.local",
+        "requester@local.invalid",
         randomUUID(),
       ),
     ).toThrow(ForbiddenException);
     service.approveWorkflow(
       DEMO_TENANT,
       workflow.id,
-      "approver@apex.local",
+      "approver@local.invalid",
       randomUUID(),
     );
     service.executeWorkflow(
       DEMO_TENANT,
       workflow.id,
-      "engine@apex.local",
+      "engine@local.invalid",
       randomUUID(),
     );
     await pause(800);
@@ -108,7 +108,7 @@ describe("OperationsService acceptance logic", () => {
   it("records injected failure paths without committing target changes", async () => {
     const workflow = service.createWorkflow(
       DEMO_TENANT,
-      "requester@apex.local",
+      "requester@local.invalid",
       randomUUID(),
       {
         title: "Failure-path validation",
@@ -120,19 +120,19 @@ describe("OperationsService acceptance logic", () => {
     service.submitWorkflow(
       DEMO_TENANT,
       workflow.id,
-      "requester@apex.local",
+      "requester@local.invalid",
       randomUUID(),
     );
     service.approveWorkflow(
       DEMO_TENANT,
       workflow.id,
-      "approver@apex.local",
+      "approver@local.invalid",
       randomUUID(),
     );
     service.executeWorkflow(
       DEMO_TENANT,
       workflow.id,
-      "engine@apex.local",
+      "engine@local.invalid",
       randomUUID(),
     );
     await pause(800);
@@ -145,7 +145,7 @@ describe("OperationsService acceptance logic", () => {
   it("persists an independent rejection decision and prevents execution", () => {
     const workflow = service.createWorkflow(
       DEMO_TENANT,
-      "requester@apex.local",
+      "requester@local.invalid",
       randomUUID(),
       {
         title: "Reject unsafe scope",
@@ -157,14 +157,14 @@ describe("OperationsService acceptance logic", () => {
     service.submitWorkflow(
       DEMO_TENANT,
       workflow.id,
-      "requester@apex.local",
+      "requester@local.invalid",
       randomUUID(),
     );
     expect(() =>
       service.rejectWorkflow(
         DEMO_TENANT,
         workflow.id,
-        "requester@apex.local",
+        "requester@local.invalid",
         randomUUID(),
         "Self decision",
       ),
@@ -172,13 +172,13 @@ describe("OperationsService acceptance logic", () => {
     const rejected = service.rejectWorkflow(
       DEMO_TENANT,
       workflow.id,
-      "approver@apex.local",
+      "approver@local.invalid",
       randomUUID(),
       "Business owner evidence is missing.",
     );
     expect(rejected.state).toBe("rejected");
     expect(rejected.decisions?.at(-1)).toMatchObject({
-      actorId: "approver@apex.local",
+      actorId: "approver@local.invalid",
       decision: "rejected",
       comment: "Business owner evidence is missing.",
     });
@@ -186,7 +186,7 @@ describe("OperationsService acceptance logic", () => {
       service.executeWorkflow(
         DEMO_TENANT,
         workflow.id,
-        "engine@apex.local",
+        "engine@local.invalid",
         randomUUID(),
       ),
     ).toThrow(ConflictException);

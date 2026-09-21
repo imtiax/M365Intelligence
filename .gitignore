@@ -1,5 +1,7 @@
 .env
 .env*.local
+.env.*
+!.env.example
 node_modules/
 .next/
 dist/
@@ -13,5 +15,12 @@ coverage/
 secrets/
 *.pem
 *.pfx
+*.key
+*.p12
+*.crt
+*.cer
+*.sqlite
+*.sqlite3
+*.db
 apps/web/artifacts/
 /artifacts/
