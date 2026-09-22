@@ -52,7 +52,7 @@ jobs:
           context: apps/${{ matrix.app }}
           load: true
           tags: m365ops-${{ matrix.app }}:${{ github.sha }}
-      - uses: aquasecurity/trivy-action@0.32.0
+      - uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: m365ops-${{ matrix.app }}:${{ github.sha }}
           format: sarif
