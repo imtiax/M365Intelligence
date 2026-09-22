@@ -1168,18 +1168,7 @@ export class OperationsService implements OnModuleInit {
     const shouldFail = workflow.targetScope
       .toLowerCase()
       .includes("failure-test");
-    const licenseTargets =
-      workflow.sourceFindingId === "FND-1029"
-        ? this.store
-            .snapshot()
-            .resources.filter(
-              (item) =>
-                item.tenantId === workflow.tenantId &&
-                item.workload === "Licensing & Cost" &&
-                item.details.licenseReclaimed !== true,
-            )
-            .slice(0, 87)
-        : [];
+    const licenseTargets: ResourceRecord[] = [];
     const affected = licenseTargets.length
       ? licenseTargets.length
       : Math.max(

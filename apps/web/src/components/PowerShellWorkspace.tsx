@@ -256,7 +256,7 @@ export function PowerShellWorkspace({ notify, onOpenReport }: { notify: (message
       <header className="pr-page-head">
         <div>
           <h1>PowerShell workspace</h1>
-          <p>Original, role-aware runbooks aligned to the Reporter 360 catalogue. Copy or download commands for your approved local PowerShell environment; previews use the synthetic tenant and never execute against a tenant.</p>
+          <p>Original, role-aware runbooks aligned to the Reporter 360 catalogue. Copy or download commands for your approved local PowerShell environment; this workspace never executes a command against a tenant.</p>
         </div>
         <span className="pr-safety"><ShieldCheckmark24Regular /> Local execution only - no tenant command is run by this browser</span>
       </header>
@@ -275,10 +275,10 @@ export function PowerShellWorkspace({ notify, onOpenReport }: { notify: (message
             <button className="pr-btn" onClick={() => void copy(selected.command).then((ok) => notify(ok ? "PowerShell command copied to clipboard." : "Copy was blocked by this browser."))} data-testid="portal-ps-copy"><Copy24Regular /> Copy command</button>
             <button className="pr-btn" onClick={() => { downloadScript(`${selected.id}.ps1`, `${selected.command}\n`); notify("PowerShell runbook downloaded."); }} data-testid="portal-ps-download"><Save24Regular /> Download .ps1</button>
             <button className="pr-btn" onClick={() => onOpenReport(selected.reportId)} data-testid="portal-ps-open-report"><ArrowRight24Regular /> Open supporting report</button>
-            <button className="pr-btn pr-primary" onClick={() => notify("Synthetic preview refreshed; no tenant command was executed.")} data-testid="portal-ps-preview"><Play24Regular /> Run synthetic preview</button>
+            <button className="pr-btn pr-primary" onClick={() => notify("Local command preview refreshed; no tenant command was executed.")} data-testid="portal-ps-preview"><Play24Regular /> Refresh local preview</button>
           </div>
           <pre className="pr-command-code"><code>{selected.command}</code></pre>
-          <div className="pr-command-output" data-testid="portal-ps-output"><header><span>SIMULATED LOCAL OUTPUT</span><b>{output.length} records shown</b></header>{output.length ? output.map((line) => <code key={line}>{line}</code>) : <p>No synthetic records matched. The runbook remains available for a connected tenant.</p>}</div>
+          <div className="pr-command-output" data-testid="portal-ps-output"><header><span>LOCAL COMMAND PREVIEW</span><b>{output.length} records shown</b></header>{output.length ? output.map((line) => <code key={line}>{line}</code>) : <p>No records are available until a tenant collector is connected. The runbook remains available for an approved environment.</p>}</div>
         </article>
       </div>
     </section>

@@ -91,7 +91,7 @@ export function toGeneratedReport(def: ReportDef, columns: Column[], rows: Row[]
       { label: "Records", value: String(rows.length), detail: `of ${baseRows(def).length} in scope` },
       { label: "Service", value: def.service, detail: def.category },
       { label: "Data window", value: windowLabel ?? "Point in time", detail: "Auto-scoped by schedule" },
-      { label: "Source", value: "Synthetic twin", detail: "Deterministic demo tenant" },
+      { label: "Source", value: "Tenant connector", detail: "No connector data available" },
     ],
   };
 }

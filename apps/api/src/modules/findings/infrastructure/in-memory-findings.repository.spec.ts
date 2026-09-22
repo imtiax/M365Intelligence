@@ -3,21 +3,17 @@ import { InMemoryFindingsRepository } from "./in-memory-findings.repository";
 describe("InMemoryFindingsRepository", () => {
   const repository = new InMemoryFindingsRepository();
 
-  it("projects every result into the active tenant boundary", async () => {
+  it("starts with no findings until a tenant collector persists evidence", async () => {
     const findings = await repository.list("tenant-under-test", { limit: 100 });
-    expect(findings).not.toHaveLength(0);
-    expect(
-      findings.every((finding) => finding.tenantId === "tenant-under-test"),
-    ).toBe(true);
+    expect(findings).toEqual([]);
   });
 
-  it("applies severity and bounded list filters", async () => {
+  it("does not manufacture records for a filter", async () => {
     const findings = await repository.list("tenant-under-test", {
       severity: "high",
       limit: 1,
     });
-    expect(findings).toHaveLength(1);
-    expect(findings[0].severity).toBe("high");
+    expect(findings).toEqual([]);
   });
 
   it("does not return an unknown finding", async () => {

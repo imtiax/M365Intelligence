@@ -1,30 +1,12 @@
 # Open-source release checklist
 
-Use this checklist for every public release and for every fork that will be shared externally.
+Use this checklist before every public release.
 
-## Data and privacy
+- [ ] Confirm no customer tenant data, credentials, certificates, tokens, exports, recordings, or screenshots are staged.
+- [ ] Confirm `.env`, `.env.local`, `.runtime`, data volumes, logs, and browser artifacts are ignored.
+- [ ] Verify a fresh checkout can create its first administrator with `npm run auth:setup -- --compose`.
+- [ ] Verify the API and web builds, dependency scan, secret scan, static analysis, and container scan.
+- [ ] Publish known limitations honestly; do not represent an unimplemented collector or remediation adapter as live functionality.
+- [ ] Enable GitHub branch protection, code scanning, Dependabot, private vulnerability reporting, and protected release tags.
 
-- [ ] Confirm the repository contains only generic synthetic sample data using reserved identities such as `*.invalid`.
-- [ ] Verify no customer tenant IDs, UPNs, device names, IP addresses, audit records, exports, screenshots, recordings, or incident details are staged.
-- [ ] Verify `.env`, `.env.local`, certificates, keys, browser artifacts, runtime state, logs, and database volumes are ignored and unstaged.
-- [ ] Review documentation, examples, test fixtures, and screenshots for tenant-specific references.
-
-## Supply chain and security
-
-- [ ] Run dependency, secret, static-analysis, and container scans.
-- [ ] Verify the build and tests from a clean clone.
-- [ ] Review direct dependencies and license obligations.
-- [ ] Tag the release, publish a release note, and disclose known limitations.
-
-## Repository settings to configure in GitHub
-
-- [ ] Make the repository public only after this checklist passes.
-- [ ] Enable Issues, Discussions, private vulnerability reporting, Dependabot alerts, Dependabot security updates, and code scanning.
-- [ ] Protect `main`: require pull requests, passing checks, resolved conversations, and linear history where the maintainer workflow supports it.
-- [ ] Restrict force pushes and deletion on `main`.
-- [ ] Require signed commits if the organization policy supports it.
-- [ ] Add `CODEOWNERS` after maintainers and code areas are agreed.
-
-## Operational boundary
-
-This repository provides a local deployment foundation and a synthetic evaluation workspace. It does not include a hosted service, a Microsoft tenant, live collector credentials, or authorization to act in a tenant. Every production operator must independently assess their Microsoft 365 permissions, data handling, compliance obligations, identity configuration, backups, monitoring, and incident response.
+The repository is a customer-controlled deployment foundation. Each operator is responsible for identity, permissions, Microsoft 365 integration, data retention, patching, backup/restore, monitoring, and incident response in their environment.

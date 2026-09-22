@@ -104,7 +104,7 @@ export function AdvancedReportBuilder({ notify }: { notify: (message: string) =>
           <p>Compose operational reports from Entra, Exchange, Teams, SharePoint, Intune, audit, and membership evidence. Every preview uses the same governed filter and export pipeline as the catalogue.</p>
         </div>
         <div className="pr-head-actions">
-          <button className="pr-btn" onClick={() => notify("Preview refreshed from the current synthetic tenant snapshot.")} data-testid="portal-builder-preview"><Eye24Regular /> Refresh preview</button>
+          <button className="pr-btn" onClick={() => notify("Preview refreshed. Connect a tenant to return records.")} data-testid="portal-builder-preview"><Eye24Regular /> Refresh preview</button>
           <button className="pr-btn pr-primary" onClick={() => { setSaved(true); notify(`Saved “${definition.name}” to this browser.`); }} data-testid="portal-builder-save"><Save24Regular /> {saved ? "Saved" : "Save definition"}</button>
         </div>
       </header>

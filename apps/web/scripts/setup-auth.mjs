@@ -1,41 +1,82 @@
-import { randomBytes, scrypt as scryptCallback } from 'node:crypto';
+import { randomBytes, randomUUID, scrypt as scryptCallback } from 'node:crypto';
+import { existsSync, mkdirSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 const scrypt = promisify(scryptCallback);
-const passwordArg = process.argv.find((item) => item.startsWith('--password='));
+const here = dirname(fileURLToPath(import.meta.url));
+const webRoot = resolve(here, '..');
+const repositoryRoot = resolve(webRoot, '..', '..');
+const argument = (name) => process.argv.find((value) => value.startsWith(`--${name}=`))?.slice(name.length + 3);
+const force = process.argv.includes('--force');
+const compose = process.argv.includes('--compose');
 const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
-const generated = Array.from(randomBytes(22), (byte) => alphabet[byte % alphabet.length]).join('');
-const password = passwordArg?.slice('--password='.length) || generated;
-if (password.length < 14) throw new Error('Password must contain at least 14 characters.');
+const generatedPassword = Array.from(randomBytes(22), (byte) => alphabet[byte % alphabet.length]).join('');
+const password = argument('password') || generatedPassword;
+const username = (argument('username') || process.env.M365INTELLIGENCE_ADMIN_USERNAME || 'admin@local.invalid').trim().toLowerCase();
+const credentialsFile = resolve(argument('credentials-file') || resolve(repositoryRoot, '.runtime', 'initial-admin-credentials.txt'));
+const webEnvFile = resolve(webRoot, '.env.local');
+const composeEnvFile = resolve(repositoryRoot, '.env');
 
-const tenantId = '00000000-0000-4000-8000-000000000001';
-const profiles = [
-  ['admin@local.invalid', 'Alex Morgan', 'Platform Administrator', ['platform-admin']],
-  ['security@local.invalid', 'Sara Khan', 'Security Operations Lead', ['security-admin']],
-  ['m365admin@local.invalid', 'Omar Rahman', 'Microsoft 365 Administrator', ['m365-admin']],
-  ['reports@local.invalid', 'Nadia Ali', 'Reporting Administrator', ['report-admin']],
-  ['auditor@local.invalid', 'David Chen', 'Compliance Auditor', ['auditor']],
-  ['viewer@local.invalid', 'Maya Patel', 'Business Risk Viewer', ['read-only']],
-];
-const users = await Promise.all(profiles.map(async ([username, name, title, roles]) => {
-  const salt = randomBytes(24).toString('base64url');
-  const hash = await scrypt(password, salt, 64, { N: 32768, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
-  return { username, name, title, tenantId, roles, salt, passwordHash: Buffer.from(hash).toString('hex') };
-}));
-const sessionSecret = randomBytes(48).toString('base64url');
-const internalApiSecret = randomBytes(48).toString('base64url');
-const content = [
+if (!/^[^\s@]+@[^\s@]+$/.test(username) || username.length > 254) throw new Error('Use a valid administrator email address with --username=admin@organization.example.');
+if (password.length < 14) throw new Error('Password must contain at least 14 characters.');
+if (!force && existsSync(webEnvFile)) throw new Error(`Local credentials already exist at ${webEnvFile}. Use --force only to rotate them.`);
+if (compose && !force && existsSync(composeEnvFile)) throw new Error(`Compose environment already exists at ${composeEnvFile}. Use --force only to rotate all generated secrets.`);
+
+const salt = randomBytes(24).toString('base64url');
+const passwordHash = Buffer.from(await scrypt(password, salt, 64, { N: 32768, r: 8, p: 1, maxmem: 64 * 1024 * 1024 })).toString('hex');
+const auth = {
+  tenantId: randomUUID(),
+  users: [{ username, name: 'Local Platform Administrator', title: 'Platform Administrator', roles: ['platform-admin'], salt, passwordHash }],
+  sessionSecret: randomBytes(48).toString('base64url'),
+  internalApiSecret: randomBytes(48).toString('base64url'),
+};
+const authLines = [
   '# Generated local authentication material. Never commit this file.',
-  `AEGIS_LOCAL_USERS_B64=${Buffer.from(JSON.stringify(users)).toString('base64url')}`,
-  `AEGIS_SESSION_SECRET=${sessionSecret}`,
-  `AEGIS_INTERNAL_API_SECRET=${internalApiSecret}`,
-  '# Localhost uses HTTP. Set true when deployed behind trusted HTTPS.',
+  `AEGIS_LOCAL_USERS_B64=${Buffer.from(JSON.stringify(auth.users)).toString('base64url')}`,
+  `AEGIS_SESSION_SECRET=${auth.sessionSecret}`,
+  `AEGIS_INTERNAL_API_SECRET=${auth.internalApiSecret}`,
+  '# Localhost uses HTTP. Set true only behind trusted HTTPS.',
   'AEGIS_COOKIE_SECURE=false',
   '',
-].join('\n');
-await writeFile(new URL('../.env.local', import.meta.url), content, { mode: 0o600 });
-console.log('Local organization identities configured:');
-for (const [username, , title] of profiles) console.log(`- ${username} (${title})`);
-console.log(`Shared local acceptance password: ${password}`);
-console.log('Restart the web application before signing in.');
+];
+
+await writeFile(webEnvFile, authLines.join('\n'), { mode: 0o600 });
+
+if (compose) {
+  const composeLines = [
+    '# Generated by npm run auth:setup -- --compose. Never commit this file.',
+    'POSTGRES_DB=m365ops',
+    'POSTGRES_USER=m365ops',
+    `POSTGRES_PASSWORD=${randomBytes(32).toString('base64url')}`,
+    'RABBITMQ_USER=m365ops',
+    `RABBITMQ_PASSWORD=${randomBytes(32).toString('base64url')}`,
+    `APP_ENCRYPTION_KEY=${randomBytes(32).toString('base64')}`,
+    ...authLines.slice(1, -1),
+    'M365_GRAPH_ENABLED=false',
+    'ENTRA_OIDC_ENABLED=false',
+    '',
+  ];
+  await writeFile(composeEnvFile, composeLines.join('\n'), { mode: 0o600 });
+}
+
+mkdirSync(dirname(credentialsFile), { recursive: true });
+await writeFile(credentialsFile, [
+  'M365Intelligence initial local administrator',
+  'Store these credentials in an approved password manager, then delete this file.',
+  `Username: ${username}`,
+  `Password: ${password}`,
+  `Generated: ${new Date().toISOString()}`,
+  '',
+].join('\n'), { mode: 0o600 });
+
+console.log('\nM365Intelligence local administrator created');
+console.log('==============================================');
+console.log(`Username: ${username}`);
+console.log(`Password: ${password}`);
+console.log(`Credentials file: ${credentialsFile}`);
+console.log(compose ? `Compose environment: ${composeEnvFile}` : `Web environment: ${webEnvFile}`);
+console.log('Save the password now. It is not recoverable from the application.');
+console.log('Delete the credentials file after storing it in your password manager.\n');

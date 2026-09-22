@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "node scripts/start-production.mjs",
     "lint": "next lint",
-    "auth:setup": "node scripts/setup-auth.mjs",
-    "test:portal": "node scripts/portal-smoke.mjs"
+    "auth:setup": "node scripts/setup-auth.mjs"
   },
   "dependencies": {
     "@fluentui/react-components": "^9.68.2",

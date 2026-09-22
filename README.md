@@ -1,116 +1,92 @@
 # M365Intelligence
 
-M365Intelligence is a local-first, open-source Microsoft 365 operations workspace. It brings reporting, Microsoft Defender SOC triage, administrator audit evidence, governance workflows, and export-ready views into one customer-controlled deployment.
+M365Intelligence is a customer-controlled Microsoft 365 operations workspace for reporting, security operations, administrator audit, governance workflows, and export-ready evidence.
 
-> **Release status:** This repository is an evaluation-ready open-source foundation. Its bundled information is generated, generic sample data. It does not include a customer tenant, customer credentials, tokens, certificates, or real Microsoft 365 activity.
+## Clean deployment by default
 
-![Reporter 360 overview](docs/assets/reporter-360-overview.png)
+This repository contains **no customer data, credentials, tokens, certificates, tenant exports, or bundled demonstration records**. A fresh deployment starts empty. Report definitions and workspace capabilities are available immediately; records appear only after an organization implements and authorizes an approved collector.
 
-## Why M365Intelligence
+The public-demo API and its synthetic data have been removed from the production build. Do not use this repository as an internet-facing service until its identity, integration, operational, and release gates have been completed for your environment.
 
-- **Customer-controlled by design.** Run the application and its data services in infrastructure you control.
-- **One operational surface.** Explore Microsoft 365 reporting, security operations, administrative audit, governance, and scheduled delivery in a unified portal.
-- **Useful before a tenant connection.** The included synthetic workspace lets teams evaluate filters, reports, exports, saved views, alerts, and workflows without exposing tenant data.
-- **Transparent integration boundary.** Live Microsoft Graph collection and real remediation are disabled by default and are never presented as live data when the source is synthetic.
-- **Open for review and extension.** The source, deployment materials, security documentation, and contribution workflow are available under Apache-2.0.
-
-This is intentionally not a hosted telemetry service. A customer deployment only communicates with Microsoft services or other integrations that its administrator explicitly configures and authorizes. Review [the Microsoft 365 connection boundary](#connect-microsoft-365) before enabling any integration.
-
-## Included workspaces
-
-- **Reporter 360:** report catalogue, dashboards, quick/easy/advanced filtering, saved views, schedules, alerts, and CSV, Excel, and PDF exports.
-- **Security operations:** synthetic Defender-style alert and incident investigation views, evidence timelines, ownership, response playbooks, and audit trails.
-- **Administrator audit:** cross-workload administrative activity timeline, high-risk change investigation, before/after context, compliance evidence, and reports.
-- **Governance:** findings, approvals, exceptions, remediation simulation, rollback records, and immutable-style event history.
-- **PowerShell workspace:** searchable operational command reference and copy-ready runbook snippets. Commands must be reviewed and run by an authorized administrator in their own environment.
-
-## Quick start: local evaluation
+## Fast local or Docker setup
 
 ### Prerequisites
 
 - Node.js 22 LTS or newer
 - npm and Git
-- Windows PowerShell on Windows (the included convenience launcher is PowerShell)
-- Docker Desktop only for the full container stack
+- Docker Desktop for the container deployment
 
-Clone the public repository, install the two applications, then generate an administrator password that remains local and git-ignored:
+Clone the repository, install the web dependencies, and create the first local platform administrator. This command generates all local secrets, creates `.env` for Docker, creates `apps/web/.env.local` for local runs, and displays the username and password clearly in the terminal.
 
 ```powershell
 git clone https://github.com/imtiax/M365Intelligence.git
-cd M365Intelligence
-
-cd apps\web
+cd M365Intelligence\apps\web
 npm.cmd ci
-npm.cmd run auth:setup
-
-cd ..\api
-npm.cmd ci
-
-cd ..\..
-powershell -ExecutionPolicy Bypass -File .\scripts\start-acceptance.ps1 -ResetData
+npm.cmd run auth:setup -- --compose --username=admin@your-organization.example
 ```
 
-`auth:setup` prints the local username and password once. Save the password in your approved password manager. Open [http://localhost:3008/login](http://localhost:3008/login) and sign in. The convenience launcher starts the API on port `3001`, the application on `3008`, and the isolated synthetic tour at [http://localhost:3008/landing/demo](http://localhost:3008/landing/demo).
+The terminal displays a block like this:
 
-### Docker deployment
+```text
+M365Intelligence local administrator created
+Username: admin@your-organization.example
+Password: <generated once>
+Credentials file: <repository>\.runtime\initial-admin-credentials.txt
+```
+
+Save the password in an approved password manager. The credentials file is local, permission-restricted where supported, and git-ignored; delete it after saving the password. The password cannot be recovered from the application. To intentionally rotate the local administrator and all generated Compose secrets, re-run the command with `--force`.
+
+Start the clean container stack:
 
 ```powershell
-Copy-Item .env.example .env
-# Replace every CHANGE_ME value with a unique secret before starting.
+cd ..\..
 docker compose up --build -d
 docker compose ps
 ```
 
-Open [http://localhost:8080](http://localhost:8080). Docker keeps database and queue services on internal networks; only Nginx exposes port `8080`. Do not use development defaults or the example secrets outside a disposable evaluation environment.
+Open [http://localhost:8080/login](http://localhost:8080/login) and use the generated username and password. For local HTTP only, bootstrap sets `AEGIS_COOKIE_SECURE=false`. Before exposing any deployment, terminate trusted TLS and set `AEGIS_COOKIE_SECURE=true`.
 
-For optional local search, AI, or observability services, add `--profile search`, `--profile ai`, or `--profile observability` to the Docker command. Stop containers with `docker compose down`; add `-v` only when you intentionally want to erase local volumes.
-
-## Demo data and safety
-
-The repository includes a deterministic sample organization, `Example Organization`, using reserved `*.invalid` identities. It exists solely to exercise the UI and end-to-end checks. It is not customer data and no bundled report, alert, user, device, or event is a live Microsoft 365 record.
-
-Do not commit any of the following:
-
-- `.env` files, passwords, tokens, keys, certificates, or signed exports
-- Microsoft tenant IDs, user principal names, device names, IP addresses, audit records, or screenshots containing customer data
-- database volumes, runtime state, browser artifacts, or production configuration
-
-The repository ignores those common local artifacts. Run a secret scan and a privacy review before each pull request or release.
-
-## Connect Microsoft 365
-
-Live tenant collection is an integration boundary, not a switch that turns sample data into production data. The included `M365_*` and Entra variables reserve the deployment contract; production collectors and live mutation paths require their own release gates, tests, and administrator approval.
-
-When implementing a connection:
-
-1. Use a dedicated, single-tenant Entra application or managed identity per customer environment.
-2. Prefer certificate or workload-identity authentication; do not store a production client secret in the repository.
-3. Request only the Microsoft Graph permissions needed by enabled read-only modules, obtain documented tenant-admin consent, and review them regularly.
-4. Keep credentials in a protected runtime secret store and enable write/remediation permissions only through a separate governed identity and approval path.
-5. Validate tenant isolation, throttling handling, audit logging, retention, restore, and failure behavior before production use.
-
-See [docs/MICROSOFT-365-CONNECTION.md](docs/MICROSOFT-365-CONNECTION.md), the [security architecture](docs/architecture/security.md), and the [threat model](docs/architecture/threat-model.md).
-
-## Verify a checkout
+## Local non-Docker run
 
 ```powershell
-# API unit and build verification
+cd apps\web
+npm.cmd ci
+npm.cmd run auth:setup -- --username=admin@your-organization.example
+npm.cmd run build
+npm.cmd start
+```
+
+Open [http://localhost:3008/login](http://localhost:3008/login). The web-only mode is suitable for interface evaluation; API-backed operations require the API service and approved connection configuration.
+
+## Credentials and account lifecycle
+
+- Bootstrap creates **one** local `platform-admin` identity; it does not create sample people or shared passwords.
+- Use `--username=admin@your-organization.example` to choose the initial administrator.
+- Use `--password=<approved-temporary-password>` only when an operator must control the initial secret; otherwise a high-entropy password is generated.
+- Bootstrap refuses to overwrite existing credentials. Use `--force` only for a deliberate credential rotation and restart the services afterwards.
+- For enterprise production, replace the local adapter with validated Entra ID OIDC claims, MFA/Conditional Access, server-side role mapping, centralized throttling/session controls, and audited identity lifecycle management.
+
+## Microsoft 365 connection boundary
+
+The application intentionally does not invent live tenant data. Microsoft Graph collection and tenant write/remediation actions must be implemented and released for each enabled workload under least privilege, change approval, audit, and tenant-isolation controls.
+
+Start with a single-tenant Entra application or managed identity, certificate/workload authentication, approved read-only Graph permissions, and a documented data-retention model. Keep collection disabled until the organization completes the connection and security validation in [docs/MICROSOFT-365-CONNECTION.md](docs/MICROSOFT-365-CONNECTION.md).
+
+## Verification
+
+```powershell
 cd apps\api
+npm.cmd ci
 npm.cmd run build
 npm.cmd test
 
-# With the local environment running, exercise the Reporter 360 portal.
 cd ..\web
-npm.cmd run test:portal
+npm.cmd run build
 ```
 
-The portal check validates dashboard drill-through, filtering, saved views, schedules, alerts, live CSV/Excel/PDF exports, record details, workspace reset, and sign-out. It writes a local ignored screenshot under `apps/web/artifacts`.
+## Security and contribution
 
-## Contributing
-
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md), follow the [Code of Conduct](CODE_OF_CONDUCT.md), sign off commits under the [Developer Certificate of Origin](DCO.md), and use the issue and pull-request templates. For vulnerabilities, do **not** open an issue; follow [SECURITY.md](SECURITY.md).
-
-The initial public roadmap and release gates are in [docs/roadmap.md](docs/roadmap.md). Consult [SUPPORT.md](SUPPORT.md) for community support boundaries and [TRADEMARKS.md](TRADEMARKS.md) for fair-use guidance.
+Read [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), [SUPPORT.md](SUPPORT.md), and the [open-source release checklist](docs/OPEN-SOURCE-RELEASE.md). Never commit `.env`, `.env.local`, certificates, tokens, tenant data, exports, runtime data, or screenshots containing customer information.
 
 ## License
 

@@ -1,10 +1,7 @@
 "use client";
 
-// Reporter 360 is an original reporting portal backed by the synthetic tenant.
-// Every control is live: exports produce real files through the platform
-// reporting engine, schedules execute with run history and empty-result
-// suppression, alert policies evaluate against the data, and workspace state
-// (views/schedules/alerts) is seeded and persisted per browser.
+// Reporter 360 is a customer-owned reporting workspace. It starts empty and
+// only displays records obtained through an approved tenant connection.
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -88,8 +85,6 @@ import {
 import { roleLabels, type PlatformRole } from "@/lib/identity";
 import { AdvancedReportBuilder } from "@/components/AdvancedReportBuilder";
 import { PowerShellWorkspace } from "@/components/PowerShellWorkspace";
-import { SocWorkspace } from "@/components/SocWorkspace";
-import { AdminAuditWorkspace } from "@/components/AdminAuditWorkspace";
 import { ConnectionCenter } from "@/components/ConnectionCenter";
 
 // Validated categorical palette (dataviz skill, references/palette.md) — fixed
@@ -261,7 +256,7 @@ export function ReporterPortal() {
     setViews(seedViews);
     setSchedules(seedSchedules);
     setAlerts(seedAlerts);
-    setToast("Workspace reset to the seeded demonstration state.");
+    setToast("Workspace cleared. No customer records are stored in this browser.");
   };
 
   const signOut = async () => {
@@ -359,7 +354,7 @@ export function ReporterPortal() {
             );
           })}
         </nav>
-        <div className="pr-sidebar-foot"><i /> {reportCatalog.length} reports · synthetic demo tenant</div>
+        <div className="pr-sidebar-foot"><i /> {reportCatalog.length} report definitions · no tenant connected</div>
       </aside>
 
       <div className="pr-main">
@@ -371,7 +366,7 @@ export function ReporterPortal() {
           </span>
           <div className="pr-topbar-right">
             <button className="pr-tenant" onClick={() => setSettingsOpen(true)} data-testid="portal-tenant" title="Tenant & data source details">
-              <i>NE</i><span>Example Organization<small>{tables.users.length} users · demo data</small></span>
+              <i>MC</i><span>My organization<small>{tables.users.length} synchronized users</small></span>
             </button>
             <button className="pr-btn" onClick={() => setSettingsOpen(true)} aria-label="Portal settings" data-testid="portal-settings"><Settings24Regular /></button>
             <span className="pr-popwrap">
@@ -466,8 +461,8 @@ export function ReporterPortal() {
               }))}
             />
           )}
-          {route.kind === "soc" && <SocWorkspace notify={setToast} onOpenReport={(id) => openReport(id)} />}
-          {route.kind === "admin-audit" && <AdminAuditWorkspace notify={setToast} onOpenReport={(id) => openReport(id)} />}
+          {route.kind === "soc" && <ConnectionRequired title="Defender SOC" detail="No Defender alerts are bundled with this deployment. Configure and validate the Defender XDR and Sentinel collectors before security events can be investigated here." />}
+          {route.kind === "admin-audit" && <ConnectionRequired title="Administrator audit & governance" detail="No administrator activity is bundled with this deployment. Configure approved Purview Audit and Microsoft 365 workload collectors before audit evidence is displayed here." />}
           {route.kind === "builder" && <AdvancedReportBuilder notify={setToast} />}
           {route.kind === "powershell" && <PowerShellWorkspace notify={setToast} onOpenReport={(id) => openReport(id)} />}
           {route.kind === "connections" && <ConnectionCenter notify={setToast} />}
@@ -1011,7 +1006,7 @@ function ScheduleModal({ def, snapshot, save, close }: { def: ReportDef; snapsho
           </div>
           <div className="pr-form-row"><label>Delivery time</label><input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
         </div>
-        <div className="pr-form-row"><label>Recipients (comma-separated)</label><input placeholder="admin@sample.invalid" value={recipients} onChange={(e) => setRecipients(e.target.value)} data-testid="portal-schedule-recipients" /></div>
+        <div className="pr-form-row"><label>Recipients (comma-separated)</label><input placeholder="admin@your-organization.example" value={recipients} onChange={(e) => setRecipients(e.target.value)} data-testid="portal-schedule-recipients" /></div>
         <div className="pr-form-row"><label>Attachment format</label>
           <select value={format} onChange={(e) => setFormat(e.target.value)} data-testid="portal-schedule-format"><option>XLSX</option><option>CSV</option><option>PDF</option><option>HTML</option></select>
         </div>
@@ -1145,19 +1140,19 @@ function SettingsModal({ workspace, onReset, onClose, notify }: {
       <div className="pr-overlay" onClick={onClose} />
       <div className="pr-modal" data-testid="portal-settings-modal">
         <h3>Tenant & data source</h3>
-        <p className="pr-sub">Example Organization — deterministic synthetic twin. In a connected deployment this panel shows Graph connector health, permissions, and sync freshness.</p>
+        <p className="pr-sub">No tenant is connected. This panel shows connector health, approved permissions, and sync freshness after collection is configured.</p>
         <div className="pr-stat-grid">
           {stats.map(([label, value]) => (
             <div key={label}><b>{fmt(value)}</b><span>{label}</span></div>
           ))}
         </div>
-        <div className="pr-note">Workspace: {workspace.views} saved views · {workspace.schedules} schedules · {workspace.alerts} alert policies — stored in this browser and re-seeded on reset. {reportCatalog.length} reports in the catalogue.</div>
+        <div className="pr-note">Workspace: {workspace.views} saved views · {workspace.schedules} schedules · {workspace.alerts} alert policies — stored only in this browser. {reportCatalog.length} report definitions are ready for a connected tenant.</div>
         <div className="pr-modal-actions">
           <button className="pr-btn" data-testid="portal-export-dataset" onClick={() => { downloadJson("reporter360-dataset.json", { schema: "reporter360.dataset.v1", generatedAt: new Date().toISOString(), tables }); notify("Full dataset exported as JSON."); }}>Export dataset (JSON)</button>
           <button className={`pr-btn ${confirmReset ? "pr-danger" : ""}`} data-testid="portal-reset-demo" onClick={() => {
             if (!confirmReset) { setConfirmReset(true); return; }
             onReset(); setConfirmReset(false); onClose();
-          }}>{confirmReset ? "Confirm reset" : "Reset demo data"}</button>
+          }}>{confirmReset ? "Confirm clear" : "Clear local workspace"}</button>
           <button className="pr-btn pr-primary" onClick={onClose}>Close</button>
         </div>
       </div>
@@ -1247,6 +1242,10 @@ function FragmentKV({ label, value, badge }: { label: string; value: string; bad
 }
 
 // ------------------------------------------------------------ collection page
+
+function ConnectionRequired({ title, detail }: { title: string; detail: string }) {
+  return <section className="pr-page-head" data-testid="portal-connection-required"><div><span className="pr-kicker">CONNECTION REQUIRED</span><h1>{title}</h1><p>{detail}</p><div className="pr-note">Use Connection Center to review prerequisites, configure an approved integration, and record the deployment change before enabling collection.</div></div></section>;
+}
 
 function CollectionPage({ title, empty, emptyAction, items, testid }: {
   title: string; empty: string; testid?: string;

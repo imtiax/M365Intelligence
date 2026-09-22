@@ -21,10 +21,6 @@ Get-Content -LiteralPath (Join-Path $web '.env.local') | ForEach-Object {
   }
 }
 
-# The acceptance runtime is the only local launcher that enables the public
-# synthetic tour automatically. Docker and ordinary deployments remain opt-in.
-$env:AEGIS_PUBLIC_DEMO_ENABLED = 'true'
-
 foreach ($port in 3001, 3008) {
   $listener = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
   if ($listener) {
@@ -89,8 +85,6 @@ if ($ResetData) {
 
 Write-Host 'Acceptance environment is ready.' -ForegroundColor Green
 Write-Host 'Web: http://localhost:3008/login'
-Write-Host 'Public synthetic demo: http://localhost:3008/landing/demo'
 Write-Host 'API: http://localhost:3001/api/docs'
 Write-Host 'Run API E2E: cd apps\api; npm.cmd run test:e2e'
-Write-Host 'Run browser E2E: cd apps\web; $env:AEGIS_SMOKE_PASSWORD="<password>"; npm.cmd run test:smoke'
-Write-Host 'Run public demo isolation: cd apps\web; npm.cmd run test:public-demo'
+Write-Host 'The workspace starts without bundled tenant records. Configure approved collectors before production use.'
